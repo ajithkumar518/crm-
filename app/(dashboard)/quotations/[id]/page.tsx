@@ -750,17 +750,30 @@ export default function QuotationDetailPage() {
       <div className="crm-card p-4">
         <StatusStepper
           compact
-          steps={[
-            "Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"
-          ].map((key, idx) => {
-            const order = ["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"];
+          steps={
+          // V1 tenants don't have Negotiation or Deal/PO, so we filter them out dynamically
+          ["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"].filter(key => {
+            if (key === "UnderReview" && !hasMod(MODULE_KEYS.NEGOTIATION)) return false;
+            if (key === "Deal/PO" && !(hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS))) return false;
+            return true;
+          }).map((key, idx, arr) => {
+            const order = arr;
             // When status is "Accepted", check if deal is Won to determine if Deal/PO is done or active.
             // If deal status is "Won", Deal/PO is completed (green check). Otherwise it's the active step (blue).
+            // For V1 (where Deal/PO is removed), the active step is just "Accepted".
             const dealWon = quotation.status === "Accepted" && quotation.deal?.status === "Won";
-            const activeStage = quotation.status === "Accepted"
-              ? (dealWon ? null : "Deal/PO")
+            let activeStage = quotation.status === "Accepted"
+              ? (order.includes("Deal/PO") ? (dealWon ? null : "Deal/PO") : "Accepted")
               : (quotation.status === "Rejected" || quotation.status === "Expired" ? "Accepted"
               : quotation.status);
+              
+            // If the activeStage is UnderReview (because the quotation has that status) but the tenant
+            // doesn't have the negotiation module, we fallback to "Sent" as the active stage, because 
+            // V1 quotations shouldn't even be able to reach UnderReview.
+            if (activeStage === "UnderReview" && !order.includes("UnderReview")) {
+              activeStage = "Sent";
+            }
+
             const currentIdx = activeStage ? order.indexOf(activeStage) : order.length;
             const stageIdx = idx;
             const isDone = stageIdx < currentIdx;

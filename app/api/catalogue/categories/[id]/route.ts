@@ -16,6 +16,9 @@ export async function PUT(
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/categories/[id]/route.ts");
+    if (guard) return guard;
+
     const body = await request.json();
     const { id } = await params;
 
@@ -61,6 +64,9 @@ export async function DELETE(
     if (!user || user.role === "Customer") {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
+
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/categories/[id]/route.ts");
+    if (guard) return guard;
 
     const { id } = await params;
 

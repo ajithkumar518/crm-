@@ -74,6 +74,7 @@ export function useQuotationDetail() {
   const [marginFloor, setMarginFloor] = useState(15.0);
   const [discountThreshold, setDiscountThreshold] = useState(5.0);
   const [creatingPo, setCreatingPo] = useState(false);
+  const [markingWon, setMarkingWon] = useState(false);
 
   const loadQuotation = async () => {
     setLoading(true);
@@ -438,6 +439,27 @@ export function useQuotationDetail() {
     }
   };
 
+  const handleMarkWon = async () => {
+    if (!quotation?.dealId) return;
+    setMarkingWon(true);
+    startLoading("Marking Opportunity as Won...", "handshake");
+    try {
+      const res = await fetch(`/api/opportunities/${quotation.dealId}/mark-won`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok || data.success) {
+        toast.success("Opportunity marked as Won!");
+        router.push(`/sales-pipeline/${quotation.dealId}`);
+      } else {
+        toast.error(data.message || "Failed to mark as Won");
+      }
+    } catch {
+      toast.error("Failed to mark as Won");
+    } finally {
+      stopLoading();
+      setMarkingWon(false);
+    }
+  };
+
   const handleDelete = () => {
     setConfirmState({
       isOpen: true,
@@ -593,6 +615,7 @@ export function useQuotationDetail() {
     marginFloor,
     discountThreshold,
     creatingPo,
+    markingWon,
     // handlers
     loadQuotation,
     loadDocuments,
@@ -614,6 +637,7 @@ export function useQuotationDetail() {
     handleApprovalDecision,
     handleDownloadPdf,
     handleCreatePo,
+    handleMarkWon,
     handleDelete,
     // computed
     today,

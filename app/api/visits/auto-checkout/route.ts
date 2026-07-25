@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { logAudit, extractAuditContext } from "@/lib/audit";
+import { enforceModuleGuard } from "@/lib/moduleGuard";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 // POST /api/visits/auto-checkout
 // Automatically checks out visits that have been CHECKED_IN for more than 12 hours without manual checkout
@@ -13,6 +15,9 @@ export async function POST(request: NextRequest) {
     if (user.role !== "Admin" && user.role !== "Manager") {
       return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
     }
+
+    const guard = enforceModuleGuard(user, MODULE_KEYS.CUSTOMER_VISITS, "API app/api/visits/auto-checkout/route.ts");
+    if (guard) return guard;
 
     const AUTO_CHECKOUT_HOURS = 12; // Configurable window as per spec
     const now = new Date();

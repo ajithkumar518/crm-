@@ -5,6 +5,7 @@ import { useToast } from "@/components/ToastProvider";
 import PageContainer from "@/components/PageContainer";
 import { CRMSpinner } from "@/components/CRMSpinner";
 import { cn } from "@/lib/ui-utils";
+import { ModuleGate } from "@/components/ModuleGate";
 
 const Ico = ({ d, size = 16, className }: { d: string; size?: number; className?: string }) => (
   <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -93,6 +94,7 @@ export default function PipelineStagesSettingsPage() {
   };
 
   return (
+    <ModuleGate variantMin={2}>
     <PageContainer className="space-y-4 p-0">
       <div className="flex items-center justify-between">
         <div><h1 className="text-2xl font-bold text-slate-800">Pipeline Stages</h1><p className="text-sm text-slate-500 mt-0.5">Configure deal pipeline stages</p></div>
@@ -160,5 +162,6 @@ export default function PipelineStagesSettingsPage() {
         </div>
       )}
     </PageContainer>
+    </ModuleGate>
   );
 }

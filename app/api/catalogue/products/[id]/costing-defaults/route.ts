@@ -14,6 +14,9 @@ export async function GET(
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/products/[id]/costing-defaults/route.ts");
+    if (guard) return guard;
+
   const { id: productId } = await params;
 
   try {

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { useAuth } from "@/components/AuthProvider";
 import PageContainer from "@/components/PageContainer";
+import { ModuleGate } from "@/components/ModuleGate";
 import { Plus, Trash2, Save, FileText } from "lucide-react";
 
 interface DocType {
@@ -98,15 +99,18 @@ export default function DocumentTypesSettingsPage() {
 
   if (loading) {
     return (
+      <ModuleGate variantMin={3}>
       <PageContainer>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-transparent" />
         </div>
       </PageContainer>
+      </ModuleGate>
     );
   }
 
   return (
+    <ModuleGate variantMin={3}>
     <PageContainer>
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -169,5 +173,6 @@ export default function DocumentTypesSettingsPage() {
         </div>
       </div>
     </PageContainer>
+    </ModuleGate>
   );
 }

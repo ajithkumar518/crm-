@@ -36,11 +36,13 @@ const MODULE_LABELS: Record<string, string> = {
  * </ModuleGate>
  */
 export function ModuleGate({
-  module: moduleKey,
+  module,
+  variantMin,
   children,
   fallback,
 }: {
-  module: ModuleKey;
+  module?: ModuleKey;
+  variantMin?: number;
   children: ReactNode;
   fallback?: ReactNode;
 }) {
@@ -52,13 +54,19 @@ export function ModuleGate({
     enabledModules: user?.enabledModules ?? user?.company?.enabledModules ?? null,
   };
 
-  if (hasModule(subject, moduleKey)) {
+  // If a specific module key is provided, check it via hasModule
+  if (module && hasModule(subject, module)) {
+    return <>{children}</>;
+  }
+  
+  // If no module key but a variantMin is provided, check variant directly
+  if (!module && variantMin !== undefined && (subject.variant ?? 1) >= variantMin) {
     return <>{children}</>;
   }
 
   if (fallback) return <>{fallback}</>;
 
-  const label = MODULE_LABELS[moduleKey] ?? moduleKey;
+  const label = module ? (MODULE_LABELS[module] ?? module) : `Variant ${variantMin}`;
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-6 flex flex-col items-center justify-center text-center min-h-[120px]">

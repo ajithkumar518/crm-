@@ -56,10 +56,10 @@ function ReportsDirectoryContent() {
     ...(isVariant3 ? [
       { href: "/reports/samples", title: "Sample Report", description: "Sample dispatch tracking, conversion & outstanding balances", icon: <Stethoscope size={22} />, category: "Operations", variant: "light" as const },
       { href: "/reports/negotiations", title: "Negotiation Report", description: "Negotiation outcomes, discount trends & closure analysis", icon: <Gavel size={22} />, category: "Operations", variant: "orange" as const },
-      { href: "/reports/purchase-orders", title: "Purchase Order Report", description: "PO lifecycle, approval status & ERP sync tracking", icon: <PackageCheck size={22} />, category: "Operations", variant: "blue" as const },
-      { href: "/reports/po-conversion", title: "PO Conversion Report", description: "Deal-to-PO conversion rates & value analysis", icon: <BarChart3 size={22} />, category: "Operations", variant: "green" as const },
     ] : []),
     ...(isVariant4 ? [
+      { href: "/reports/purchase-orders", title: "Purchase Order Report", description: "PO lifecycle, approval status & ERP sync tracking", icon: <PackageCheck size={22} />, category: "Operations", variant: "blue" as const },
+      { href: "/reports/po-conversion", title: "PO Conversion Report", description: "Deal-to-PO conversion rates & value analysis", icon: <BarChart3 size={22} />, category: "Operations", variant: "green" as const },
       { href: "/reports/competitor-analysis", title: "Competitor Analysis", description: "Win/loss analysis, competitor positioning & market share", icon: <Swords size={22} />, category: "Intelligence", variant: "indigo" as const },
       { href: "/reports/target-achievement", title: "Target Achievement", description: "Sales target vs achievement with executive breakdown", icon: <Target size={22} />, category: "Intelligence", variant: "amber" as const },
     ] : []),

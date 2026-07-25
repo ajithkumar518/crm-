@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, FileCode, Copy, Download, X, XCircle, Check, FileText, MoreVertical } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, FileCode, Copy, Download, X, XCircle, Check, FileText, MoreVertical, Trophy } from "lucide-react";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 interface QuotationActionBarProps {
   quotation: any;
@@ -9,6 +11,7 @@ interface QuotationActionBarProps {
   editMode: boolean;
   savingItems: boolean;
   creatingPo: boolean;
+  markingWon: boolean;
   generatingPdf: boolean;
   needsApproval: boolean;
   onStartEdit: () => void;
@@ -20,6 +23,7 @@ interface QuotationActionBarProps {
   onAccept: () => void;
   onReject: () => void;
   onCreatePo: () => void;
+  onMarkWon: () => void;
   onClone: () => void;
   onDownloadPdf: () => void;
   onGeneratePdf: () => void;
@@ -53,6 +57,7 @@ export default function QuotationActionBar({
   editMode,
   savingItems,
   creatingPo,
+  markingWon,
   generatingPdf,
   needsApproval,
   onStartEdit,
@@ -64,28 +69,34 @@ export default function QuotationActionBar({
   onAccept,
   onReject,
   onCreatePo,
+  onMarkWon,
   onClone,
   onDownloadPdf,
   onGeneratePdf,
   onDelete,
 }: QuotationActionBarProps) {
+  const hasMod = useHasModule();
   const canEdit = quotation.status === "Draft";
   const canRequestApproval = quotation.status === "Draft" && needsApproval;
   const canSend = ["Draft", "Approved"].includes(quotation.status);
   const canNegotiate = ["Sent", "UnderReview"].includes(quotation.status);
   const canAcceptReject = ["Sent", "UnderReview"].includes(quotation.status);
-  const canCreatePo = quotation.status === "Accepted";
+  
+  const hasDealsOrPO = hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS);
+  const canCreatePo = quotation.status === "Accepted" && hasDealsOrPO;
+  const canMarkWon = quotation.status === "Accepted" && !hasDealsOrPO;
 
   const hasChild = quotation.childRevisions && quotation.childRevisions.length > 0;
   const isNegotiationPriceRevision = quotation.negotiation && quotation.negotiation.status === "PriceRevision";
   const canClone = !hasChild && (["Rejected", "Expired"].includes(quotation.status) || isNegotiationPriceRevision);
   const canDelete = canEdit;
 
-  const primaryAction: "send" | "accept" | "createPo" | null =
+  const primaryAction: "send" | "accept" | "createPo" | "markWon" | null =
     quotation.status === "Draft" && !needsApproval ? "send"
     : quotation.status === "Approved" ? "send"
     : ["Sent", "UnderReview"].includes(quotation.status) ? "accept"
-    : quotation.status === "Accepted" ? "createPo"
+    : canCreatePo ? "createPo"
+    : canMarkWon ? "markWon"
     : null;
 
   function OverflowMenu() {
@@ -224,7 +235,7 @@ export default function QuotationActionBar({
                 </button>
               )}
 
-              {canNegotiate && (
+              {canNegotiate && hasMod(MODULE_KEYS.NEGOTIATION) && (
                 <button onClick={onNegotiate} title="Move quotation to negotiation" className={actionButtonClass("secondary", true)}>
                   <AlertTriangle size={15} /> Negotiate
                 </button>
@@ -244,6 +255,12 @@ export default function QuotationActionBar({
               {canCreatePo && (
                 <button onClick={onCreatePo} disabled={creatingPo} title="Create purchase order from this quotation" className={actionButtonClass(primaryAction === "createPo" ? "primary" : "secondary", !creatingPo)}>
                   <FileCode size={15} /> {creatingPo ? "Creating..." : "Create PO"}
+                </button>
+              )}
+
+              {canMarkWon && (
+                <button onClick={onMarkWon} disabled={markingWon} title="Mark this opportunity as Won" className={actionButtonClass(primaryAction === "markWon" ? "success" : "secondary", !markingWon)}>
+                  <Trophy size={15} /> {markingWon ? "Marking..." : "Mark as Won"}
                 </button>
               )}
 

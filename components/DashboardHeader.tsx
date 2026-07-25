@@ -182,7 +182,12 @@ export default function DashboardHeader({
 
   useEffect(() => {
     if (searchQuery.trim().length > 0) {
-      let results = searchModules(searchQuery, activeVariant);
+      const subject = { 
+        variant: activeVariant, 
+        enabledModules: user?.company?.enabledModules,
+        companyId: user?.company?.id 
+      };
+      let results = searchModules(searchQuery, subject);
       if (isServiceWorkspace) {
         results = [
           { key: "requests", label: "Service Requests", href: "/service/requests", icon: "🛠️" },

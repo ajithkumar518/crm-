@@ -20,6 +20,9 @@ export async function POST(
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.CUSTOMER_VISITS, "API app/api/visits/[id]/attachments/route.ts");
+    if (guard) return guard;
+
     const { id } = await params;
 
     const visit = await prisma.customerVisit.findFirst({
@@ -100,6 +103,9 @@ export async function GET(
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.CUSTOMER_VISITS, "API app/api/visits/[id]/attachments/route.ts");
+    if (guard) return guard;
+
     const { id } = await params;
 
     const documents = await prisma.cRMDocument.findMany({
@@ -132,6 +138,9 @@ export async function DELETE(
     if (!user || user.role === "Customer") {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
+
+    const guard = enforceModuleGuard(user, MODULE_KEYS.CUSTOMER_VISITS, "API app/api/visits/[id]/attachments/route.ts");
+    if (guard) return guard;
 
     const { id } = await params;
     const { searchParams } = new URL(request.url);

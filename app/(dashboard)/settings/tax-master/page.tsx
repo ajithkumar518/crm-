@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { PageShell } from "@/components/ui/PageShell";
 import { Modal } from "@/components/ui/Modal";
 import { FormField, Input, Select } from "@/components/ui/FormField";
+import { ModuleGate } from "@/components/ModuleGate";
 import { useToast } from "@/components/ToastProvider";
 import { useAuth } from "@/components/AuthProvider";
 import { useRouter } from "next/navigation";
@@ -125,6 +126,7 @@ export default function TaxMasterPage() {
   if (authLoading || !user) return null;
 
   return (
+    <ModuleGate variantMin={2}>
     <PageShell
       title="Tax Master"
       subtitle="Manage GST/IGST tax rates used in RFQ costing and quotation line items"
@@ -282,5 +284,6 @@ export default function TaxMasterPage() {
         </div>
       </Modal>
     </PageShell>
+    </ModuleGate>
   );
 }

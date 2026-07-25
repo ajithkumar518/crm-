@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
 import PageContainer from "@/components/PageContainer";
+import { ModuleGate } from "@/components/ModuleGate";
 import { CRMSpinner } from "@/components/CRMSpinner";
 
 const Ico = ({ d, size = 16, className }: { d: string; size?: number; className?: string }) => (
@@ -84,6 +85,7 @@ export default function CompetitorMasterSettingsPage() {
   };
 
   return (
+    <ModuleGate variantMin={4}>
     <PageContainer className="space-y-4 p-0">
       <div className="flex items-center justify-between">
         <div>
@@ -201,5 +203,6 @@ export default function CompetitorMasterSettingsPage() {
         </div>
       </div>
     </PageContainer>
+    </ModuleGate>
   );
 }

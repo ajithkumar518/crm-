@@ -43,7 +43,7 @@ export async function GET(
 ) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-  const guard = enforceModuleGuard(user, MODULE_KEYS.NEGOTIATION, "C:/Users/Sandhiya/Desktop/SUKI_CRM2/Crm_sales_Service//api/negotiations/[id]/revisions");
+  const guard = enforceModuleGuard(user, MODULE_KEYS.NEGOTIATION, "GET /api/negotiations/[id]/revisions");
   if (guard) return guard;
 
   const { id } = await params;
@@ -70,7 +70,7 @@ export async function POST(
 ) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-  const guard = enforceModuleGuard(user, MODULE_KEYS.NEGOTIATION, "C:/Users/Sandhiya/Desktop/SUKI_CRM2/Crm_sales_Service//api/negotiations/[id]/revisions");
+  const guard = enforceModuleGuard(user, MODULE_KEYS.NEGOTIATION, "POST /api/negotiations/[id]/revisions");
   if (guard) return guard;
   if (user.role === "Customer") return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/components/ToastProvider";
 import { useAuth } from "@/components/AuthProvider";
 import PageContainer from "@/components/PageContainer";
+import { ModuleGate } from "@/components/ModuleGate";
 import { Plus, Trash2, Save, Settings } from "lucide-react";
 
 interface CustomField {
@@ -85,15 +86,18 @@ export default function CustomFieldsSettingsPage() {
 
   if (loading) {
     return (
+      <ModuleGate variantMin={3}>
       <PageContainer>
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-300 border-t-transparent" />
         </div>
       </PageContainer>
+      </ModuleGate>
     );
   }
 
   return (
+    <ModuleGate variantMin={3}>
     <PageContainer>
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -187,5 +191,6 @@ export default function CustomFieldsSettingsPage() {
         )}
       </div>
     </PageContainer>
+    </ModuleGate>
   );
 }

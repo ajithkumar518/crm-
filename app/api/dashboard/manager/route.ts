@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceModuleGuard } from "@/lib/moduleGuard";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 // GET /api/dashboard/manager — Sales Manager / Admin dashboard with team performance
 export async function GET() {
@@ -9,6 +11,9 @@ export async function GET() {
   if (user.role === "SalesExecutive" || user.role === "Customer") {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
   }
+
+  const guard = enforceModuleGuard(user, MODULE_KEYS.MANAGER_DASHBOARD, "GET /api/dashboard/manager");
+  if (guard) return guard;
 
   // SuperAdmin must use support mode to access client dashboard data
   if (user.role === "SuperAdmin" && (!user.supportMode || !user.companyId)) {

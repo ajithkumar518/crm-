@@ -17,6 +17,9 @@ export async function GET(
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/products/[id]/specs/route.ts");
+    if (guard) return guard;
+
     const { id } = await params;
 
     // Check if product exists and belongs to user's company
@@ -55,6 +58,9 @@ export async function POST(
     if (!user || user.role === "Customer") {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
+
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/products/[id]/specs/route.ts");
+    if (guard) return guard;
 
     const body = await request.json();
     const { id } = await params;

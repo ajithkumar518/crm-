@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceModuleGuard } from "@/lib/moduleGuard";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 // GET /api/settings/pipeline-stages
 // Returns PipelineStageMaster rows — these ACTUALLY control stage behavior
@@ -9,6 +11,8 @@ import { verifyAuth } from "@/lib/auth";
 export async function GET() {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+  const guard = enforceModuleGuard(user, MODULE_KEYS.MANAGER_DASHBOARD, "GET /api/settings/pipeline-stages");
+  if (guard) return guard;
 
   const stages = await prisma.pipelineStageMaster.findMany({
     where: { companyId: user.companyId, isActive: true },
@@ -26,6 +30,8 @@ export async function POST(request: NextRequest) {
   if (user.role === "Customer" || user.role === "SalesExecutive") {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
   }
+  const guard = enforceModuleGuard(user, MODULE_KEYS.MANAGER_DASHBOARD, "POST /api/settings/pipeline-stages");
+  if (guard) return guard;
 
   const body = await request.json();
   if (!body.stageName || !body.displayName) {

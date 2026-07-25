@@ -4,61 +4,34 @@
 // NOTE: Users & Roles & Permissions are handled separately via userManagementSubItems
 //       and are NOT listed here. This map covers only the Settings expandable section.
 
+import { getNavItems, NavItem } from "../canonical-navigation-config";
+
 export type SettingsItem = {
   key: string;
   label: string;
   href: string;
 };
 
-export const VARIANT_SETTINGS_MAP: Record<number, SettingsItem[]> = {
+const mapToSettingsItem = (item: NavItem): SettingsItem => ({
+  key: item.href.replace('/settings/', ''),
+  label: item.label,
+  href: item.href,
+});
 
-  // V1 — Starter CRM
-  1: [
-    { key: 'lead-sources',    label: 'Lead Sources',    href: '/settings/lead-sources' },
-    { key: 'email-templates', label: 'Email Templates', href: '/settings/email-templates' },
-  ],
-
-  // V2 — Professional CRM
-  2: [
-    { key: 'lead-sources',       label: 'Lead Sources',       href: '/settings/lead-sources' },
-    { key: 'pipeline-stages',    label: 'Pipeline Stages',    href: '/settings/pipeline-stages' },
-    { key: 'notification-rules', label: 'Notification Rules', href: '/settings/notification-rules' },
-    { key: 'email-templates',    label: 'Email Templates',    href: '/settings/email-templates' },
-    { key: 'whatsapp-templates', label: 'WhatsApp Templates', href: '/settings/whatsapp-templates' },
-    { key: 'product-categories', label: 'Product Categories', href: '/settings/product-categories' },
-  ],
-
-  // V3 — Advanced CRM
-  3: [
-    { key: 'lead-sources',       label: 'Lead Sources',       href: '/settings/lead-sources' },
-    { key: 'pipeline-stages',    label: 'Pipeline Stages',    href: '/settings/pipeline-stages' },
-    { key: 'approval-matrix',    label: 'Approval Matrix',    href: '/settings/approval-matrix' },
-    { key: 'notification-rules', label: 'Notification Rules', href: '/settings/notification-rules' },
-    { key: 'email-templates',    label: 'Email Templates',    href: '/settings/email-templates' },
-    { key: 'whatsapp-templates', label: 'WhatsApp Templates', href: '/settings/whatsapp-templates' },
-    { key: 'product-categories', label: 'Product Categories', href: '/settings/product-categories' },
-    { key: 'loss-reason-master', label: 'Loss Reason Master', href: '/settings/loss-reason-master' },
-    { key: 'custom-fields',      label: 'Custom Fields',      href: '/settings/custom-fields' },
-  ],
-
-  // V4 — Enterprise CRM
-  4: [
-    { key: 'lead-sources',       label: 'Lead Sources',       href: '/settings/lead-sources' },
-    { key: 'pipeline-stages',    label: 'Pipeline Stages',    href: '/settings/pipeline-stages' },
-    { key: 'approval-matrix',    label: 'Approval Matrix',    href: '/settings/approval-matrix' },
-    { key: 'notification-rules', label: 'Notification Rules', href: '/settings/notification-rules' },
-    { key: 'email-templates',    label: 'Email Templates',    href: '/settings/email-templates' },
-    { key: 'whatsapp-templates', label: 'WhatsApp Templates', href: '/settings/whatsapp-templates' },
-    { key: 'competitor-master',  label: 'Competitor Master',  href: '/settings/competitor-master' },
-    { key: 'product-categories', label: 'Product Categories', href: '/settings/product-categories' },
-    { key: 'loss-reason-master', label: 'Loss Reason Master', href: '/settings/loss-reason-master' },
-    { key: 'territories',        label: 'Territories',        href: '/settings/territories' },
-    { key: 'custom-fields',      label: 'Custom Fields',      href: '/settings/custom-fields' },
-  ],
+const buildSettingsMapForVariant = (variant: number): SettingsItem[] => {
+  const items = getNavItems(variant);
+  return items
+    .filter(item => item.type === 'setting' && item.href.startsWith('/settings/') && item.href !== '/settings/roles')
+    .map(mapToSettingsItem);
 };
 
-// Helper — get settings items for a given variant number
-// Falls back to V1 if variant is unknown
+export const VARIANT_SETTINGS_MAP: Record<number, SettingsItem[]> = {
+  1: buildSettingsMapForVariant(1),
+  2: buildSettingsMapForVariant(2),
+  3: buildSettingsMapForVariant(3),
+  4: buildSettingsMapForVariant(4),
+};
+
 export function getSettingsForVariant(variant: number): SettingsItem[] {
   return VARIANT_SETTINGS_MAP[variant] ?? VARIANT_SETTINGS_MAP[1];
 }

@@ -17,6 +17,9 @@ export async function GET(
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/products/[id]/datasheets/route.ts");
+    if (guard) return guard;
+
     const { id } = await params;
 
     const product = await prisma.product.findUnique({ where: { id } });
@@ -51,6 +54,9 @@ export async function POST(
     if (!user || user.role === "Customer") {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
+
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/products/[id]/datasheets/route.ts");
+    if (guard) return guard;
 
     const { id } = await params;
     const body = await request.json();

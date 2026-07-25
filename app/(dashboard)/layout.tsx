@@ -12,6 +12,7 @@ import Logo from "@/components/Logo";
 import { useLogoTheme } from "@/lib/use-logo-theme";
 import { cn } from "@/lib/ui-utils";
 import { getSettingsForVariant } from "@/lib/config/variantSettingsMap";
+import { getNavItems } from "@/lib/canonical-navigation-config";
 import { hasModule, ModuleCheckSubject } from "@/lib/modules";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import {
@@ -829,8 +830,6 @@ function SidebarContent({
 }) {
   const logoTheme = useLogoTheme({ initialColor: user?.theme, initialIsDark: user?.themeMode === "dark" });
   const isVariant2 = (user?.variant || user?.company?.variant || 1) >= 2;
-  const isVariant3 = (user?.variant || user?.company?.variant || 1) >= 3;
-  const isVariant4 = (user?.variant || user?.company?.variant || 1) >= 4;
   const activeVariant: number = user?.variant || user?.company?.variant || 1;
   const isServiceWorkspace = pathname.startsWith("/service");
 
@@ -927,239 +926,31 @@ function SidebarContent({
   const makeToggle = (label: string) => () => setOpenSection(prev => prev === label ? null : label);
   const openSectionLabel = (label: string) => () => setOpenSection(label);
 
-  const leadSubItems = isVariant3 ? [
-    { href: "/leads", label: "All Leads" },
-    { href: "/leads?status=New", label: "New Leads" },
-    { href: "/leads?status=TodayFollowUp", label: "Follow-Up Due" },
-    { href: "/leads?status=SQL", label: "SQL" },
-    { href: "/leads?status=Overdue", label: "Overdue Leads" },
-    { href: "/leads?status=Lost", label: "Lost Leads" },
-    { href: "/leads?status=Duplicate", label: "Duplicate Leads" },
-  ] : isVariant2 ? [
-    { href: "/leads", label: "All Leads" },
-    { href: "/leads?status=New", label: "New Leads" },
-    { href: "/leads?status=TodaysFollowUp", label: "Today's follow up" },
-    { href: "/leads?status=SQL", label: "SQL" },
-    { href: "/leads?status=Overdue", label: "Overdue Leads" },
-    { href: "/leads?status=Lost", label: "Lost Leads" },
-    { href: "/leads?status=Duplicate", label: "Duplicate Leads" },
-  ] : [
-    { href: "/leads", label: "All Leads" },
-    { href: "/leads?status=New", label: "New Leads" },
-    { href: "/leads?status=TodaysFollowUp", label: "Today's Follow-up" },
-    { href: "/leads?status=Lost", label: "Lost Leads" },
-  ];
+  const getSub = (parentKey: string) => {
+    return getNavItems(activeVariant, user?.role)
+      .filter(item => item.type === "submodule" && item.parentKey === parentKey)
+      .map(item => ({ href: item.href, label: item.label }));
+  };
 
-  const accountsSubItems = isVariant3 ? [
-    { href: "/customer-master", label: "All Accounts" },
-    { href: "/customer-master?status=ActiveCustomer", label: "Active Accounts" },
-    { href: "/customer-master?status=Prospect", label: "Prospect Accounts" },
-    { href: "/customer-master?status=Inactive", label: "Inactive Accounts" },
-  ] : isVariant2 ? [
-    { href: "/customer-master", label: "All Accounts" },
-    { href: "/customer-master?status=ActiveCustomer", label: "Active Accounts" },
-    { href: "/customer-master?status=Prospect", label: "Prospect Accounts" },
-    { href: "/customer-master?status=Inactive", label: "Inactive Accounts" },
-  ] : [
-    { href: "/customer-master", label: "All Accounts" },
-    { href: "/customer-master?status=ActiveCustomer", label: "Active Accounts" },
-  ];
-
-  const contactsSubItems = isVariant3 ? [
-    { href: "/contacts", label: "All Contacts" },
-    { href: "/contacts?type=Technical", label: "Technical Contacts" },
-    { href: "/contacts?type=Purchase", label: "Purchase Contacts" },
-    { href: "/contacts?type=Finance", label: "Finance Contacts" },
-    { href: "/contacts?type=Management", label: "Management Contacts" },
-  ] : isVariant2 ? [
-    { href: "/contacts", label: "All Contacts" },
-    { href: "/contacts?type=Technical", label: "Technical Contacts" },
-    { href: "/contacts?type=Purchase", label: "Purchase Contacts" },
-  ] : [
-    { href: "/contacts", label: "All Contacts" },
-  ];
-
-  const activitySubItems = isVariant3 ? [
-    { href: "/activities?type=Call", label: "Calls" },
-    { href: "/activities?type=Meeting", label: "Meetings" },
-    { href: "/activities?type=Email", label: "Emails" },
-    { href: "/activities?type=WhatsApp", label: "WhatsApp" },
-    { href: "/activities?type=Note", label: "Notes" },
-    { href: "/timeline", label: "Timeline" },
-  ] : isVariant2 ? [
-    { href: "/activities?type=Call", label: "Calls" },
-    { href: "/activities?type=Meeting", label: "Meetings" },
-    { href: "/activities?type=Email", label: "Emails" },
-    { href: "/activities?type=WhatsApp", label: "WhatsApp" },
-    { href: "/activities?type=Note", label: "Notes" },
-    { href: "/timeline", label: "Timeline" },
-  ] : [
-    { href: "/activities?type=Call", label: "Calls" },
-    { href: "/activities?type=Meeting", label: "Meetings" },
-    { href: "/activities?type=Email", label: "Emails" },
-    { href: "/activities?type=Note", label: "Notes" },
-  ];
-
-  const taskSubItems = isVariant3 ? [
-    { href: "/tasks?status=Pending", label: "Pending" },
-    { href: "/tasks?status=Completed", label: "Completed" },
-    { href: "/tasks?status=Overdue", label: "Overdue" },
-    { href: "/tasks?status=Cancelled", label: "Cancelled" },
-  ] : isVariant2 ? [
-    { href: "/tasks?status=Pending", label: "Pending" },
-    { href: "/tasks?status=Completed", label: "Completed" },
-    { href: "/tasks?status=Overdue", label: "Overdue" },
-    { href: "/tasks?status=Cancelled", label: "Cancelled" },
-  ] : [
-    { href: "/tasks?status=Pending", label: "Pending" },
-    { href: "/tasks?status=Completed", label: "Completed" },
-    { href: "/tasks?status=Overdue", label: "Overdue" },
-  ];
-
-  const followUpSubItems = isVariant3 ? [
-    { href: "/follow-up?status=Pending", label: "Pending" },
-    { href: "/follow-up?status=Completed", label: "Completed" },
-    { href: "/follow-up?status=Overdue", label: "Overdue" },
-    { href: "/follow-up?status=Cancelled", label: "Cancelled" },
-  ] : isVariant2 ? [
-    { href: "/follow-up?status=Pending", label: "Pending" },
-    { href: "/follow-up?status=Completed", label: "Completed" },
-    { href: "/follow-up?status=Overdue", label: "Overdue" },
-    { href: "/follow-up?status=Cancelled", label: "Cancelled" },
-  ] : [
-    { href: "/follow-up", label: "All follow ups" },
-    { href: "/follow-up?status=Pending", label: "Pending" },
-    { href: "/follow-up?status=Completed", label: "Completed" },
-    { href: "/follow-up?status=Overdue", label: "Overdue" },
-  ];
-
-  const salesPipelineSubItems = isVariant3 ? [
-    { href: "/sales-pipeline/pipeline-list", label: "All Opportunities" },
-    { href: "/sales-pipeline/pipeline-list?stage=Qualified", label: "Qualified" },
-    { href: "/sales-pipeline/pipeline-list?stage=RequirementGathering", label: "Requirement Gathering" },
-    { href: "/sales-pipeline/pipeline-list?stage=TechnicalDiscussion", label: "Technical Discussion" },
-    { href: "/sales-pipeline/pipeline-list?stage=MeetingScheduled", label: "Meeting Scheduled" },
-    { href: "/sales-pipeline/pipeline-list?stage=DemoConducted", label: "Demo Conducted" },
-    { href: "/sales-pipeline/pipeline-list?stage=overdue", label: "Overdue" },
-    { href: "/sales-pipeline/pipeline-list?stage=Rejected", label: "Rejected" },
-  ] : isVariant2 ? [
-    { href: "/sales-pipeline/pipeline-list", label: "All Opportunities" },
-    { href: "/sales-pipeline/pipeline-list?stage=Qualified", label: "Qualified" },
-    { href: "/sales-pipeline/pipeline-list?stage=RequirementGathering", label: "Requirement Gathering" },
-    { href: "/sales-pipeline/pipeline-list?stage=TechnicalDiscussion", label: "Technical Discussion" },
-    { href: "/sales-pipeline/pipeline-list?stage=MeetingScheduled", label: "Meeting Scheduled" },
-    { href: "/sales-pipeline/pipeline-list?stage=DemoConducted", label: "Demo Conducted" },
-    { href: "/sales-pipeline/pipeline-list?stage=overdue", label: "Overdue" },
-    { href: "/sales-pipeline/pipeline-list?stage=Rejected", label: "Rejected" },
-  ] : [
-    { href: "/sales-pipeline/pipeline-list", label: "All Opportunities" },
-    { href: "/sales-pipeline/pipeline-list?stage=Qualified", label: "Qualified" },
-    { href: "/sales-pipeline/pipeline-list?stage=RequirementGathering", label: "Requirement Gathering" },
-    { href: "/sales-pipeline/pipeline-list?stage=MeetingScheduled", label: "Meeting Scheduled" },
-    { href: "/sales-pipeline/pipeline-list?stage=overdue", label: "Overdue" },
-    { href: "/sales-pipeline/pipeline-list?stage=Rejected", label: "Rejected" },
-  ];
-
-  const dealSubItems = isVariant3 ? [
-    { href: "/deals?status=Active", label: "Active Deals" },
-    { href: "/deals?status=OnHold", label: "On Hold Deals" },
-    { href: "/deals?status=Won", label: "Won Deals" },
-    { href: "/deals?status=Lost", label: "Lost Deals" },
-  ] : isVariant2 ? [
-    { href: "/deals", label: "Overview" },
-    { href: "/deals?status=Active", label: "Active Deals" },
-    { href: "/deals?status=OnHold", label: "On Hold Deals" },
-    { href: "/deals?status=Won", label: "Won Deals" },
-    { href: "/deals?status=Lost", label: "Lost Deals" },
-  ] : [
-    { href: "/deals", label: "Overview" },
-    { href: "/deals?status=Active", label: "Active Deals" },
-    { href: "/deals?status=Won", label: "Won Deals" },
-    { href: "/deals?status=Lost", label: "Lost Deals" },
-  ];
-
-  const customerAssetSubItems = [
-    { href: "/customer-assets", label: "Overview" },
-  ];
-
-  const reportsSubItems = isVariant3 ? [
-    { href: "/reports/leads", label: "Lead Report" },
-    { href: "/reports/followups", label: "Follow-Up Report" },
-    { href: "/reports/opportunities", label: "Opportunity Report" },
-    { href: "/reports/rfq", label: "RFQ Report" },
-    { href: "/reports/quotations", label: "Quotation Report" },
-    { href: "/reports/negotiations", label: "Negotiation Report" },
-    { href: "/reports/visits", label: "Visit Report" },
-  ] : isVariant2 ? [
-    { href: "/reports/leads", label: "Lead Report" },
-    { href: "/reports/followups", label: "Follow-Up Report" },
-    { href: "/reports/opportunities", label: "Opportunity Report" },
-    { href: "/reports/rfq", label: "RFQ Report" },
-    { href: "/reports/quotations", label: "Quotation Report" },
-    { href: "/reports/visits", label: "Visit Report" },
-  ] : [
-    { href: "/reports/leads", label: "Lead Report" },
-    { href: "/reports/followups", label: "Follow-Up Report" },
-    { href: "/reports/opportunities", label: "Opportunity Report" },
-    { href: "/reports/quotations", label: "Quotation Report" },
-  ];
-
+  const leadSubItems = getSub("leads");
+  const accountsSubItems = getSub("accounts");
+  const contactsSubItems = getSub("contacts");
+  const activitySubItems = getSub("activities");
+  const taskSubItems = getSub("tasks");
+  const followUpSubItems = getSub("follow-ups");
+  const salesPipelineSubItems = getSub("pipeline");
+  const dealSubItems = getSub("deals");
+  const customerAssetSubItems = [{ href: "/customer-assets", label: "Overview" }];
+  const reportsSubItems = getSub("reports");
   const userManagementSubItems = [
     { href: "/user-master", label: "Users" },
     { href: "/settings/roles", label: "Roles & Permissions" },
   ];
-
   const settingsSubItems = getSettingsForVariant(activeVariant);
-
-  // Variant 2 navigation items
-  const customerVisitsSubItems = isVariant3 ? [
-    { href: "/visits?status=PLANNED", label: "Planned Visits" },
-    { href: "/visits?status=COMPLETED", label: "Completed Visits" },
-    { href: "/visits?status=MISSED", label: "Missed Visits" },
-    { href: "/visits/reports", label: "Visit Reports" },
-  ] : [
-    { href: "/visits?status=PLANNED", label: "Planned Visits" },
-    { href: "/visits?status=COMPLETED", label: "Completed Visits" },
-    { href: "/visits?status=MISSED", label: "Missed Visits" },
-    { href: "/visits/reports", label: "Visit Log" },
-  ];
-
-  const productCatalogueSubItems = [
-    { href: "/catalogue/categories", label: "Categories" },
-    { href: "/catalogue/products", label: "Products" },
-    { href: "/catalogue/specifications", label: "Specifications" },
-    { href: "/catalogue/datasheets", label: "Datasheets" },
-    { href: "/catalogue/brochures", label: "Brochures" },
-  ];
-
-  const rfqSubItems = [
-    { href: "/rfq?status=New", label: "New RFQ" },
-    { href: "/rfq?status=UnderReview", label: "Under Review" },
-    { href: "/rfq?status=CostingPending", label: "Costing Pending" },
-    { href: "/rfq?status=QuotationCreated", label: "Quotation Created" },
-    { href: "/rfq?status=Closed", label: "Closed RFQ" },
-  ];
-
-  const quotationSubItems = isVariant3 ? [
-    { href: "/quotations?status=Draft", label: "Draft" },
-    { href: "/quotations?status=Sent", label: "Sent" },
-    { href: "/quotations?status=UnderReview", label: "Under Review" },
-    { href: "/quotations?status=Accepted", label: "Accepted" },
-    { href: "/quotations?status=Rejected", label: "Rejected" },
-    { href: "/quotations?status=Expired", label: "Expired" },
-  ] : isVariant2 ? [
-    { href: "/quotations?status=Draft", label: "Draft" },
-    { href: "/quotations?status=Sent", label: "Sent" },
-    { href: "/quotations?status=Accepted", label: "Accepted" },
-    { href: "/quotations?status=Rejected", label: "Rejected" },
-    { href: "/quotations?status=Expired", label: "Expired" },
-  ] : [
-    { href: "/quotations?status=Draft", label: "Draft" },
-    { href: "/quotations?status=Sent", label: "Sent" },
-    { href: "/quotations?status=Accepted", label: "Accepted" },
-    { href: "/quotations?status=Rejected", label: "Rejected" },
-  ];
-
+  const customerVisitsSubItems = getSub("visits");
+  const productCatalogueSubItems = getSub("catalogue");
+  const rfqSubItems = getSub("rfq");
+  const quotationSubItems = getSub("quotations");
   const forecastSubItems = [
     { href: "/forecast", label: "Overview" },
     { href: "/forecast?type=Revenue", label: "Revenue Forecast" },
@@ -1167,80 +958,15 @@ function SidebarContent({
     { href: "/forecast?type=Sales", label: "Sales Forecast" },
     { href: "/forecast/target-vs-achievement", label: "Target vs Achievement" },
   ];
-
-  // ─── Variant 3 navigation items ───
-  const sampleMgmtSubItems = [
-    { href: "/samples?status=New", label: "New Sample Request" },
-    { href: "/samples?status=UnderReview", label: "Under Review" },
-    { href: "/samples?status=SentToCustomer", label: "Sent To Customer" },
-    { href: "/samples?status=Approved", label: "Approved" },
-    { href: "/samples?status=Rejected", label: "Rejected" },
-    { href: "/samples?status=Revision", label: "Revisions" },
-  ];
-
-  const negotiationMgmtSubItems = [
-    { href: "/negotiations?status=Active", label: "Active Negotiation" },
-    { href: "/negotiations?status=PendingApproval", label: "Pending Approval" },
-    { href: "/negotiations?status=PriceRevision", label: "Price Revision" },
-    { href: "/negotiations?status=CommercialDiscussion", label: "Commercial Discussion" },
-    { href: "/negotiations?status=Closed-Success", label: "Won" },
-    { href: "/negotiations?status=Closed-Failure", label: "Lost" },
-  ];
-
-  const purchaseOrderMgmtSubItems = [
-    { href: "/purchase-orders", label: "Overview" },
-    { href: "/purchase-orders?status=New", label: "New PO" },
-    { href: "/purchase-orders?status=UnderValidation", label: "Under Validation" },
-    { href: "/purchase-orders?status=Approved", label: "Approved PO" },
-    { href: "/purchase-orders?status=Rejected", label: "Rejected PO" },
-    { href: "/purchase-orders?status=Closed", label: "Closed PO" },
-  ];
-
-  const documentMgmtSubItems = [
-    { href: "/documents?type=Drawing", label: "Drawings" },
-    { href: "/documents?type=TechnicalSpec", label: "Technical Specifications" },
-    { href: "/documents?type=NDA", label: "NDA" },
-    { href: "/documents?type=Quotation", label: "Quotations" },
-    { href: "/documents?type=Agreement", label: "Agreements" },
-    { href: "/documents?type=Brochure", label: "Brochures" },
-  ];
-
-  const approvalCenterSubItems = [
-    { href: "/approvals?type=Quotation", label: "Quotation Approvals" },
-    { href: "/approvals?type=Discount", label: "Discount Approvals" },
-    { href: "/approvals?type=Negotiation", label: "Negotiation Approvals" },
-  ];
-
-  // ─── Variant 4 navigation items ───
-  const competitorMgmtSubItems = [
-    { href: "/competitors", label: "Overview" },
-    { href: "/competitors/products", label: "Competitor Products" },
-    { href: "/competitors/lost-analysis", label: "Lost Deals Analysis" },
-    { href: "/competitors/win-loss", label: "Win/Loss Analysis" },
-  ];
-
-  const keyAccountMgmtSubItems = [
-    { href: "/key-accounts", label: "Overview" },
-    { href: "/key-accounts?importance=Critical", label: "Strategic Accounts" },
-    { href: "/key-accounts?view=revenue", label: "Revenue Potential" },
-    { href: "/key-accounts/visits", label: "Visit Schedule" },
-    { href: "/key-accounts/relationships", label: "Relationship Mapping" },
-  ];
-
-  const territoryMgmtSubItems = [
-    { href: "/territories", label: "Overview" },
-    { href: "/territories?view=regions", label: "Regions" },
-    { href: "/territories/accounts", label: "Territory Accounts" },
-    { href: "/territories/performance", label: "Territory Performance" },
-  ];
-
-  const targetMgmtSubItems = [
-    { href: "/targets", label: "Overview" },
-    { href: "/targets?type=Monthly", label: "Monthly Targets" },
-    { href: "/targets?type=Quarterly", label: "Quarterly Targets" },
-    { href: "/targets?type=Yearly", label: "Yearly Targets" },
-    { href: "/targets/achievement", label: "Achievement Tracking" },
-  ];
+  const sampleMgmtSubItems = getSub("samples");
+  const negotiationMgmtSubItems = getSub("negotiations");
+  const purchaseOrderMgmtSubItems = getSub("purchase-orders");
+  const documentMgmtSubItems = getSub("documents");
+  const approvalCenterSubItems = getSub("approvals");
+  const competitorMgmtSubItems = getSub("competitors");
+  const keyAccountMgmtSubItems = getSub("key-accounts");
+  const territoryMgmtSubItems = getSub("territories");
+  const targetMgmtSubItems = getSub("targets");
 
   // Sales Manager Dashboard is shown as a separate NavLink for Variant 2
 

@@ -2,13 +2,23 @@
 
 import { StatusStepper } from "@/components/ui/StatusStepper";
 import { Ico, icons } from "./QuotationIcons";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 interface QuotationStatusTimelineProps {
   quotation: any;
 }
 
 export default function QuotationStatusTimeline({ quotation }: QuotationStatusTimelineProps) {
-  const order = ["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"];
+  const hasMod = useHasModule();
+  const order = [
+    "Draft", 
+    "Approved", 
+    "Sent", 
+    ...(hasMod(MODULE_KEYS.NEGOTIATION) ? ["UnderReview"] : []), 
+    "Accepted", 
+    ...(hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS) ? ["Deal/PO"] : [])
+  ];
   const currentIdx = order.indexOf(quotation.status === "Rejected" || quotation.status === "Expired" ? "Accepted" : quotation.status);
   const isRejected = quotation.status === "Rejected";
 
@@ -16,7 +26,7 @@ export default function QuotationStatusTimeline({ quotation }: QuotationStatusTi
     <section className="crm-card p-5">
       <StatusStepper
         compact
-        steps={["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"].map((key, idx) => {
+        steps={order.map((key, idx) => {
           const stageIdx = idx;
           const isDone = stageIdx < currentIdx;
           const isCurrent = key === quotation.status || (key === "Deal/PO" && quotation.status === "Accepted" && quotation.dealId);

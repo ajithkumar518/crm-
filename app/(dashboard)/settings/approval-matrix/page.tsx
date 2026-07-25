@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
 import PageContainer from "@/components/PageContainer";
+import { ModuleGate } from "@/components/ModuleGate";
 
 const Ico = ({ d, size = 16, className }: { d: string; size?: number; className?: string }) => (
   <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -140,13 +141,16 @@ export default function ApprovalMatrixPage() {
 
   if (loading) {
     return (
+      <ModuleGate variantMin={3}>
       <PageContainer>
         <div className="text-center py-12 text-gray-400">Loading approval matrix...</div>
       </PageContainer>
+      </ModuleGate>
     );
   }
 
   return (
+    <ModuleGate variantMin={3}>
     <PageContainer>
       <Link href="/settings" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-4">
         <Ico d={icons.back} size={16} /> Back to Settings
@@ -221,5 +225,6 @@ export default function ApprovalMatrixPage() {
         ))}
       </div>
     </PageContainer>
+    </ModuleGate>
   );
 }

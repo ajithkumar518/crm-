@@ -8,7 +8,7 @@ import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 export async function GET(request: NextRequest) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-  const guard = enforceModuleGuard(user, MODULE_KEYS.DOCUMENTS, "C:/Users/Sandhiya/Desktop/SUKI_CRM2/Crm_sales_Service//api/documents/companies");
+  const guard = enforceModuleGuard(user, MODULE_KEYS.DOCUMENTS, "GET /api/documents/companies");
   if (guard) return guard;
 
   const { searchParams } = new URL(request.url);

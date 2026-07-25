@@ -16,6 +16,9 @@ export async function DELETE(
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/products/[id]/brochures/[brId]/route.ts");
+    if (guard) return guard;
+
     const { id, brId } = await params;
 
     const product = await prisma.product.findUnique({ where: { id } });

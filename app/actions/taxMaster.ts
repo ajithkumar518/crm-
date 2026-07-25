@@ -4,11 +4,16 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
+import { hasModule } from "@/lib/modules";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 export async function getTaxMasterAction(onlyActive = false) {
   try {
     const userPayload = await verifyAuth();
     if (!userPayload) return { success: false, message: "Unauthorized" };
+    if (!hasModule(userPayload, MODULE_KEYS.MANAGER_DASHBOARD)) {
+      return { success: false, message: "This feature is not included in your current plan." };
+    }
 
     const where: any = {
       OR: [{ companyId: userPayload.companyId }, { companyId: null }],
@@ -37,6 +42,9 @@ export async function createTaxMasterAction(data: {
     const userPayload = await verifyAuth();
     if (!userPayload || !["Admin", "SalesManager"].includes(userPayload.role)) {
       return { success: false, message: "Admin or SalesManager only" };
+    }
+    if (!hasModule(userPayload, MODULE_KEYS.MANAGER_DASHBOARD)) {
+      return { success: false, message: "This feature is not included in your current plan." };
     }
     if (!data.taxName?.trim()) return { success: false, message: "Tax name is required" };
     if (data.taxPercent < 0 || data.taxPercent > 100)
@@ -71,6 +79,9 @@ export async function updateTaxMasterAction(
     if (!userPayload || !["Admin", "SalesManager"].includes(userPayload.role)) {
       return { success: false, message: "Admin or SalesManager only" };
     }
+    if (!hasModule(userPayload, MODULE_KEYS.MANAGER_DASHBOARD)) {
+      return { success: false, message: "This feature is not included in your current plan." };
+    }
 
     const existing = await prisma.taxMaster.findUnique({ where: { id } });
     if (!existing) return { success: false, message: "Tax rate not found" };
@@ -99,6 +110,9 @@ export async function deleteTaxMasterAction(id: string) {
     const userPayload = await verifyAuth();
     if (!userPayload || userPayload.role !== "Admin") {
       return { success: false, message: "Admin only" };
+    }
+    if (!hasModule(userPayload, MODULE_KEYS.MANAGER_DASHBOARD)) {
+      return { success: false, message: "This feature is not included in your current plan." };
     }
 
     const existing = await prisma.taxMaster.findUnique({ where: { id } });

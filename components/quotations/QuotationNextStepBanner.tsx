@@ -1,6 +1,8 @@
 "use client";
 
 import { Ico, icons } from "./QuotationIcons";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 interface QuotationNextStepBannerProps {
   quotation: any;
@@ -25,6 +27,7 @@ export default function QuotationNextStepBanner({
   onRequestApproval,
   onApprovalDecision,
 }: QuotationNextStepBannerProps) {
+  const hasMod = useHasModule();
   return (
     <>
       <section className="crm-card p-5 flex items-center justify-between gap-4">
@@ -36,7 +39,11 @@ export default function QuotationNextStepBanner({
             {quotation.status === "Approved" && "Quotation approved — ready to send to customer"}
             {quotation.status === "Sent" && "Customer reviewing — start negotiation if they request changes"}
             {quotation.status === "UnderReview" && "In negotiation — propose revisions or mark accepted/rejected"}
-            {quotation.status === "Accepted" && "Customer accepted — create a Deal or Purchase Order"}
+            {quotation.status === "Accepted" && (
+              hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS)
+                ? "Customer accepted — create a Deal or Purchase Order"
+                : "Customer accepted — ready to proceed"
+            )}
             {quotation.status === "Rejected" && "Quotation rejected — clone & revise to create a new version"}
             {quotation.status === "Expired" && "Quotation expired — clone & revise with updated validity"}
           </p>

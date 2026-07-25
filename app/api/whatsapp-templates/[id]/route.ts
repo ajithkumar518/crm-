@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceModuleGuard } from "@/lib/moduleGuard";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+  const guard = enforceModuleGuard(user, MODULE_KEYS.MANAGER_DASHBOARD, "GET /api/whatsapp-templates/[id]");
+  if (guard) return guard;
 
   const { id } = await params;
   const template = await prisma.whatsAppTemplate.findFirst({
@@ -21,6 +25,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   if (!["Admin", "SalesManager"].includes(user.role ?? "")) {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
   }
+  const guard = enforceModuleGuard(user, MODULE_KEYS.MANAGER_DASHBOARD, "PUT /api/whatsapp-templates/[id]");
+  if (guard) return guard;
 
   const { id } = await params;
   const body = await request.json();
@@ -46,6 +52,8 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (!["Admin", "SalesManager"].includes(user.role ?? "")) {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
   }
+  const guard = enforceModuleGuard(user, MODULE_KEYS.MANAGER_DASHBOARD, "DELETE /api/whatsapp-templates/[id]");
+  if (guard) return guard;
 
   const { id } = await params;
   const existing = await prisma.whatsAppTemplate.findFirst({

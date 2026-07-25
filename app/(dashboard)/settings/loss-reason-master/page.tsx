@@ -5,6 +5,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/ToastProvider";
 import PageContainer from "@/components/PageContainer";
+import { ModuleGate } from "@/components/ModuleGate";
 import { CRMSpinner } from "@/components/CRMSpinner";
 
 const Ico = ({ d, size = 16, className }: { d: string; size?: number; className?: string }) => (
@@ -83,6 +84,7 @@ export default function LossReasonMasterPage() {
   const canManage = ["Admin", "SalesManager"].includes(user?.role ?? "");
 
   return (
+    <ModuleGate variantMin={3}>
     <PageContainer className="space-y-4 p-0">
       <div>
         <h1 className="text-2xl font-bold text-slate-800">Loss Reason Master</h1>
@@ -168,5 +170,6 @@ export default function LossReasonMasterPage() {
 
       <ConfirmModal {...confirmState} onCancel={() => setConfirmState({ ...confirmState, isOpen: false })} />
     </PageContainer>
+    </ModuleGate>
   );
 }

@@ -13,6 +13,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/categories/route.ts");
+    if (guard) return guard;
+
     const url = new URL(request.url);
     const isActive = url.searchParams.get("isActive");
     const search = url.searchParams.get("search") || "";
@@ -65,6 +68,9 @@ export async function POST(request: Request) {
     if (!user || user.role === "Customer") {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
+
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/categories/route.ts");
+    if (guard) return guard;
 
     const body = await request.json();
 

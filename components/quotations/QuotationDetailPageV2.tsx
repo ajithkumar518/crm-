@@ -44,6 +44,7 @@ export default function QuotationDetailPageV2() {
         editMode={q.editMode}
         savingItems={q.savingItems}
         creatingPo={q.creatingPo}
+        markingWon={q.markingWon}
         generatingPdf={q.generatingPdf}
         needsApproval={q.needsApproval}
         onStartEdit={q.startEdit}
@@ -55,6 +56,7 @@ export default function QuotationDetailPageV2() {
         onAccept={q.handleAccept}
         onReject={q.handleReject}
         onCreatePo={q.handleCreatePo}
+        onMarkWon={q.handleMarkWon}
         onClone={q.handleClone}
         onDownloadPdf={q.handleDownloadPdf}
         onGeneratePdf={q.handleGeneratePdf}

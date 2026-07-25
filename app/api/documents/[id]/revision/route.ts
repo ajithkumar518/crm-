@@ -14,7 +14,7 @@ export async function POST(
 ) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-  const guard = enforceModuleGuard(user, MODULE_KEYS.DOCUMENTS, "C:/Users/Sandhiya/Desktop/SUKI_CRM2/Crm_sales_Service//api/documents/[id]/revision");
+  const guard = enforceModuleGuard(user, MODULE_KEYS.DOCUMENTS, "POST /api/documents/[id]/revision");
   if (guard) return guard;
   if (user.role === "Customer") return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
 

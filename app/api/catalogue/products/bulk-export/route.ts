@@ -13,6 +13,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.PRODUCT_CATALOGUE, "API app/api/catalogue/products/bulk-export/route.ts");
+    if (guard) return guard;
+
     const url = new URL(request.url);
     const categoryId = url.searchParams.get("categoryId") || "";
     const isActive = url.searchParams.get("isActive");

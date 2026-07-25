@@ -34,6 +34,9 @@ export async function GET(
         { status: 403 }
       );
 
+    const guard = enforceModuleGuard(user, MODULE_KEYS.RFQ, "GET /api/rfq/[id]/requirement-report");
+    if (guard) return guard;
+
     const { id } = await params;
 
     // Fetch the RFQ with its line items (used for cross-reference)
@@ -194,4 +197,5 @@ export async function GET(
     console.error("Error generating requirement report:", error);
     return NextResponse.json({ success: false, message: error.message || "Internal Server Error" }, { status: 500 });
   }
+
 }
