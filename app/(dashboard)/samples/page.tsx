@@ -1,4 +1,5 @@
 "use client";
+import { ModuleGate } from "@/components/ModuleGate";
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -233,10 +234,19 @@ function SampleListContent() {
   );
 }
 
-export default function SampleListPage() {
+function SampleListPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[var(--primary)] animate-spin" /></div>}>
       <SampleListContent />
     </Suspense>
+  );
+}
+
+
+export default function SampleListPageWrapper(props: any) {
+  return (
+    <ModuleGate variantMin={3}>
+      <SampleListPage {...props} />
+    </ModuleGate>
   );
 }

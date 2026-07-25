@@ -11,6 +11,9 @@ import { FormField, Input, Select } from "@/components/ui/FormField";
 import { SuccessOverlay, SuccessAction } from "@/components/SuccessOverlay";
 import { ArrowLeft, Save, Phone, Video, StickyNote, User, Building2, Mail, Info, Calendar, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import PageContainer from "@/components/PageContainer";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 type ActivityType = "call" | "meeting" | "note" | "email";
 
@@ -18,6 +21,7 @@ function NewActivityPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const hasMod = useHasModule();
 
   const urlLeadId = searchParams.get("leadId") || "";
   const urlDealId = searchParams.get("dealId") || "";
@@ -316,7 +320,7 @@ function NewActivityPageInner() {
         </FormField>
       );
     }
-    if (urlDealId) {
+    if (urlDealId && hasMod(MODULE_KEYS.DEALS)) {
       return (
         <FormField label="Linked Opportunity (auto-filled)">
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm">
@@ -334,6 +338,7 @@ function NewActivityPageInner() {
   const showOutcomeField = !isTerminatedStatus && (meetingForm.status === "Completed" || isMeetingDatePassed || markCompleteEarly);
 
   return (
+    <PageContainer className="p-0">
     <PageShell title="Log Activity" subtitle="Record a call, meeting, email, or note."
       action={
         <Link href="/activities" className="btn-secondary text-xs flex items-center gap-2">
@@ -684,6 +689,7 @@ function NewActivityPageInner() {
         onClose={() => setOverlay(o => ({ ...o, open: false }))}
       />
     </PageShell>
+    </PageContainer>
   );
 }
 

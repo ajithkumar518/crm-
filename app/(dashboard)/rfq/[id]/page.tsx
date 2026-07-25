@@ -9,6 +9,8 @@ import { useToast } from "@/components/ToastProvider";
 import { PageShell } from "@/components/ui/PageShell";
 import { Modal } from "@/components/ui/Modal";
 import { FormField, Input, Textarea, Select } from "@/components/ui/FormField";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import { formatDate, formatDateTime, cn } from "@/lib/ui-utils";
 import EntityDocumentTab from "@/components/documents/EntityDocumentTab";
 import { CostingDetailsPanel } from "@/components/rfq/CostingDetailsPanel";
@@ -246,6 +248,7 @@ export default function RFQDetailPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({ customerDueDate: "", priority: "Normal", assignedUserId: "", requirementDetails: "", notes: "" });
   const [savingEdit, setSavingEdit] = useState(false);
+  const hasMod = useHasModule();
 
   const canSeeFullCosting = ["CostingEngineer", "Admin", "SalesManager"].includes(user?.role || "");
   const isCostingOwner = rfq?.costingOwnerId === user?.id;
@@ -579,7 +582,7 @@ export default function RFQDetailPage() {
     >
       <div className="space-y-6">
         {/* Deal linkage link */}
-        {rfq.opportunity && (
+        {rfq.opportunity && hasMod(MODULE_KEYS.DEALS) && (
           <div className="flex items-center gap-1.5 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-xl text-xs text-emerald-800 dark:text-emerald-300">
             <Link2 size={13} />
             <span>RFQ created from deal:</span>
@@ -599,7 +602,7 @@ export default function RFQDetailPage() {
             steps={[
               { label: "RFQ", key: "rfq", reached: true, active: true },
               { label: "Quotation", key: "quotation", reached: rfq.quotations?.length > 0, active: false, onClick: () => rfq.quotations?.[0]?.id && router.push(`/quotations/${rfq.quotations[0].id}`), clickable: !!rfq.quotations?.[0]?.id },
-              { label: "Negotiation", key: "negotiation", reached: !!rfq.quotations?.[0]?.negotiationId, active: false, onClick: () => rfq.quotations?.[0]?.negotiationId && router.push(`/negotiations/${rfq.quotations[0].negotiationId}`), clickable: !!rfq.quotations?.[0]?.negotiationId },
+              ...(hasMod(MODULE_KEYS.NEGOTIATION) ? [{ label: "Negotiation", key: "negotiation", reached: !!rfq.quotations?.[0]?.negotiationId, active: false, onClick: () => rfq.quotations?.[0]?.negotiationId && router.push(`/negotiations/${rfq.quotations[0].negotiationId}`), clickable: !!rfq.quotations?.[0]?.negotiationId }] : []),
               { label: "Won/Lost", key: "outcome", reached: ["Accepted", "Rejected"].includes(rfq.quotations?.[0]?.status), active: false, terminal: rfq.quotations?.[0]?.status === "Rejected" ? "danger" : rfq.quotations?.[0]?.status === "Accepted" ? "success" : undefined },
             ]}
           />

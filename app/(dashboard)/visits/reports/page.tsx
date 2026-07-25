@@ -32,6 +32,7 @@ const statusLabels: Record<string, string> = {
 export default function VisitReportsPage() {
   const toast = useToast();
   const { user } = useAuth();
+  const isVariant3 = (user?.variant || 1) >= 3;
 
   const [visits, setVisits] = useState<any[]>([]);
   const [summary, setSummary] = useState({
@@ -137,7 +138,7 @@ export default function VisitReportsPage() {
             <BarChart3 size={20} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Visit Reports</h1>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">{isVariant3 ? "Visit Reports" : "Visit Log"}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Operations dashboard and visit analytics</p>
           </div>
         </div>

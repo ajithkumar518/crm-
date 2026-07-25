@@ -1,4 +1,5 @@
 "use client";
+import { ModuleGate } from "@/components/ModuleGate";
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -34,7 +35,7 @@ const statusColors: Record<string, string> = {
 
 const statusOptions = ["Active", "PriceRevision", "CommercialDiscussion", "PendingApproval", "Closed-Success", "Closed-Failure"];
 
-export default function NegotiationListPage() {
+function NegotiationListPage() {
   const [negotiations, setNegotiations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -205,5 +206,14 @@ export default function NegotiationListPage() {
         onCancel={() => setConfirmState({ isOpen: false, title: "", message: "", action: () => {} })}
       />
     </PageContainer>
+  );
+}
+
+
+export default function NegotiationListPageWrapper(props: any) {
+  return (
+    <ModuleGate variantMin={3}>
+      <NegotiationListPage {...props} />
+    </ModuleGate>
   );
 }

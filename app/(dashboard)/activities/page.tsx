@@ -12,6 +12,9 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { CRMSpinner } from "@/components/CRMSpinner";
 import { Search, Filter, Plus, Phone, Video, StickyNote, Trash2, Clock, Calendar, User, MessageSquare, List } from "lucide-react";
 import { formatDate, cn } from "@/lib/ui-utils";
+import PageContainer from "@/components/PageContainer";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 type TabType = "calls" | "meetings" | "notes" | "emails" | "whatsapp";
 
@@ -36,6 +39,7 @@ export default function ActivitiesPage() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const toast = useToast();
+  const hasMod = useHasModule();
 
   const [activeTab, setActiveTab] = useState<TabType>(normalizeTab(searchParams.get("type")));
   const [items, setItems] = useState<any[]>([]);
@@ -113,6 +117,7 @@ export default function ActivitiesPage() {
       },
     });
   };
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
 
   const typeParam = searchParams.get("type");
   const tabs = [
@@ -120,12 +125,13 @@ export default function ActivitiesPage() {
     { label: "Calls", href: "/activities?type=Call", active: pathname === "/activities" && (typeParam === "Call" || typeParam === "calls"), icon: <Phone size={16} /> },
     { label: "Meetings", href: "/activities?type=Meeting", active: pathname === "/activities" && (typeParam === "Meeting" || typeParam === "meetings"), icon: <Video size={16} /> },
     { label: "Emails", href: "/activities?type=Email", active: pathname === "/activities" && (typeParam === "Email" || typeParam === "emails"), icon: <MessageSquare size={16} /> },
-    { label: "WhatsApp", href: "/activities?type=WhatsApp", active: pathname === "/activities" && (typeParam === "WhatsApp" || typeParam === "whatsapp"), icon: <MessageSquare size={16} /> },
+    ...(isV2 ? [{ label: "WhatsApp", href: "/activities?type=WhatsApp", active: pathname === "/activities" && (typeParam === "WhatsApp" || typeParam === "whatsapp"), icon: <MessageSquare size={16} /> }] : []),
     { label: "Notes", href: "/activities?type=Note", active: pathname === "/activities" && (typeParam === "Note" || typeParam === "notes"), icon: <StickyNote size={16} /> },
-    { label: "Timeline", href: "/timeline", active: pathname === "/timeline", icon: <Clock size={16} /> },
+    ...(isV2 ? [{ label: "Timeline", href: "/timeline", active: pathname === "/timeline", icon: <Clock size={16} /> }] : []),
   ];
 
   return (
+    <PageContainer className="p-0">
     <PageShell
       title="Activities Overview"
       subtitle="Calls, meetings, and notes across your pipeline."
@@ -167,7 +173,7 @@ export default function ActivitiesPage() {
               <option value="">All Statuses</option>
               {activeTab === "calls" && <><option value="Completed">Completed</option><option value="NoAnswer">No Answer</option><option value="Scheduled">Scheduled</option></>}
               {activeTab === "meetings" && <><option value="Scheduled">Scheduled</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option></>}
-              {activeTab === "notes" && <><option value="LEAD">Lead</option><option value="CUSTOMER">Customer</option><option value="DEAL">Deal</option></>}
+              {activeTab === "notes" && <><option value="LEAD">Lead</option><option value="CUSTOMER">Customer</option>{hasMod(MODULE_KEYS.DEALS) && <option value="DEAL">Deal</option>}</>}
             </select>
           </div>
         </div>
@@ -274,5 +280,6 @@ export default function ActivitiesPage() {
 
       <ConfirmModal isOpen={confirmState.isOpen} title={confirmState.title} message={confirmState.message} onConfirm={confirmState.action} onCancel={() => setConfirmState((s) => ({ ...s, isOpen: false }))} />
     </PageShell>
+    </PageContainer>
   );
 }

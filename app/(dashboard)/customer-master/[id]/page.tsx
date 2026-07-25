@@ -683,7 +683,7 @@ export default function Customer360Page({ params: paramsPromise }: { params: Pro
                         onChange={(e) => handleFastDealStatusChange(deal.id, e.target.value)}
                         className="text-[10px] font-bold px-2 py-0.5 rounded border bg-white cursor-pointer"
                       >
-                        {DEAL_STATUSES.map((status) => (
+                        {DEAL_STATUSES.filter((status) => status !== "Negotiation" || hasMod(MODULE_KEYS.NEGOTIATION)).map((status) => (
                           <option key={status} value={status}>{status}</option>
                         ))}
                       </select>

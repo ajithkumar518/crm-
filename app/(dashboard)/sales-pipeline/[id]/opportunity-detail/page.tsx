@@ -202,264 +202,20 @@ function ProposalQuotationGuide({
   opportunityId,
   linkedQuotations,
   loading,
-  formatCurrency,
-  onRefresh,
 }: {
   opportunityId: string;
   linkedQuotations: any[];
   loading: boolean;
-  formatCurrency: (amount: number) => string;
-  onRefresh: () => void;
 }) {
   const router = useRouter();
-  const toast = useToast();
   const hasMod = useHasModule();
-  const [sending, setSending] = useState(false);
-  const [accepting, setAccepting] = useState(false);
-  const [negotiating, setNegotiating] = useState(false);
-  const [markingWon, setMarkingWon] = useState(false);
-
-  const hasQuotation = linkedQuotations.length > 0;
-  const latestQuote = linkedQuotations[0];
-  const hasAcceptedQuote = linkedQuotations.some((q: any) => q.status === "Accepted");
-  const hasSentQuote = linkedQuotations.some((q: any) => q.status === "Sent");
-  const hasApprovedQuote = linkedQuotations.some((q: any) => q.status === "Approved");
-  const hasPendingApprovalQuote = linkedQuotations.some((q: any) => q.status === "PendingApproval");
-  const hasDraftQuote = linkedQuotations.some((q: any) => q.status === "Draft");
-  const hasUnderReviewQuote = linkedQuotations.some((q: any) => q.status === "UnderReview");
-  const hasExpiredQuote = linkedQuotations.some((q: any) => q.status === "Expired");
-
-  const handleSendQuote = async (quoteId: string) => {
-    setSending(true);
-    try {
-      const res = await fetch(`/api/quotations/${quoteId}/send`, { method: "POST" });
-      const data = await res.json();
-      if (data.success) { toast.success("Quotation sent to customer"); onRefresh(); }
-      else toast.error(data.message || "Failed to send");
-    } catch { toast.error("Failed to send"); }
-    finally { setSending(false); }
-  };
-
-  const handleAcceptQuote = async (quoteId: string) => {
-    setAccepting(true);
-    try {
-      const res = await fetch(`/api/quotations/${quoteId}/accept`, { method: "POST" });
-      const data = await res.json();
-      if (data.success) { toast.success("Quotation accepted"); onRefresh(); }
-      else toast.error(data.message || "Failed to accept");
-    } catch { toast.error("Failed to accept"); }
-    finally { setAccepting(false); }
-  };
-
-  const handleNegotiate = async (quoteId: string) => {
-    setNegotiating(true);
-    try {
-      const res = await fetch(`/api/quotations/${quoteId}/negotiate`, { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        toast.success("Moved to negotiation");
-        onRefresh();
-        if (data.data?.negotiationId) {
-          router.push(`/negotiations/${data.data.negotiationId}`);
-        }
-      } else {
-        toast.error(data.message || "Failed to move to negotiation");
-      }
-    } catch { toast.error("Failed to move to negotiation"); }
-    finally { setNegotiating(false); }
-  };
-
-  const handleMarkWon = async () => {
-    setMarkingWon(true);
-    try {
-      const res = await fetch(`/api/opportunities/${opportunityId}/mark-won`, { method: "POST" });
-      const data = await res.json();
-      if (res.ok || data.success) { toast.success("Deal marked as Won!"); window.location.reload(); }
-      else toast.error(data.message || "Failed to mark as Won");
-    } catch { toast.error("Failed to mark as Won"); }
-    finally { setMarkingWon(false); }
-  };
 
   if (loading) {
     return <div className="h-16 rounded-xl bg-slate-100 animate-pulse" />;
   }
 
-  // State D — Accepted quotation
-  if (hasAcceptedQuote) {
-    // (existing code below)
-    const q = linkedQuotations.find((q: any) => q.status === "Accepted") || latestQuote;
-    return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">✅</span>
-            <div>
-              <p className="text-sm font-semibold text-green-800">Quotation accepted — ready to mark deal as Won!</p>
-              <p className="text-xs text-green-600">
-                {q.quotationCode} • Final value: {formatCurrency(q.finalAmount || q.totalAmount)}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleMarkWon}
-            disabled={markingWon}
-            className="px-5 py-2 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50"
-          >
-            {markingWon ? "Marking..." : "🏆 Mark Deal as Won"}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const hasQuotation = linkedQuotations.length > 0;
 
-  // State C2 — Approved quotation (ready to send)
-  if (hasApprovedQuote) {
-    const q = linkedQuotations.find((q: any) => q.status === "Approved") || latestQuote;
-    return (
-      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">✅</span>
-            <div>
-              <p className="text-sm font-semibold text-emerald-800">Quotation approved — ready to send to customer</p>
-              <p className="text-xs text-emerald-600">
-                {q.quotationCode} • Final value: {formatCurrency(q.finalAmount || q.totalAmount)}
-                {q.overallMarginPercent != null && <> • Margin: {Number(q.overallMarginPercent).toFixed(1)}%</>}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => router.push(`/quotations/${q.id}`)}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
-            >
-              View Quotation
-            </button>
-            <button
-              onClick={() => handleSendQuote(q.id)}
-              disabled={sending}
-              className="px-3 py-2 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-            >
-              {sending ? "Sending..." : "Send to Customer"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // State C1 — Pending approval quotation
-  if (hasPendingApprovalQuote) {
-    const q = linkedQuotations.find((q: any) => q.status === "PendingApproval") || latestQuote;
-    return (
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">⏳</span>
-            <div>
-              <p className="text-sm font-semibold text-amber-800">Quotation pending manager approval</p>
-              <p className="text-xs text-amber-600">
-                {q.quotationCode} • Final value: {formatCurrency(q.finalAmount || q.totalAmount)}
-                {q.overallMarginPercent != null && <> • Margin: {Number(q.overallMarginPercent).toFixed(1)}%</>}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => router.push(`/quotations/${q.id}`)}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
-            >
-              View Quotation
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // State C — Sent quotation
-  if (hasSentQuote) {
-    const q = linkedQuotations.find((q: any) => q.status === "Sent") || latestQuote;
-    return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">⏳</span>
-            <div>
-              <p className="text-sm font-semibold text-green-800">Quotation sent — waiting for customer response</p>
-              <p className="text-xs text-green-600">
-                {q.quotationCode} • {formatCurrency(q.finalAmount || q.totalAmount)}
-                {q.overallMarginPercent != null && <> • Margin: {Number(q.overallMarginPercent).toFixed(1)}%</>}
-                • Valid until {q.validUntil ? new Date(q.validUntil).toLocaleDateString("en-IN") : "—"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => router.push(`/quotations/${q.id}`)}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
-            >
-              View Quotation
-            </button>
-            <button
-              onClick={() => handleAcceptQuote(q.id)}
-              disabled={accepting}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50"
-            >
-              {accepting ? "Accepting..." : "Mark as Accepted ✓"}
-            </button>
-            {hasMod(MODULE_KEYS.NEGOTIATION) && (
-            <button
-              onClick={() => handleNegotiate(q.id)}
-              disabled={negotiating}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 transition-colors disabled:opacity-50"
-            >
-              {negotiating ? "Opening..." : "Negotiate Changes"}
-            </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // State E — Under negotiation (UnderReview) — only for variants with NEGOTIATION module
-  if (hasUnderReviewQuote && hasMod(MODULE_KEYS.NEGOTIATION)) {
-    const q = linkedQuotations.find((q: any) => q.status === "UnderReview") || latestQuote;
-    return (
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">🤝</span>
-            <div>
-              <p className="text-sm font-semibold text-amber-800">Quotation under negotiation</p>
-              <p className="text-xs text-amber-600">
-                {q.quotationCode} • Final value: {formatCurrency(q.finalAmount || q.totalAmount)}
-                {q.overallMarginPercent != null && <> • Margin: {Number(q.overallMarginPercent).toFixed(1)}%</>}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => router.push(`/quotations/${q.id}`)}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
-            >
-              View Quotation
-            </button>
-            <button
-              onClick={() => handleAcceptQuote(q.id)}
-              disabled={accepting}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-white bg-green-600 hover:bg-green-700 transition-colors disabled:opacity-50"
-            >
-              {accepting ? "Accepting..." : "Mark as Accepted ✓"}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // State B — Draft quotation
   if (hasQuotation) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -467,79 +223,34 @@ function ProposalQuotationGuide({
           <div className="flex items-center gap-3">
             <span className="text-xl">📋</span>
             <div>
-              <p className="text-sm font-semibold text-blue-800">Quotation draft created — send it to the customer</p>
+              <p className="text-sm font-semibold text-blue-800">Quotations are being managed</p>
               <p className="text-xs text-blue-600">
-                {latestQuote.quotationCode} • {formatCurrency(latestQuote.finalAmount || latestQuote.totalAmount)}
-                • Valid until {latestQuote.validUntil ? new Date(latestQuote.validUntil).toLocaleDateString("en-IN") : "—"}
+                You have {linkedQuotations.length} quotation(s) linked to this opportunity. Manage their lifecycle directly in the Quotation module.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => router.push(`/quotations/${latestQuote.id}`)}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-blue-600 bg-white border border-blue-200 hover:bg-blue-50 transition-colors"
+              onClick={() => router.push(`/quotations?opportunityId=${opportunityId}`)}
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
             >
-              View Quotation
-            </button>
-            <button
-              onClick={() => handleSendQuote(latestQuote.id)}
-              disabled={sending}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              {sending ? "Sending..." : "Send to Customer →"}
+              View Quotations
             </button>
           </div>
-        </div>
-        <div className="flex flex-wrap gap-2 mt-3">
-          {[
-            { label: "✓ Quotation Created", done: true },
-            { label: "2. Send to Customer", done: false, active: true },
-            { label: "3. Customer Accepts", done: false },
-            { label: "4. Mark as Won", done: false },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className={`text-[11px] px-2.5 py-1 rounded-full border ${
-                s.done ? "bg-green-100 text-green-800 border-green-200" : s.active ? "bg-blue-100 text-blue-800 border-blue-200 font-medium" : "bg-slate-100 text-slate-500 border-slate-200"
-              }`}
-            >
-              {s.label}
-            </div>
-          ))}
         </div>
       </div>
     );
   }
 
-  // State A — No quotation: choose RFQ-based or direct quotation path
   return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
       <div className="flex items-start gap-3">
         <span className="text-xl">💡</span>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-amber-800 mb-1">Create a quotation for this opportunity</p>
+          <p className="text-sm font-semibold text-amber-800 mb-1">Demo accepted — time to create a quotation</p>
           <p className="text-xs text-amber-700 mb-3">
-            Choose how to proceed. RFQ is optional — you can create a quotation directly.
+            The next steps happen in the Quotation module. Create an RFQ or a Direct Quotation to proceed.
           </p>
-          <div className="flex flex-wrap gap-2 mb-3">
-            {[
-              ...(hasMod(MODULE_KEYS.RFQ) ? [{ step: "1", label: "Create RFQ (optional)", done: false }] : []),
-              { step: "1", label: "Direct Quotation", done: false },
-              { step: "2", label: "Send to Customer", done: false },
-              { step: "3", label: "Customer Accepts", done: false },
-              { step: "4", label: "Mark Deal as Won", done: false },
-            ].map((s, idx) => (
-              <div
-                key={idx}
-                className={`flex items-center gap-1.5 text-[11px] px-3 py-1 rounded-full border ${
-                  s.done ? "bg-green-100 text-green-800 border-green-200" : "bg-white text-slate-600 border-slate-200"
-                }`}
-              >
-                <span>{s.done ? "✓" : s.step}</span>
-                <span>{s.label}</span>
-              </div>
-            ))}
-          </div>
           <div className="flex items-center gap-2 flex-wrap">
             {hasMod(MODULE_KEYS.RFQ) && (
             <button
@@ -2559,8 +2270,6 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                   opportunityId={deal.id}
                   linkedQuotations={linkedQuotations}
                   loading={linkedQuotationsLoading}
-                  formatCurrency={formatCurrency}
-                  onRefresh={fetchLinkedQuotations}
                 />
                 {linkedQuotationsLoading && (
                   <div className="flex items-center justify-end gap-3">

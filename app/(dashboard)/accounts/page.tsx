@@ -9,6 +9,8 @@ import { useToast } from "@/components/ToastProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 import { validateEmail, validatePhone } from "@/lib/formValidation";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 const Icons = {
   plus: "M12 4v16m8-8H4",
@@ -58,6 +60,8 @@ export default function AccountsPage() {
   const toast = useToast();
   const [confirmState, setConfirmState] = useState<{isOpen: boolean; title: string; message: string; action: () => void}>({ isOpen: false, title: "", message: "", action: () => {} });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
 
   const [formData, setFormData] = useState({
     id: "",
@@ -350,13 +354,15 @@ export default function AccountsPage() {
             <div className={`text-sm font-medium ${statusFilter === "ActiveCustomer" ? "text-emerald-700" : "text-slate-500"}`}>Active</div>
             <div className="text-2xl font-semibold text-emerald-600 mt-1">{activeCount}</div>
           </div>
-          <div 
-            onClick={() => setStatusFilter(statusFilter === "Prospect" ? "" : "Prospect")}
-            className={`rounded-xl p-5 border cursor-pointer transition-colors ${statusFilter === "Prospect" ? "bg-amber-50 border-amber-200 ring-1 ring-amber-500" : "bg-white border-slate-200 hover:bg-slate-50"}`}
-          >
-            <div className={`text-sm font-medium ${statusFilter === "Prospect" ? "text-amber-700" : "text-slate-500"}`}>Prospects</div>
-            <div className="text-2xl font-semibold text-amber-600 mt-1">{prospectCount}</div>
-          </div>
+          {isV2 && (
+            <div 
+              onClick={() => setStatusFilter(statusFilter === "Prospect" ? "" : "Prospect")}
+              className={`rounded-xl p-5 border cursor-pointer transition-colors ${statusFilter === "Prospect" ? "bg-amber-50 border-amber-200 ring-1 ring-amber-500" : "bg-white border-slate-200 hover:bg-slate-50"}`}
+            >
+              <div className={`text-sm font-medium ${statusFilter === "Prospect" ? "text-amber-700" : "text-slate-500"}`}>Prospects</div>
+              <div className="text-2xl font-semibold text-amber-600 mt-1">{prospectCount}</div>
+            </div>
+          )}
           <div 
             onClick={() => setStatusFilter(statusFilter === "Churned" ? "" : "Churned")}
             className={`rounded-xl p-5 border cursor-pointer transition-colors ${statusFilter === "Churned" ? "bg-rose-50 border-rose-200 ring-1 ring-rose-500" : "bg-white border-slate-200 hover:bg-slate-50"}`}
@@ -364,13 +370,15 @@ export default function AccountsPage() {
             <div className={`text-sm font-medium ${statusFilter === "Churned" ? "text-rose-700" : "text-slate-500"}`}>Churned</div>
             <div className="text-2xl font-semibold text-rose-600 mt-1">{churnedCount}</div>
           </div>
-          <div 
-            onClick={() => setStatusFilter(statusFilter === "Inactive" ? "" : "Inactive")}
-            className={`rounded-xl p-5 border cursor-pointer transition-colors ${statusFilter === "Inactive" ? "bg-slate-100 border-slate-300 ring-1 ring-slate-400" : "bg-white border-slate-200 hover:bg-slate-50"}`}
-          >
-            <div className={`text-sm font-medium ${statusFilter === "Inactive" ? "text-slate-700" : "text-slate-500"}`}>Inactive</div>
-            <div className="text-2xl font-semibold text-slate-600 mt-1">{inactiveCount}</div>
-          </div>
+          {isV2 && (
+            <div 
+              onClick={() => setStatusFilter(statusFilter === "Inactive" ? "" : "Inactive")}
+              className={`rounded-xl p-5 border cursor-pointer transition-colors ${statusFilter === "Inactive" ? "bg-slate-100 border-slate-300 ring-1 ring-slate-400" : "bg-white border-slate-200 hover:bg-slate-50"}`}
+            >
+              <div className={`text-sm font-medium ${statusFilter === "Inactive" ? "text-slate-700" : "text-slate-500"}`}>Inactive</div>
+              <div className="text-2xl font-semibold text-slate-600 mt-1">{inactiveCount}</div>
+            </div>
+          )}
         </div>
 
         {isFilterOpen && (
@@ -400,11 +408,11 @@ export default function AccountsPage() {
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                 >
                   <option value="">All Statuses</option>
-                  <option value="Prospect">Prospect</option>
+                  {isV2 && <option value="Prospect">Prospect</option>}
                   <option value="ActiveCustomer">Active Customer</option>
                   <option value="Renewed">Renewed</option>
                   <option value="Churned">Churned</option>
-                  <option value="Inactive">Inactive</option>
+                  {isV2 && <option value="Inactive">Inactive</option>}
                 </select>
               </div>
               <div>
@@ -648,11 +656,11 @@ export default function AccountsPage() {
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     >
-                      <option value="Prospect">Prospect</option>
+                      {isV2 && <option value="Prospect">Prospect</option>}
                       <option value="ActiveCustomer">Active Customer</option>
                       <option value="Renewed">Renewed</option>
                       <option value="Churned">Churned</option>
-                      <option value="Inactive">Inactive</option>
+                      {isV2 && <option value="Inactive">Inactive</option>}
                     </select>
                   </div>
 
@@ -663,7 +671,7 @@ export default function AccountsPage() {
                       onChange={(e) => setFormData({ ...formData, accountType: e.target.value })}
                       className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                     >
-                      <option value="Prospect">Prospect</option>
+                      {isV2 && <option value="Prospect">Prospect</option>}
                       <option value="Customer">Customer</option>
                       <option value="Partner">Partner</option>
                       <option value="Vendor">Vendor</option>

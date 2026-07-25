@@ -52,9 +52,11 @@ function QuotationListContent() {
   const statusFilter = useStatusFromUrl("status");
   const hasMod = useHasModule();
 
-  const quoteStatuses = QUOTES_STATUS.filter((s) =>
-    s.value === "UnderReview" ? hasMod(MODULE_KEYS.NEGOTIATION) : true
-  );
+  const quoteStatuses = QUOTES_STATUS.filter((s) => {
+    if (s.value === "UnderReview") return hasMod(MODULE_KEYS.NEGOTIATION);
+    if (s.value === "Expired") return hasMod(MODULE_KEYS.RFQ);
+    return true;
+  });
 
   const [error, setError] = useState("");
 

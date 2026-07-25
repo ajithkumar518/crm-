@@ -22,6 +22,8 @@ import PageContainer from "@/components/PageContainer";
 import { PageShell } from "@/components/ui/PageShell";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { StatusBadge, PriorityBadge } from "@/components/ui/StatusBadge";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 // Helpers for visual alignment
 function getCompanyName(customerName: string) {
@@ -71,6 +73,8 @@ export default function FollowUpsPage() {
   const toast = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
   const [followUps, setFollowUps] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
@@ -167,7 +171,7 @@ export default function FollowUpsPage() {
   useEffect(() => {
     const status = searchParams.get("status");
     if (status) {
-      const valid = ["All", "Pending", "Overdue", "Completed", "Cancelled"];
+      const valid = ["All", "Pending", "Overdue", "Completed", ...(isV2 ? ["Cancelled"] : [])];
       if (valid.includes(status)) {
         setStatusFilter(status as any);
       }
@@ -561,7 +565,7 @@ export default function FollowUpsPage() {
               <option value="Pending">Pending</option>
               <option value="Overdue">Overdue</option>
               <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
+              {isV2 && <option value="Cancelled">Cancelled</option>}
             </select>
 
             {/* Date Picker */}
@@ -1008,7 +1012,7 @@ export default function FollowUpsPage() {
                             <option value="Pending">Pending</option>
                             <option value="Completed">Completed</option>
                             <option value="Overdue">Overdue</option>
-                            <option value="Cancelled">Cancelled</option>
+                            {isV2 && <option value="Cancelled">Cancelled</option>}
                           </select>
                         </div>
                       </div>

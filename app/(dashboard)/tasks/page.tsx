@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getTasksAction, updateTaskAction, deleteTaskAction } from "@/app/actions/tasks";
 import { useToast } from "@/components/ToastProvider";
 import { PageShell } from "@/components/ui/PageShell";
+import PageContainer from "@/components/PageContainer";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Pagination, usePagination } from "@/components/ui/Pagination";
@@ -14,6 +15,8 @@ import { StatusFilterBar, useStatusFromUrl } from "@/components/shared/StatusFil
 import { PLANNER_STATUS } from "@/lib/module-status-config";
 import { formatDate, cn } from "@/lib/ui-utils";
 import { Plus, Search, Filter, CheckSquare, Clock, AlertTriangle, CheckCircle2, Pencil, Trash2, CalendarClock, Tag, User2 } from "lucide-react";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 const TASK_STATUSES = ["Open", "InProgress", "Done", "Overdue", "Cancelled"];
 const TASK_PRIORITIES = ["Low", "Medium", "High", "Urgent"];
@@ -28,6 +31,8 @@ const PRIORITY_COLOR: Record<string, string> = {
 function TasksPageContent() {
   const router = useRouter();
   const toast = useToast();
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
 
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +92,7 @@ function TasksPageContent() {
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
+    <PageContainer className="p-0">
     <PageShell
       title="Tasks Overview"
       subtitle="Create, assign, and track tasks across your team."
@@ -108,7 +114,7 @@ function TasksPageContent() {
 
         {/* Status Filter Bar */}
         <StatusFilterBar
-          statuses={PLANNER_STATUS}
+          statuses={PLANNER_STATUS.filter(s => isV2 || s.value !== "Cancelled")}
           paramKey="status"
           basePath="/tasks"
         />
@@ -225,6 +231,7 @@ function TasksPageContent() {
         onCancel={() => setConfirmState(s => ({ ...s, isOpen: false }))}
       />
     </PageShell>
+    </PageContainer>
   );
 }
 

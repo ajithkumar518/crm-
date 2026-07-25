@@ -6,6 +6,7 @@ import { useToast } from "@/components/ToastProvider";
 import { FormField, Input, Textarea, Select } from "@/components/ui/FormField";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/ui-utils";
+import { ModuleGate } from "@/components/ModuleGate";
 import {
   Plus, Search, Pencil, Trash2, X, Tag, FolderTree, Save, Check
 } from "lucide-react";
@@ -158,6 +159,7 @@ export default function CategoriesPage() {
   const filtered = categories;
 
   return (
+    <ModuleGate variantMin={2}>
     <div className="flex h-full w-full">
       {/* Center Panel: List */}
       <div className="w-[320px] lg:w-[400px] xl:w-[450px] shrink-0 border-r border-border flex flex-col bg-page-bg relative">
@@ -341,5 +343,6 @@ export default function CategoriesPage() {
         isDestructive={true}
       />
     </div>
+    </ModuleGate>
   );
 }

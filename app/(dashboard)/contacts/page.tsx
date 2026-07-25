@@ -7,6 +7,7 @@ import { getContactsAction, deleteContactAction } from "@/app/actions/contacts";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
 import { PageShell } from "@/components/ui/PageShell";
+import PageContainer from "@/components/PageContainer";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Pagination, usePagination } from "@/components/ui/Pagination";
@@ -17,8 +18,14 @@ import { Search, Filter, Plus, BookUser, Pencil, Trash2, Mail, Phone, User, Tag,
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 import { CRMSpinner } from "@/components/CRMSpinner";
 import { getInitials, getAvatarColor, cn } from "@/lib/ui-utils";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
-const CONTACT_TYPES = ["Technical", "Purchase", "Finance", "Management"];
+const getContactTypes = (isV2: boolean, isV3: boolean) => [
+  ...(!isV2 ? [] : []),
+  ...(isV2 && !isV3 ? ["Technical", "Purchase"] : []),
+  ...(isV3 ? ["Technical", "Purchase", "Finance", "Management"] : [])
+];
 
 function ContactsPageContent() {
   const router = useRouter();
@@ -27,6 +34,9 @@ function ContactsPageContent() {
   const { user } = useAuth();
 
   const [contacts, setContacts] = useState<any[]>([]);
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
+  const isV3 = hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT);
   const [loading, setLoading] = useState(true);
   const { startLoading, stopLoading } = useGlobalLoading();
   const [search, setSearch] = useState("");
@@ -88,6 +98,7 @@ function ContactsPageContent() {
   };
 
   return (
+    <PageContainer className="p-0">
     <PageShell
       title="Contacts Overview"
       subtitle="Manage contacts linked to customers and leads."
@@ -136,7 +147,7 @@ function ContactsPageContent() {
               >
                 All
               </button>
-              {CONTACT_TYPES.map((t) => (
+              {getContactTypes(isV2, isV3).filter(t => isV2 || !["Technical", "Purchase"].includes(t)).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTypeFilter(t)}
@@ -236,6 +247,7 @@ function ContactsPageContent() {
 
       <ConfirmModal isOpen={confirmState.isOpen} title={confirmState.title} message={confirmState.message} onConfirm={confirmState.action} onCancel={() => setConfirmState((s) => ({ ...s, isOpen: false }))} />
     </PageShell>
+    </PageContainer>
   );
 }
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
+import PageContainer from "@/components/PageContainer";
 import { PageShell } from "@/components/ui/PageShell";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { Modal } from "@/components/ui/Modal";
@@ -760,14 +761,16 @@ function VisitsListContent() {
 
 export default function VisitsListPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[var(--primary)] animate-spin" />
-        </div>
-      }
-    >
-      <VisitsListContent />
-    </Suspense>
+    <PageContainer>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[var(--primary)] animate-spin" />
+          </div>
+        }
+      >
+        <VisitsListContent />
+      </Suspense>
+    </PageContainer>
   );
 }

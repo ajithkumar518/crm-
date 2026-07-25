@@ -10,6 +10,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/ToastProvider";
 import { PageShell } from "@/components/ui/PageShell";
+import PageContainer from "@/components/PageContainer";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Modal } from "@/components/ui/Modal";
@@ -27,22 +28,23 @@ import {
   TrendingUp, AlertTriangle, Copy, Upload, Zap, ChevronRight,
 } from "lucide-react";
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import LeadImportModal from "@/components/leads/LeadImportModal";
 
 const LEAD_STATUSES = ["New", "Contacted", "FollowUpDue", "SQL", "Qualified", "Converted", "Lost", "Overdue", "Duplicate"];
 const LEAD_SOURCES  = ["Website", "Facebook", "Instagram", "LinkedIn", "Referral", "WalkIn", "ColdCall", "Partner", "Trade Show", "Tender Portal"];
-const V2_TABS = [
-  { key: "", label: "Leads Overview" },
-  { key: "New", label: "New" },
-  { key: "TodayFollowUp", label: "Follow-Up Due" },
-  { key: "TodaysFollowUp", label: "Today's Follow-up" },
-  { key: "UpcomingFollowUp", label: "Upcoming Follow-ups" },
-  { key: "SQL", label: "SQL" },
-  { key: "Overdue", label: "Overdue" },
-  { key: "Unassigned", label: "Unassigned" },
-  { key: "Lost", label: "Lost" },
-  { key: "Duplicate", label: "Duplicate" },
-] as const;
+const getTabs = (isV3: boolean) => [
+  { key: '', label: 'Leads Overview' },
+  { key: 'New', label: 'New' },
+  { key: isV3 ? 'TodayFollowUp' : 'TodaysFollowUp', label: isV3 ? 'Follow-Up Due' : "Today's Follow-up" },
+  { key: 'UpcomingFollowUp', label: 'Upcoming Follow-ups' },
+  { key: 'SQL', label: 'SQL' },
+  { key: 'Overdue', label: 'Overdue' },
+  { key: 'Unassigned', label: 'Unassigned' },
+  { key: 'Lost', label: 'Lost' },
+  { key: 'Duplicate', label: 'Duplicate' },
+];
 
 function isSlaBreached(l: Lead, now: Date) {
   if (l.slaStatus === "Breached") return true;
@@ -94,6 +96,8 @@ export default function LeadsPage() {
   const toast    = useToast();
   const { startLoading, stopLoading } = useGlobalLoading();
   const searchParams = useSearchParams();
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
 
   const [leads,      setLeads]      = useState<Lead[]>([]);
   const [executives, setExecutives] = useState<User[]>([]);
@@ -483,6 +487,7 @@ export default function LeadsPage() {
   };
 
   return (
+    <PageContainer className="p-0">
     <PageShell
       title="Leads Overview"
       subtitle="Manage and track your sales pipeline"
@@ -533,24 +538,39 @@ export default function LeadsPage() {
           isActive={activeTab === "TodayFollowUp" || activeTab === "TodaysFollowUp"}
           onClick={() => handleTabClick("TodayFollowUp")}
         />
-        <SummaryCard
-          label="SQL"
-          value={kpiSQL}
-          subtitle="Sales Qualified Leads"
-          icon={<TrendingUp size={20} />}
-          variant="light"
-          isActive={activeTab === "SQL"}
-          onClick={() => handleTabClick("SQL")}
-        />
-        <SummaryCard
-          label="Overdue"
-          value={kpiOverdue}
-          subtitle="SLA breached / overdue FU"
-          icon={<AlertTriangle size={20} />}
-          variant="light"
-          isActive={activeTab === "Overdue"}
-          onClick={() => handleTabClick("Overdue")}
-        />
+        {isV2 && (
+          <SummaryCard
+            label="SQL"
+            value={kpiSQL}
+            subtitle="Sales Qualified Leads"
+            icon={<TrendingUp size={20} />}
+            variant="light"
+            isActive={activeTab === "SQL"}
+            onClick={() => handleTabClick("SQL")}
+          />
+        )}
+        {isV2 && (
+          <SummaryCard
+            label="Overdue"
+            value={kpiOverdue}
+            subtitle="SLA breached / overdue FU"
+            icon={<AlertTriangle size={20} />}
+            variant="light"
+            isActive={activeTab === "Overdue"}
+            onClick={() => handleTabClick("Overdue")}
+          />
+        )}
+        {isV2 && (
+          <SummaryCard
+            label="Duplicate"
+            value={kpiDuplicate}
+            subtitle="Duplicate Leads"
+            icon={<Copy size={20} />}
+            variant="light"
+            isActive={activeTab === "Duplicate"}
+            onClick={() => handleTabClick("Duplicate")}
+          />
+        )}
       </div>
 
       {/* ── Table Card ── */}
@@ -560,7 +580,7 @@ export default function LeadsPage() {
         <div className="px-4 sm:px-5 py-3.5 border-b border-theme flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3 shrink-0">
             <h2 className="text-base font-bold text-theme-primary whitespace-nowrap">
-              {V2_TABS.find(t => t.key === activeTab)?.label || "Leads Overview"}
+              {getTabs(hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT)).find(t => t.key === activeTab)?.label || "Leads Overview"}
             </h2>
             <span className="text-xs font-medium text-theme-muted bg-surface-2 px-2 py-0.5 rounded-full whitespace-nowrap">
               {filtered.length} {filtered.length === 1 ? "lead" : "leads"}
@@ -594,7 +614,7 @@ export default function LeadsPage() {
               className="h-8 px-2.5 text-xs rounded-lg bg-surface-2 border border-theme text-theme-secondary focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] cursor-pointer shrink-0"
             >
               <option value="">All Status</option>
-              {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              {LEAD_STATUSES.filter(s => isV2 || !["SQL", "Overdue", "Duplicate"].includes(s)).map(s => <option key={s} value={s}>{s}</option>)}
             </select>
 
             {/* Follow-Up Status filter */}
@@ -1070,5 +1090,6 @@ export default function LeadsPage() {
         }}
       />
     </PageShell>
+    </PageContainer>
   );
 }

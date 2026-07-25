@@ -1,4 +1,5 @@
 "use client";
+import { ModuleGate } from "@/components/ModuleGate";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,8 @@ import { StatusFilterBar, useStatusFromUrl } from "@/components/shared/StatusFil
 import { DEALS_STATUS, PIPELINE_STAGE_VALUES, deriveHealthStatus } from "@/lib/module-status-config";
 import { getInitials, getAvatarColor, formatDate, cn } from "@/lib/ui-utils";
 import { Plus, Search, Download, Eye, Pencil, Trash2, Briefcase, TrendingUp, CheckCircle, XCircle, PauseCircle } from "lucide-react";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 import { CRMSpinner } from "@/components/CRMSpinner";
 const STAGES = [...PIPELINE_STAGE_VALUES];
@@ -35,6 +38,8 @@ function DealsPageContent() {
   const { user: currentUser } = useAuth();
   const { formatCurrency, preferredCurrency } = useCurrency();
   const currencySymbol = CURRENCY_SYMBOLS[preferredCurrency as keyof typeof CURRENCY_SYMBOLS] || "₹";
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
 
   const [deals,     setDeals]     = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -206,7 +211,7 @@ function DealsPageContent() {
       <PageContainer className="space-y-4 p-0">
       {/* Status Filter Bar */}
       <StatusFilterBar
-        statuses={DEALS_STATUS}
+        statuses={DEALS_STATUS.filter(s => isV2 || !["TechnicalDiscussion", "DemoConducted"].includes(s.value))}
         paramKey="status"
         basePath="/deals"
       />
@@ -353,7 +358,7 @@ function DealsPageContent() {
             </FormField>
             <FormField label="Stage" required>
               <Select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
-                {STAGES.map(s => <option key={s} value={s}>{s === "OnHold" ? "On Hold" : s === "RequirementGathering" ? "Requirement Gathering" : s === "TechnicalDiscussion" ? "Technical Discussion" : s === "MeetingScheduled" ? "Meeting Scheduled" : s === "DemoConducted" ? "Demo Conducted" : s === "DemoAccepted" ? "Demo Accepted" : s}</option>)}
+                {STAGES.filter(s => isV2 || !["TechnicalDiscussion", "DemoConducted"].includes(s)).map(s => <option key={s} value={s}>{s === "OnHold" ? "On Hold" : s === "RequirementGathering" ? "Requirement Gathering" : s === "TechnicalDiscussion" ? "Technical Discussion" : s === "MeetingScheduled" ? "Meeting Scheduled" : s === "DemoConducted" ? "Demo Conducted" : s === "DemoAccepted" ? "Demo Accepted" : s}</option>)}
               </Select>
             </FormField>
             <FormField label="Assigned To" required>
@@ -375,10 +380,19 @@ function DealsPageContent() {
   );
 }
 
-export default function DealsPage() {
+function DealsPage() {
   return (
     <Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[var(--primary)] animate-spin" /></div>}>
       <DealsPageContent />
     </Suspense>
+  );
+}
+
+
+export default function DealsPageWrapper(props: any) {
+  return (
+    <ModuleGate variantMin={3}>
+      <DealsPage {...props} />
+    </ModuleGate>
   );
 }

@@ -1,3 +1,5 @@
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 "use client";
 
 import { useState } from "react";
@@ -11,11 +13,18 @@ import { ArrowLeft, Save, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { validateEmail, validatePhone, validateAlphabetic, validateRequired } from "@/lib/formValidation";
 
-const CONTACT_TYPES = ["Technical", "Purchase", "Finance", "Management"];
+const getContactTypes = (isV2: boolean, isV3: boolean) => [
+  ...(!isV2 ? [] : []),
+  ...(isV2 && !isV3 ? ["Technical", "Purchase"] : []),
+  ...(isV3 ? ["Technical", "Purchase", "Finance", "Management"] : [])
+];
 
 export default function NewContactPage() {
   const router = useRouter();
   const toast = useToast();
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
+  const isV3 = hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT);
   const [saving, setSaving] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [showCustomerSearch, setShowCustomerSearch] = useState(false);
@@ -130,7 +139,7 @@ export default function NewContactPage() {
             <FormField label="Designation"><Input value={form.designation} onChange={(e) => setForm((f) => ({ ...f, designation: e.target.value }))} placeholder="e.g. CTO" /></FormField>
             <FormField label="Contact Type">
               <Select value={form.contactType} onChange={(e) => setForm((f) => ({ ...f, contactType: e.target.value }))}>
-                {CONTACT_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
+                {getContactTypes(isV2, isV3).map((t) => (<option key={t} value={t}>{t}</option>))}
               </Select>
             </FormField>
             <FormField label="Status">

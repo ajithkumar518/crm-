@@ -1,4 +1,5 @@
 "use client";
+import { ModuleGate } from "@/components/ModuleGate";
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -42,7 +43,7 @@ const entityLinkMap: Record<string, (id: string) => string> = {
   Negotiation: (id) => `/negotiations/${id}`,
 };
 
-export default function ApprovalsPage() {
+function ApprovalsPage() {
   const [approvals, setApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -324,5 +325,14 @@ export default function ApprovalsPage() {
         </div>
       )}
     </PageContainer>
+  );
+}
+
+
+export default function ApprovalsPageWrapper(props: any) {
+  return (
+    <ModuleGate variantMin={3}>
+      <ApprovalsPage {...props} />
+    </ModuleGate>
   );
 }

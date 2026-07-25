@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { CRMSpinner } from "@/components/CRMSpinner";
 
 import { useState, useEffect, useCallback, use } from "react";
@@ -14,14 +14,23 @@ import { getInitials, getAvatarColor, formatDateTime, cn } from "@/lib/ui-utils"
 import { FieldGrid } from "@/components/shared/FieldGrid";
 import { StatusPill } from "@/components/shared/StatusPill";
 import { ArrowLeft, Phone, Mail, Building2, Tag, Save, Pencil, X, Check, User, Calendar } from "lucide-react";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
-const CONTACT_TYPES = ["Technical", "Purchase", "Finance", "Management"];
+const getContactTypes = (isV2: boolean, isV3: boolean) => [
+  ...(!isV2 ? [] : []),
+  ...(isV2 && !isV3 ? ["Technical", "Purchase"] : []),
+  ...(isV3 ? ["Technical", "Purchase", "Finance", "Management"] : [])
+];
 
 export default function ContactDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const contactId = resolvedParams.id;
   const router = useRouter();
   const toast = useToast();
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
+  const isV3 = hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT);
 
   const [contact, setContact] = useState<any>(null);
   useSyncUrlParam(contact?.type, "type");
@@ -185,7 +194,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex border-b border-slate-200 gap-6 overflow-x-auto pb-px mb-5">
             {[
               { id: "overview", label: "Overview" },
-              { id: "rfqs", label: `RFQs (${contact.rfqs?.length || 0})` },
+              ...(hasMod(MODULE_KEYS.RFQ) ? [{ id: "rfqs", label: `RFQs (${contact.rfqs?.length || 0})` }] : []),
               { id: "quotations", label: `Quotations (${contact.quotations?.length || 0})` },
               { id: "tasks", label: `Tasks (${contact.Task?.length || 0})` },
               { id: "timeline", label: "Activity Timeline" },
@@ -235,7 +244,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                       <FormField label="Designation"><Input value={form.designation} onChange={(e) => setForm((f: any) => ({ ...f, designation: e.target.value }))} /></FormField>
                       <FormField label="Contact Type">
                         <Select value={form.contactType} onChange={(e) => setForm((f: any) => ({ ...f, contactType: e.target.value }))}>
-                          {CONTACT_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
+                          {getContactTypes(isV2, isV3).map((t) => (<option key={t} value={t}>{t}</option>))}
                         </Select>
                       </FormField>
                       <FormField label="Status">
@@ -313,7 +322,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           )}
 
           {/* RFQs Tab */}
-          {activeTab === "rfqs" && (
+          {activeTab === "rfqs" && hasMod(MODULE_KEYS.RFQ) && (
             <div className="crm-card p-5">
               <h3 className="text-sm font-bold text-slate-700 mb-4">RFQs</h3>
               {(!contact.rfqs || contact.rfqs.length === 0) ? (
@@ -476,7 +485,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 {/* RFQs */}
-                {contact.rfqs?.map((r: any) => (
+                {hasMod(MODULE_KEYS.RFQ) && contact.rfqs?.map((r: any) => (
                   <div key={r.id} className="relative">
                     <span className="absolute -left-10 top-0.5 w-7 h-7 rounded-full flex items-center justify-center bg-blue-100 text-blue-600 border border-white ring-4 ring-white">
                       <Tag size={13} />
@@ -609,10 +618,12 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           <div className="crm-card p-5">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Stats</h3>
             <div className="space-y-3">
+              {hasMod(MODULE_KEYS.RFQ) && (
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-500">RFQs</span>
                 <span className="text-sm font-bold text-slate-700">{contact.rfqs?.length || 0}</span>
               </div>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-500">Quotations</span>
                 <span className="text-sm font-bold text-slate-700">{contact.quotations?.length || 0}</span>

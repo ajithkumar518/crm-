@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ToastProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { PageShell } from "@/components/ui/PageShell";
+import PageContainer from "@/components/PageContainer";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { StatusFilterBar, useStatusFromUrl } from "@/components/shared/StatusFilterBar";
 import { PIPELINE_STATUS } from "@/lib/module-status-config";
 import { formatDate, cn } from "@/lib/ui-utils";
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import {
   Search, AlertTriangle,
   Download, Zap, TrendingUp, DollarSign, Clock,
@@ -37,6 +40,8 @@ function SalesPipelineListContent() {
   const activeTab = useStatusFromUrl("stage");
   const toast = useToast();
   const { formatCurrency } = useCurrency();
+  const hasMod = useHasModule();
+  const isV2 = hasMod(MODULE_KEYS.RFQ);
 
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -101,6 +106,7 @@ function SalesPipelineListContent() {
   };
 
   return (
+    <PageContainer className="p-0">
     <PageShell
       title="Sales Pipeline Overview"
       subtitle="Track and manage your opportunities through the sales cycle."
@@ -128,7 +134,7 @@ function SalesPipelineListContent() {
       <div className="space-y-4">
         {/* ─── Status Filter Bar ─── */}
         <StatusFilterBar
-          statuses={PIPELINE_STATUS}
+          statuses={PIPELINE_STATUS.filter(s => isV2 || !["TechnicalDiscussion", "DemoConducted"].includes(s.value))}
           paramKey="stage"
           basePath="/sales-pipeline/pipeline-list"
         />
@@ -320,6 +326,7 @@ function SalesPipelineListContent() {
       </div>
 
     </PageShell>
+    </PageContainer>
   );
 }
 

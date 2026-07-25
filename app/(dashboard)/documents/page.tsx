@@ -1,4 +1,5 @@
 "use client";
+import { ModuleGate } from "@/components/ModuleGate";
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
@@ -82,7 +83,7 @@ function formatSize(bytes?: number): string {
   return `${(bytes / 1024).toFixed(0)} KB`;
 }
 
-export default function DocumentsListPage() {
+function DocumentsListPage() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -409,5 +410,14 @@ export default function DocumentsListPage() {
         isDestructive
       />
     </PageContainer>
+  );
+}
+
+
+export default function DocumentsListPageWrapper(props: any) {
+  return (
+    <ModuleGate variantMin={3}>
+      <DocumentsListPage {...props} />
+    </ModuleGate>
   );
 }
