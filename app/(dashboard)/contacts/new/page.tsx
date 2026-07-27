@@ -1,7 +1,7 @@
-import { useHasModule } from "@/components/ModuleGate";
-import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 "use client";
 
+import { useHasModule } from "@/components/ModuleGate";
+import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createContactAction } from "@/app/actions/contacts";

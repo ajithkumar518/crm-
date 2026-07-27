@@ -1140,8 +1140,8 @@ export async function convertLeadToCustomerAction(leadId: string) {
 export async function convertLeadToDealAction(
   leadId: string,
   dealName: string,
-  dealValue: number,
-  expectedCloseDate: string
+  dealValue?: number,
+  expectedCloseDate?: string
 ) {
   try {
     const userPayload = await verifyAuth();
@@ -1227,12 +1227,13 @@ export async function convertLeadToDealAction(
       const opportunityCode = `${oppPrefix}${String(oppCount + 1).padStart(5, "0")}`;
 
       // 4. Create the Deal (starts at Qualified stage)
+      const resolvedDealValue = dealValue != null ? dealValue : (lead.estimatedValue || 0);
       const deal = await tx.deal.create({
         data: {
           dealName,
           customerId: customer.id,
-          dealValue: parseFloat(dealValue as any),
-          expectedCloseDate: new Date(expectedCloseDate),
+          dealValue: resolvedDealValue,
+          expectedCloseDate: new Date(expectedCloseDate || new Date(Date.now() + 30 * 86400000)),
           assignedUserId: lead.assignedUserId || userPayload.id,
           status: "Qualified",
           stageEnteredAt: new Date(),
@@ -1259,6 +1260,7 @@ export async function convertLeadToDealAction(
           email: lead.email,
           phone: lead.phone,
           company: customer.name,
+          designation: lead.designation || null,
           status: "Active",
           contactType: "Technical",
           isPrimary: true,
@@ -1266,6 +1268,16 @@ export async function convertLeadToDealAction(
           ownerId: lead.assignedUserId || userPayload.id,
           companyId: userPayload.companyId,
         }
+      });
+
+      // 5b. Link Contact to Opportunity as primary stakeholder
+      await tx.opportunityContact.create({
+        data: {
+          dealId: deal.id,
+          contactId: contact.id,
+          stakeholderRole: "Decision Maker",
+          isPrimary: true,
+        },
       });
 
       // 6. Seed OpportunityDetail with lead data
@@ -1617,6 +1629,16 @@ export async function convertLeadV2Action(
           businessNeed: lead.notes || null,
           // V5: leadVerified maps from lead.isGenuine (avoids businessNeed key collision)
           leadVerified: lead.isGenuine ?? false,
+        },
+      });
+
+      // 5c. Link Contact to Opportunity as primary stakeholder
+      await tx.opportunityContact.create({
+        data: {
+          dealId: deal.id,
+          contactId: contact.id,
+          stakeholderRole: "Decision Maker",
+          isPrimary: true,
         },
       });
 

@@ -74,8 +74,12 @@ export default function NewQuotationPage() {
     if (hasMod(MODULE_KEYS.PRODUCT_CATALOGUE)) {
       fetch("/api/catalogue/products").then(res => res.json()).then(data => { if (data.success) setProducts(data.data || []); else console.error("Failed to load products:", data.message); }).catch(err => console.error("Error loading products:", err));
     }
-    fetch("/api/rfq").then(res => res.json()).then(data => { if (data.success) setRfqs(data.data || []); else console.error("Failed to load RFQs:", data.message); }).catch(err => console.error("Error loading RFQs:", err));
-    fetch("/api/deals").then(res => res.json()).then(data => { if (data.success) setDeals(data.data || []); else console.error("Failed to load deals:", data.message); }).catch(err => console.error("Error loading deals:", err));
+    if (hasMod(MODULE_KEYS.RFQ)) {
+      fetch("/api/rfq").then(res => res.json()).then(data => { if (data.success) setRfqs(data.data || []); else console.error("Failed to load RFQs:", data.message); }).catch(err => console.error("Error loading RFQs:", err));
+    }
+    if (hasMod(MODULE_KEYS.DEALS)) {
+      fetch("/api/deals").then(res => res.json()).then(data => { if (data.success) setDeals(data.data || []); else console.error("Failed to load deals:", data.message); }).catch(err => console.error("Error loading deals:", err));
+    }
     fetch("/api/users").then(res => res.json()).then(data => { if (data.success) setUsers(data.data || []); else console.error("Failed to load users:", data.message); }).catch(err => console.error("Error loading users:", err));
 
     // Pre-fill from query params
@@ -303,27 +307,31 @@ export default function NewQuotationPage() {
                 ))}
               </Select>
             </FormField>
-            <FormField label="Link to RFQ">
-              <Select value={form.rfqId} onChange={(e) => setForm({ ...form, rfqId: e.target.value })}>
-                <option value="">-- None --</option>
-                {rfqs.map((r: any) => <option key={r.id} value={r.id}>{r.rfqCode} - {r.customer?.name}</option>)}
-              </Select>
-            </FormField>
-            <FormField label="Link to Deal">
-              {searchParams.get("opportunityId") ? (
-                <>
-                  <Select value={form.dealId} disabled>
-                    <option value={form.dealId}>{form.dealTitle}</option>
-                  </Select>
-                  <p className="text-[11px] text-[var(--text-tertiary)] mt-1.5">Deal auto-linked from opportunity</p>
-                </>
-              ) : (
-                <Select value={form.dealId} onChange={(e) => setForm({ ...form, dealId: e.target.value })}>
+            {hasMod(MODULE_KEYS.RFQ) && (
+              <FormField label="Link to RFQ">
+                <Select value={form.rfqId} onChange={(e) => setForm({ ...form, rfqId: e.target.value })}>
                   <option value="">-- None --</option>
-                  {deals.map((d: any) => <option key={d.id} value={d.id}>{d.dealName}</option>)}
+                  {rfqs.map((r: any) => <option key={r.id} value={r.id}>{r.rfqCode} - {r.customer?.name}</option>)}
                 </Select>
-              )}
-            </FormField>
+              </FormField>
+            )}
+            {hasMod(MODULE_KEYS.DEALS) && (
+              <FormField label="Link to Deal">
+                {searchParams.get("opportunityId") ? (
+                  <>
+                    <Select value={form.dealId} disabled>
+                      <option value={form.dealId}>{form.dealTitle}</option>
+                    </Select>
+                    <p className="text-[11px] text-[var(--text-tertiary)] mt-1.5">Deal auto-linked from opportunity</p>
+                  </>
+                ) : (
+                  <Select value={form.dealId} onChange={(e) => setForm({ ...form, dealId: e.target.value })}>
+                    <option value="">-- None --</option>
+                    {deals.map((d: any) => <option key={d.id} value={d.id}>{d.dealName}</option>)}
+                  </Select>
+                )}
+              </FormField>
+            )}
             <FormField label="Valid Until" required>
               <Input type="date" value={form.validUntil} onChange={(e) => setForm({ ...form, validUntil: e.target.value })} required />
             </FormField>

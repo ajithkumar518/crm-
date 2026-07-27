@@ -105,7 +105,7 @@ function TasksPageContent() {
       <div className="space-y-4">
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SummaryCard label="Total Tasks" value={kpiTotal} icon={<CheckSquare size={20} />} variant="blue" subtitle="All tasks" />
           <SummaryCard label="Pending" value={kpiPending} icon={<Clock size={20} />} variant="amber" subtitle="Open / In Progress" />
           <SummaryCard label="Overdue" value={kpiOverdue} icon={<AlertTriangle size={20} />} variant="red" subtitle="Past due dates" />

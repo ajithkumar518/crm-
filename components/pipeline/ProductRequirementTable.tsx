@@ -64,6 +64,8 @@ export function ProductRequirementTable({
   const hasData = (item: RequirementItem) =>
     item.productName || item.estimatedQuantity || item.material || item.attachmentUrl;
 
+  console.log("[ProductRequirementTable] products received:", products.length, "hasCatalogue:", hasCatalogue);
+
   const filteredProducts = (search: string) => {
     if (!search.trim()) return products.slice(0, 15);
     const q = search.toLowerCase();

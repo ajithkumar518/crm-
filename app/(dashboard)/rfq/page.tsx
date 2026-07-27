@@ -207,7 +207,7 @@ function RFQListContent() {
       <div className="space-y-4">
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <SummaryCard label="Pending Costing" value={stats.pending_costing} icon={<Clock size={18} />} variant="amber" />
             <SummaryCard label="Aging 0-2d" value={stats.aging_0_2} icon={<Clock size={18} />} variant="green" />
             <SummaryCard label="Aging 3-5d" value={stats.aging_3_5} icon={<AlertTriangle size={18} />} variant="amber" />

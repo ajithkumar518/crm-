@@ -11,6 +11,19 @@ import { ReportFilterLayout, FilterField, filterInputClass } from "@/components/
 import ReportActions from "@/components/reports/ReportActions";
 import { CRMSpinner } from "@/components/CRMSpinner";
 
+const STAGE_LABELS: Record<string, string> = {
+  Qualified: "Qualified",
+  RequirementGathering: "Req. Gathering",
+  TechnicalDiscussion: "Tech. Discussion",
+  MeetingScheduled: "Meeting Scheduled",
+  DemoConducted: "Demo Conducted",
+  DemoAccepted: "Demo Accepted",
+  Won: "Won",
+  Lost: "Lost",
+  Rejected: "Rejected",
+  OnHold: "On Hold",
+};
+
 export default function OpportunitiesReportPage() {
   const toast = useToast();
   const { formatCurrency, preferredCurrency } = useCurrency();
@@ -48,7 +61,7 @@ export default function OpportunitiesReportPage() {
   const handleExport = () => {
     if (deals.length === 0) { toast.error("No data to export"); return; }
     const headers = ["Deal Name", "Customer", "Stage", `Deal Value (${preferredCurrency})`, "Expected Close", "Assigned To", "Created Date"];
-    const rows = deals.map(d => [d.dealName, d.customerName, d.stage, d.dealValue, d.expectedCloseDate ? new Date(d.expectedCloseDate).toLocaleDateString() : "", d.assignedTo, new Date(d.createdDate).toLocaleDateString()]);
+    const rows = deals.map(d => [d.dealName || "", d.customerName || "", STAGE_LABELS[d.stage] || d.stage, d.dealValue || 0, d.expectedCloseDate ? new Date(d.expectedCloseDate).toLocaleDateString() : "", d.assignedTo || "", d.createdDate ? new Date(d.createdDate).toLocaleDateString() : ""]);
     const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
@@ -83,7 +96,7 @@ export default function OpportunitiesReportPage() {
           <SummaryCard label="Won" value={summary.won} icon={<Trophy size={20} />} variant="green" subtitle="Closed won" />
           <SummaryCard label="Lost" value={summary.lost} icon={<XCircle size={20} />} variant="light" subtitle="Closed lost" />
           <SummaryCard label="Active" value={summary.active} icon={<Activity size={20} />} variant="blue" subtitle="In pipeline" />
-          <SummaryCard label="Win Rate" value={`${summary.winRate}%`} icon={<Percent size={20} />} variant="amber" subtitle="Won / Total" />
+          <SummaryCard label="Win Rate" value={`${summary.winRate}%`} icon={<Percent size={20} />} variant="amber" subtitle="Won / Closed" />
         </div>
 
         {/* Filters Panel */}
@@ -141,13 +154,13 @@ export default function OpportunitiesReportPage() {
                 ) : (
                   deals.map(d => (
                     <tr key={d.id} className="crm-tr">
-                      <td className="crm-td font-medium text-foreground">{d.dealName}</td>
-                      <td className="crm-td text-foreground">{d.customerName}</td>
-                      <td className="crm-td text-foreground">{d.stage}</td>
+                      <td className="crm-td font-medium text-foreground">{d.dealName || "—"}</td>
+                      <td className="crm-td text-foreground">{d.customerName || "—"}</td>
+                      <td className="crm-td text-foreground">{STAGE_LABELS[d.stage] || d.stage}</td>
                       <td className="crm-td text-right font-semibold text-foreground">{formatCurrency(d.dealValue)}</td>
                       <td className="crm-td text-foreground">{d.expectedCloseDate ? new Date(d.expectedCloseDate).toLocaleDateString() : "—"}</td>
-                      <td className="crm-td text-foreground">{d.assignedTo}</td>
-                      <td className="crm-td text-muted-foreground">{new Date(d.createdDate).toLocaleDateString()}</td>
+                      <td className="crm-td text-foreground">{d.assignedTo || "—"}</td>
+                      <td className="crm-td text-muted-foreground">{d.createdDate ? new Date(d.createdDate).toLocaleDateString() : "—"}</td>
                     </tr>
                   ))
                 )}

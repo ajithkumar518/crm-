@@ -133,6 +133,7 @@ export const PIPELINE_STATUS: StatusOption[] = [
   { label: "Meeting scheduled", value: "MeetingScheduled" },
   { label: "Demo conducted", value: "DemoConducted" },
   { label: "Demo accepted", value: "DemoAccepted" },
+  { label: "Won", value: "Won" },
   { label: "Overdue", value: "overdue" },
   { label: "Rejected", value: "Rejected" },
   { label: "Lost", value: "Lost" },

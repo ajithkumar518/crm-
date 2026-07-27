@@ -110,7 +110,7 @@ function ContactsPageContent() {
     >
       <div className="space-y-4">
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <SummaryCard label="Total Contacts" value={kpiTotal} subtitle="All contacts" icon={<Users size={20} />} variant="blue" />
           <SummaryCard label="Active" value={kpiActive} subtitle="Active contacts" icon={<CheckCircle2 size={20} />} variant="green" />
           <SummaryCard label="Inactive" value={kpiInactive} subtitle="Inactive contacts" icon={<ArchiveX size={20} />} variant="red" />

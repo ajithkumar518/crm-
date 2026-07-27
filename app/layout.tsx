@@ -8,6 +8,7 @@ import { getMeAction } from "@/app/actions/auth";
 import { migrateTheme, migrateMode, DEFAULT_THEME_NAME, DEFAULT_THEME_MODE } from "@/lib/theme";
 import { cookies } from "next/headers";
 import { readThemeCookies } from "@/lib/theme-cookies";
+import Script from "next/script";
 
 const inter = { className: "font-sans" };
 
@@ -62,7 +63,9 @@ export default async function RootLayout({
   return (
     <html lang="en" data-theme={themeColor} data-mode={themeMode} className={isDark ? "dark" : ""} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: antiFoucScript }} />
+        <Script id="anti-fouc-script" strategy="beforeInteractive">
+          {antiFoucScript}
+        </Script>
       </head>
       <body className={inter.className}>
         <ThemeProvider

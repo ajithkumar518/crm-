@@ -339,7 +339,7 @@ export default function AccountsPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className={`grid grid-cols-2 ${isV2 ? "md:grid-cols-5" : "md:grid-cols-3"} gap-4 mb-6`}>
           <div 
             onClick={() => setStatusFilter("")}
             className={`rounded-xl p-5 border cursor-pointer transition-colors ${statusFilter === "" ? "bg-blue-50 border-blue-200 ring-1 ring-blue-500" : "bg-white border-slate-200 hover:bg-slate-50"}`}

@@ -27,8 +27,9 @@ const SEARCH_PLACEHOLDERS: Record<number, string> = {
 };
 
 function useClock() {
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
+    setNow(new Date());
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
   }, []);
@@ -241,8 +242,8 @@ export default function DashboardHeader({
     }
   };
 
-  const dateStr = now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  const timeStr = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const dateStr = now ? now.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "--";
+  const timeStr = now ? now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
 
   return (
     <header className="h-14 bg-[var(--topbar-bg)] border-b border-[var(--topbar-border)] flex items-center justify-between px-3 md:px-5 shrink-0 z-40 relative shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -426,15 +427,15 @@ export default function DashboardHeader({
         </div>
 
         {/* Date/Time */}
-        <div className="hidden lg:flex items-center gap-1 px-2 py-1 bg-[var(--surface-2)] border border-[var(--border)] rounded-lg">
+        <div className="hidden lg:flex items-center gap-1 px-2 py-1 bg-[var(--surface-2)] border border-[var(--border)] rounded-lg" suppressHydrationWarning>
           <span className="text-slate-400">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </span>
-          <span className="text-[11px] font-semibold text-[var(--text-secondary)]">{dateStr}</span>
+          <span className="text-[11px] font-semibold text-[var(--text-secondary)]" suppressHydrationWarning>{dateStr}</span>
           <span className="text-slate-300 dark:text-slate-700 text-[10px]">|</span>
-          <span className="text-[11px] font-bold text-[var(--text-primary)]">{timeStr}</span>
+          <span className="text-[11px] font-bold text-[var(--text-primary)]" suppressHydrationWarning>{timeStr}</span>
         </div>
 
         {/* Notifications */}

@@ -57,6 +57,7 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'leads-all', label: 'All Leads', href: '/leads', iconEmoji: '👤', keywords: ['all leads', 'leads list'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
   { key: 'leads-new', label: 'New Leads', href: '/leads?status=New', iconEmoji: '👤', keywords: ['new lead', 'add lead'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
   { key: 'leads-followup', label: "Today's Follow-up", href: '/leads?status=TodaysFollowUp', iconEmoji: '👤', keywords: ['followup today', 'due today'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
+  { key: 'leads-sql', label: 'SQL', href: '/leads?status=SQL', iconEmoji: '👤', keywords: ['sql', 'sales qualified', 'qualified'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
   { key: 'leads-lost', label: 'Lost Leads', href: '/leads?status=Lost', iconEmoji: '👤', keywords: ['lost', 'lost lead'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
   { key: 'accounts-all', label: 'All Accounts', href: '/customer-master', iconEmoji: '🏢', keywords: ['all accounts', 'accounts list'], type: 'submodule', parentLabel: 'Accounts', parentKey: 'accounts' },
   { key: 'accounts-active', label: 'Active Accounts', href: '/customer-master?status=ActiveCustomer', iconEmoji: '🏢', keywords: ['active', 'customer'], type: 'submodule', parentLabel: 'Accounts', parentKey: 'accounts' },
@@ -80,7 +81,12 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'pipeline-qualified', label: 'Qualified', href: '/sales-pipeline/pipeline-list?stage=Qualified', iconEmoji: '📈', keywords: ['qualified', 'sql'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-rg', label: 'Requirement Gathering', href: '/sales-pipeline/pipeline-list?stage=RequirementGathering', iconEmoji: '📈', keywords: ['requirement', 'gathering', 'rg'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-meeting', label: 'Meeting Scheduled', href: '/sales-pipeline/pipeline-list?stage=MeetingScheduled', iconEmoji: '📈', keywords: ['meeting', 'scheduled'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
+  { key: 'pipeline-technical', label: 'Technical Discussion', href: '/sales-pipeline/pipeline-list?stage=TechnicalDiscussion', iconEmoji: '📈', keywords: ['technical', 'discussion'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
+  { key: 'pipeline-demo', label: 'Demo Conducted', href: '/sales-pipeline/pipeline-list?stage=DemoConducted', iconEmoji: '📈', keywords: ['demo', 'conducted'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
+  { key: 'pipeline-demo-accepted', label: 'Demo Accepted', href: '/sales-pipeline/pipeline-list?stage=DemoAccepted', iconEmoji: '📈', keywords: ['demo', 'accepted', 'won'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
+  { key: 'pipeline-won', label: 'Won', href: '/sales-pipeline/pipeline-list?stage=Won', iconEmoji: '📈', keywords: ['won', 'closed won', 'success'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-overdue', label: 'Overdue', href: '/sales-pipeline/pipeline-list?stage=overdue', iconEmoji: '📈', keywords: ['overdue', 'stale'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
+  { key: 'pipeline-lost', label: 'Lost', href: '/sales-pipeline/pipeline-list?stage=Lost', iconEmoji: '📈', keywords: ['lost', 'closed lost'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-rejected', label: 'Rejected', href: '/sales-pipeline/pipeline-list?stage=Rejected', iconEmoji: '📈', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   // Quotation sub-modules
   { key: 'quotations-draft', label: 'Draft', href: '/quotations?status=Draft', iconEmoji: '💰', keywords: ['draft', 'not sent'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
@@ -106,7 +112,6 @@ export const V2_EXTRAS: NavItem[] = [
   { key: 'visits', label: 'Customer Visits', href: '/visits', iconEmoji: '🚗', keywords: ['visit', 'field', 'site visit'], type: 'module' , variantMin: 2 },
   { key: 'catalogue', label: 'Product Catalogue', href: '/catalogue', iconEmoji: '📦', keywords: ['product', 'catalogue', 'catalog'], type: 'module' , variantMin: 2 },
   // V2 leads extras
-  { key: 'leads-sql', label: 'SQL', href: '/leads?status=SQL', iconEmoji: '👤', keywords: ['sql', 'stale', 'long'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads', variantMin: 2 },
   { key: 'leads-overdue', label: 'Overdue Leads', href: '/leads?status=Overdue', iconEmoji: '👤', keywords: ['overdue', 'late', 'stale'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads', variantMin: 2 },
   { key: 'leads-duplicate', label: 'Duplicate Leads', href: '/leads?status=Duplicate', iconEmoji: '👤', keywords: ['duplicate', 'copy'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads', variantMin: 2 },
   // V2 accounts extras
@@ -141,9 +146,7 @@ export const V2_EXTRAS: NavItem[] = [
   { key: 'tasks-cancelled', label: 'Cancelled', href: '/tasks?status=Cancelled', iconEmoji: '✅', keywords: ['cancelled', 'aborted'], type: 'submodule', parentLabel: 'Tasks', parentKey: 'tasks' , variantMin: 2 },
   // V2 follow-ups cancelled
   { key: 'follow-ups-cancelled', label: 'Cancelled', href: '/follow-up?status=Cancelled', iconEmoji: '🔔', keywords: ['cancelled', 'aborted'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' , variantMin: 2 },
-  // V2 pipeline extras
-  { key: 'pipeline-technical', label: 'Technical Discussion', href: '/sales-pipeline/pipeline-list?stage=TechnicalDiscussion', iconEmoji: '📈', keywords: ['technical', 'discussion'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline', variantMin: 2 },
-  { key: 'pipeline-demo', label: 'Demo Conducted', href: '/sales-pipeline/pipeline-list?stage=DemoConducted', iconEmoji: '📈', keywords: ['demo', 'conducted'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline', variantMin: 2 },
+  // V2 pipeline extras (TechnicalDiscussion & DemoConducted moved to V1 — all variants advance through them)
   // V2 reports extras
   { key: 'reports-rfq', label: 'RFQ Report', href: '/reports/rfq', iconEmoji: '📑', keywords: ['rfq', 'request'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' , variantMin: 2 },
   { key: 'reports-visits', label: 'Visit Report', href: '/reports/visits', iconEmoji: '📑', keywords: ['visit', 'field'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' , variantMin: 2 },

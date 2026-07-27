@@ -58,13 +58,14 @@ export async function GET(request: NextRequest) {
     return {
       id: d.id,
       opportunityCode: d.opportunityCode || d.dealName,
-      opportunityName: d.dealName,
-      accountName: d.customer?.name || "—",
+      dealName: d.dealName,
+      customerName: d.customer?.name || "—",
       stage: d.status,
-      estimatedValue: d.dealValue,
+      dealValue: d.dealValue,
       probabilityPercent: d.probabilityPercent || 0,
       expectedCloseDate: d.expectedCloseDate ? new Date(d.expectedCloseDate).toISOString() : null,
-      assignedToName: d.assignedUser?.name || "—",
+      assignedTo: d.assignedUser?.name || "—",
+      createdDate: d.createdAt ? new Date(d.createdAt).toISOString() : null,
       daysOpen,
       isOverdue: !!isOverdue,
     };

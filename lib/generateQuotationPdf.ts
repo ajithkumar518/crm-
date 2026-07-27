@@ -1,23 +1,15 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-
-function formatCurrency(amount: number | null | undefined): string {
-  if (amount == null) return "—";
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    minimumFractionDigits: 2,
-  }).format(amount);
-}
-
-function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+import {
+  setupPdfFonts,
+  setFont,
+  formatCurrency,
+  formatPdfDate,
+  drawDivider,
+  addDocumentHeader,
+  addPageFooter,
+  PdfColors,
+} from "./pdf-shared";
 
 export interface QuotationPdfItem {
   description: string;
@@ -78,174 +70,216 @@ export interface QuotationPdfData {
   generatedByName?: string;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function drawInfoBox(
+  doc: jsPDF,
+  title: string,
+  x: number,
+  y: number,
+  w: number,
+  content: { label?: string; value?: string }[],
+): number {
+  const lineH = 3.8;
+  let h = 8 + content.length * lineH;
+
+  // Measure dynamic height for wrapped values
+  doc.setFontSize(8);
+  setFont(doc, "normal");
+  for (const item of content) {
+    if (item.value && item.value.length > 25) {
+      const lines = doc.splitTextToSize(item.value, w - 8).length;
+      h += (lines - 1) * (lineH - 0.5);
+    }
+  }
+
+  // Box background + border
+  doc.setFillColor(...PdfColors.slate50);
+  doc.setDrawColor(...PdfColors.slate200);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(x, y, w, h, 1.5, 1.5, "FD");
+
+  // Title bar
+  doc.setFillColor(...PdfColors.primary);
+  doc.roundedRect(x, y, w, 6, 1.5, 1.5, "F");
+  // Flatten bottom of title bar
+  doc.rect(x, y + 3, w, 3, "F");
+
+  doc.setFontSize(7);
+  setFont(doc, "bold");
+  doc.setTextColor(...PdfColors.white);
+  doc.text(title.toUpperCase(), x + 3, y + 4);
+
+  let cy = y + 10;
+  for (const item of content) {
+    const label = item.label ? `${item.label}: ` : "";
+    const full = `${label}${item.value || "—"}`;
+    doc.setFontSize(8);
+    setFont(doc, "bold");
+    doc.setTextColor(...PdfColors.slate500);
+    const labelW = item.label ? doc.getTextWidth(label) : 0;
+    if (labelW > 0) doc.text(label, x + 3, cy);
+
+    setFont(doc, "normal");
+    doc.setTextColor(item.value ? 30 : 148, item.value ? 41 : 163, item.value ? 59 : 184);
+    const valueX = x + 3 + labelW;
+    const maxW = w - 6 - labelW;
+    const lines = doc.splitTextToSize(item.value || "—", maxW);
+    doc.text(lines, valueX, cy);
+    cy += lines.length * (lineH - 0.5);
+  }
+
+  return y + h;
+}
+
+function formatTermsBlock(
+  doc: jsPDF,
+  label: string,
+  content: string,
+  startY: number,
+  pageH: number,
+  margin: number,
+): number {
+  if (!content) return startY;
+  let y = startY;
+  if (y > pageH - 40) {
+    doc.addPage();
+    y = margin + 5;
+  }
+
+  doc.setFontSize(8);
+  setFont(doc, "bold");
+  doc.setTextColor(...PdfColors.slate500);
+  doc.text(label, margin, y);
+  y += 4;
+
+  setFont(doc, "normal");
+  doc.setTextColor(...PdfColors.slate600);
+  const lines = doc.splitTextToSize(content, 180);
+  for (const line of lines) {
+    if (y > pageH - 18) {
+      doc.addPage();
+      y = margin + 5;
+    }
+    doc.text(line, margin, y);
+    y += 3.5;
+  }
+  return y + 2;
+}
+
 /**
- * Generate a properly-aligned quotation PDF using jsPDF.
- * Includes: company header, customer info, line items table with HSN,
- * totals section, terms, signature line, and footer on every page.
- * Handles multi-page automatically.
+ * Right-align amount strings so decimal points line up.
+ */
+function drawAlignedAmount(doc: jsPDF, amount: string, decimalX: number, y: number): void {
+  const parts = amount.split(".");
+  const intPart = parts[0];
+  const fracPart = parts.length > 1 ? `.${parts[1]}` : "";
+  const intW = doc.getTextWidth(intPart);
+  doc.text(intPart, decimalX - intW, y);
+  if (fracPart) doc.text(fracPart, decimalX, y);
+}
+
+// ─── Main PDF generator ─────────────────────────────────────────────────────
+
+/**
+ * Generate a professional, visually-polished quotation PDF using jsPDF.
+ * Includes: branded header, customer/contact info cards, line-items table with
+ * zebra striping, decimal-aligned totals, commercial terms, T&Cs, and signature.
  */
 export function generateQuotationPdf(data: QuotationPdfData): jsPDF {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  setupPdfFonts(doc);
+
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const margin = 15;
   const contentW = pageW - 2 * margin;
 
   const companyName = data.company?.name || "SUKI CRM";
-  const companyAddress = data.companyAddress || "";
-  const companyGstin = data.companyGstin || "";
-  const companyPhone = data.companyPhone || "";
-  const companyEmail = data.companyEmail || "";
 
-  let y = margin;
+  // ── Header ──
+  let y = addDocumentHeader(doc, {
+    companyName,
+    companyAddress: data.companyAddress || "",
+    companyGstin: data.companyGstin || "",
+    companyPhone: data.companyPhone || "",
+    companyEmail: data.companyEmail || "",
+    badgeText: "QUOTATION",
+    docCode: data.quotationCode,
+    metaLines: [
+      `Revision: R${data.revisionNumber}`,
+      `Status: ${data.status}`,
+      `Valid Until: ${formatPdfDate(data.validUntil)}`,
+    ],
+  });
 
-  // ── Company Header ──
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 64, 175); // #1e40af
-  doc.text(companyName, margin, y);
-  y += 6;
-
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(148, 163, 184); // #94a3b8
-  if (companyAddress) {
-    const addrLines = doc.splitTextToSize(companyAddress, contentW * 0.6);
-    doc.text(addrLines, margin, y);
-    y += addrLines.length * 3.5;
-  }
-  const companyContactParts: string[] = [];
-  if (companyGstin) companyContactParts.push(`GSTIN: ${companyGstin}`);
-  if (companyPhone) companyContactParts.push(companyPhone);
-  if (companyEmail) companyContactParts.push(companyEmail);
-  if (companyContactParts.length > 0) {
-    doc.text(companyContactParts.join("  |  "), margin, y);
-    y += 3.5;
-  }
-
-  // ── Quotation badge (right-aligned) ──
-  const badgeX = pageW - margin;
-  doc.setFillColor(30, 64, 175);
-  doc.roundedRect(badgeX - 35, margin - 2, 35, 8, 1.5, 1.5, "F");
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.text("QUOTATION", badgeX - 17.5, margin + 3.5, { align: "center" });
-
-  doc.setTextColor(30, 41, 59);
-  doc.setFontSize(12);
-  doc.text(data.quotationCode, badgeX, margin + 10, { align: "right" });
-
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 116, 139);
-  doc.text(`Revision: R${data.revisionNumber}`, badgeX, margin + 14, { align: "right" });
-  doc.text(`Status: ${data.status}`, badgeX, margin + 18, { align: "right" });
-  doc.text(`Valid Until: ${formatDate(data.validUntil)}`, badgeX, margin + 22, { align: "right" });
-
-  // Reset y to the max of left/right header content
-  y = Math.max(y, margin + 26);
-
-  // ── Divider line ──
-  doc.setDrawColor(30, 64, 175);
-  doc.setLineWidth(0.8);
-  doc.line(margin, y, pageW - margin, y);
-  y += 6;
-
-  // ── Meta row: Date | Valid Until | Status ──
-  const colW = contentW / 3;
-  const metaLabels = ["Quotation Date", "Valid Until", "Status"];
-  const metaValues = [formatDate(data.createdAt), formatDate(data.validUntil), data.status];
-
-  for (let i = 0; i < 3; i++) {
-    const cx = margin + i * colW;
+  // ── Meta row ──
+  const metaColW = contentW / 3;
+  const meta = [
+    { label: "Quotation Date", value: formatPdfDate(data.createdAt) },
+    { label: "Valid Until", value: formatPdfDate(data.validUntil) },
+    { label: "Status", value: data.status },
+  ];
+  for (let i = 0; i < meta.length; i++) {
+    const cx = margin + i * metaColW;
     doc.setFontSize(7);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(148, 163, 184);
-    doc.text(metaLabels[i].toUpperCase(), cx, y);
+    setFont(doc, "bold");
+    doc.setTextColor(...PdfColors.slate400);
+    doc.text(meta[i].label.toUpperCase(), cx, y);
     doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(30, 41, 59);
-    doc.text(metaValues[i], cx, y + 4.5);
+    setFont(doc, "normal");
+    doc.setTextColor(...PdfColors.primaryDark);
+    doc.text(meta[i].value, cx, y + 4.5);
   }
   y += 12;
 
-  // ── Bill To / Contact ──
-  const halfW = contentW / 2 - 3;
+  // ── Bill To / Contact cards ──
+  const boxGap = 4;
+  const boxW = (contentW - boxGap) / 2;
 
-  // Bill To (left)
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(148, 163, 184);
-  doc.text("BILL TO", margin, y);
-  doc.setFontSize(10);
-  doc.setTextColor(30, 41, 59);
-  doc.setFont("helvetica", "bold");
-  doc.text(data.customer?.name || "—", margin, y + 4.5);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  let billY = y + 8;
-  if (data.customer?.customerCode) {
-    doc.text(`Code: ${data.customer.customerCode}`, margin, billY); billY += 3.5;
-  }
-  if (data.customer?.billingAddress) {
-    const addrLines = doc.splitTextToSize(data.customer.billingAddress, halfW);
-    doc.text(addrLines, margin, billY);
-    billY += addrLines.length * 3.5;
-  }
-  if (data.customer?.city) {
-    doc.text(data.customer.city, margin, billY); billY += 3.5;
-  }
-  if (data.customer?.gstNumber) {
-    doc.text(`GSTIN: ${data.customer.gstNumber}`, margin, billY); billY += 3.5;
-  }
-  if (data.customer?.phone) {
-    doc.text(`Phone: ${data.customer.phone}`, margin, billY); billY += 3.5;
-  }
-  if (data.customer?.email) {
-    doc.text(`Email: ${data.customer.email}`, margin, billY); billY += 3.5;
-  }
+  const customerContent = [
+    { label: undefined, value: data.customer?.name || "—" },
+    { label: "Code", value: data.customer?.customerCode || "" },
+    { label: "Address", value: data.customer?.billingAddress || "" },
+    { label: "City", value: data.customer?.city || "" },
+    { label: "GSTIN", value: data.customer?.gstNumber || "" },
+    { label: "Phone", value: data.customer?.phone || "" },
+    { label: "Email", value: data.customer?.email || "" },
+  ].filter((c) => c.value || c.label === undefined);
 
-  // Contact (right)
-  const contactX = margin + halfW + 6;
-  doc.setFontSize(7);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(148, 163, 184);
-  doc.text("CONTACT", contactX, y);
-  doc.setFontSize(10);
-  doc.setTextColor(30, 41, 59);
-  doc.setFont("helvetica", "bold");
-  doc.text(data.contact?.name || "—", contactX, y + 4.5);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  let conY = y + 8;
-  if (data.contact?.email) {
-    doc.text(data.contact.email, contactX, conY); conY += 3.5;
-  }
-  if (data.contact?.phone) {
-    doc.text(data.contact.phone, contactX, conY); conY += 3.5;
-  }
+  const contactContent = [
+    { label: undefined, value: data.contact?.name || "—" },
+    { label: "Email", value: data.contact?.email || "" },
+    { label: "Phone", value: data.contact?.phone || "" },
+  ].filter((c) => c.value || c.label === undefined);
 
-  y = Math.max(billY, conY) + 4;
+  const leftH = drawInfoBox(doc, "Bill To", margin, y, boxW, customerContent);
+  const rightH = drawInfoBox(doc, "Contact", margin + boxW + boxGap, y, boxW, contactContent);
+  y = Math.max(leftH, rightH) + 6;
 
-  // Deal info if linked
+  // ── Deal info ──
   if (data.deal) {
+    doc.setFillColor(...PdfColors.slate100);
+    doc.setDrawColor(...PdfColors.slate200);
+    doc.roundedRect(margin, y, contentW, 8, 1.5, 1.5, "FD");
     doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 41, 59);
-    doc.text(`Opportunity: ${data.deal.dealName}`, margin, y);
-    y += 5;
+    setFont(doc, "bold");
+    doc.setTextColor(...PdfColors.primaryDark);
+    doc.text(`Opportunity: ${data.deal.dealName}`, margin + 3, y + 5);
+    if (data.deal.opportunityCode) {
+      setFont(doc, "normal");
+      doc.setTextColor(...PdfColors.slate500);
+      doc.text(data.deal.opportunityCode, pageW - margin - 3, y + 5, { align: "right" });
+    }
+    y += 11;
   }
 
   // ── Line items table ──
   const head = [["#", "Description", "HSN", "Qty", "UOM", "Unit Price", "Disc%", "Tax%", "Line Total"]];
-
   const body = data.items.map((it, idx) => [
     String(idx + 1),
     it.description || it.product?.name || "—",
-    it.hsn || "-",
+    it.hsn || "—",
     String(it.quantity),
     it.unit || "Nos",
     formatCurrency(it.unitPrice),
@@ -256,195 +290,198 @@ export function generateQuotationPdf(data: QuotationPdfData): jsPDF {
 
   autoTable(doc, {
     startY: y,
-    margin: { left: margin, right: margin, top: margin + 5, bottom: 20 },
+    margin: { left: margin, right: margin, top: margin + 5, bottom: 22 },
     head,
     body,
-    styles: { fontSize: 7.5, cellPadding: 2, overflow: "linebreak", lineColor: [226, 232, 240], lineWidth: 0.1 },
+    styles: {
+      font: "NotoSans",
+      fontSize: 8,
+      cellPadding: 2.5,
+      overflow: "linebreak",
+      lineColor: [203, 213, 225], // #cbd5e1
+      lineWidth: 0.25,
+      textColor: 30,
+    },
     headStyles: {
       fillColor: [30, 41, 59],
       textColor: 255,
       fontStyle: "bold",
-      fontSize: 7.5,
+      fontSize: 8,
       halign: "left",
+      valign: "middle",
     },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
-      0: { cellWidth: 7, halign: "center" },
+      0: { cellWidth: 8, halign: "center" },
       1: { cellWidth: "auto" },
-      2: { cellWidth: 16, halign: "center" },
+      2: { cellWidth: 18, halign: "center" },
       3: { cellWidth: 12, halign: "right" },
-      4: { cellWidth: 12, halign: "center" },
-      5: { cellWidth: 22, halign: "right" },
-      6: { cellWidth: 11, halign: "center" },
-      7: { cellWidth: 11, halign: "center" },
-      8: { cellWidth: 24, halign: "right", fontStyle: "bold" },
+      4: { cellWidth: 14, halign: "center" },
+      5: { cellWidth: 24, halign: "right" },
+      6: { cellWidth: 12, halign: "center" },
+      7: { cellWidth: 12, halign: "center" },
+      8: { cellWidth: 26, halign: "right", fontStyle: "bold" },
     },
     didDrawPage: () => {
-      // Footer on every page
-      const pageHeight = doc.internal.pageSize.getHeight();
-      doc.setFontSize(7);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(148, 163, 184);
-      doc.setDrawColor(226, 232, 240);
-      doc.setLineWidth(0.3);
-      doc.line(margin, pageHeight - 12, pageW - margin, pageHeight - 12);
-      const pageText = `Page ${doc.getNumberOfPages()}`;
-      doc.text(`This is a computer-generated quotation and does not require a physical signature.`, margin, pageHeight - 7);
-      doc.text(pageText, pageW - margin, pageHeight - 7, { align: "right" });
+      addPageFooter(doc, {
+        left: "This is a computer-generated quotation and does not require a physical signature.",
+      });
     },
   });
 
   // lastAutoTable is added by jspdf-autotable at runtime
-  y = (doc as any).lastAutoTable.finalY + 6;
+  y = (doc as any).lastAutoTable.finalY + 8;
 
-  // ── Totals section (right-aligned) ──
-  // After applyNegotiationRevision, subtotal is ALREADY net of discount (sum of discounted
-  // totalPrice values). Showing Subtotal - Discount + Tax doesn't add up to Grand Total.
-  // Instead: compute gross from discountPercent, show Gross → Discount → Net Subtotal → Tax → Grand Total.
-  const totalsW = 70;
-  const totalsX = pageW - margin - totalsW;
-  const labelX = totalsX;
-  const valueX = pageW - margin;
-
+  // ── Totals section (right-aligned, decimal-aligned) ──
   const netSubtotal = data.subtotal || data.totalAmount;
   const discountPct = data.discountPercent || 0;
   const grossSubtotal = discountPct > 0 ? netSubtotal / (1 - discountPct / 100) : netSubtotal;
   const discountAmount = grossSubtotal - netSubtotal;
 
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(71, 85, 105);
+  const totals: Array<{ label: string; value: string; style?: "normal" | "deduction" | "grand" }> = [
+    { label: "Gross Total", value: formatCurrency(grossSubtotal), style: "normal" },
+    { label: `Discount (${discountPct}%)`, value: `-${formatCurrency(discountAmount)}`, style: "deduction" },
+    { label: "Net Subtotal", value: formatCurrency(netSubtotal), style: "normal" },
+    { label: "Tax (GST)", value: formatCurrency(data.taxAmount || 0), style: "normal" },
+  ];
 
-  doc.text("Gross Total", labelX, y);
-  doc.text(formatCurrency(grossSubtotal), valueX, y, { align: "right" });
-  y += 5;
+  const totalsW = 80;
+  const totalsX = pageW - margin - totalsW;
+  const labelX = totalsX + 3;
+  // All amount decimal points line up at this x; integer parts render to the left.
+  const decimalX = pageW - margin - 3;
 
-  doc.text(`Discount (${discountPct}%)`, labelX, y);
-  doc.setTextColor(220, 38, 38);
-  doc.text(`-${formatCurrency(discountAmount)}`, valueX, y, { align: "right" });
-  y += 5;
-
-  doc.setTextColor(71, 85, 105);
-  doc.text("Net Subtotal", labelX, y);
-  doc.text(formatCurrency(netSubtotal), valueX, y, { align: "right" });
-  y += 5;
-
-  doc.text("Tax (GST)", labelX, y);
-  doc.text(formatCurrency(data.taxAmount || 0), valueX, y, { align: "right" });
-  y += 5;
-
-  // Grand total with border
-  doc.setDrawColor(30, 64, 175);
-  doc.setLineWidth(0.8);
-  doc.line(totalsX, y, valueX, y);
-  y += 5;
-
-  doc.setFontSize(13);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(30, 64, 175);
-  doc.text("Grand Total", labelX, y);
-  doc.text(formatCurrency(data.finalAmount), valueX, y, { align: "right" });
-  y += 8;
-
-  // ── Terms section ──
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(30, 41, 59);
-
-  const addTermsBlock = (label: string, content: string) => {
-    if (!content) return;
-    // Check if we need a new page
-    if (y > pageH - 40) {
-      doc.addPage();
-      y = margin + 5;
+  // Render totals rows
+  doc.setDrawColor(...PdfColors.slate200);
+  doc.setLineWidth(0.3);
+  for (const row of totals) {
+    doc.setFontSize(10);
+    if (row.style === "deduction") {
+      setFont(doc, "normal");
+      doc.setTextColor(...PdfColors.red);
+    } else {
+      setFont(doc, "normal");
+      doc.setTextColor(...PdfColors.slate600);
     }
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(100, 116, 139);
-    doc.text(label, margin, y);
-    y += 4;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    const lines = doc.splitTextToSize(content, contentW);
-    // Render line by line to handle page breaks
-    for (const line of lines) {
-      if (y > pageH - 15) {
-        doc.addPage();
-        y = margin + 5;
-      }
-      doc.text(line, margin, y);
-      y += 3.5;
-    }
-    y += 3;
-  };
+    doc.text(row.label, labelX, y);
+    drawAlignedAmount(doc, row.value, decimalX, y);
+    y += 6;
+  }
 
-  // Commercial terms in a grid
+  // Grand total highlighted band
+  const grandY = y + 2;
+  const bandH = 9;
+  doc.setFillColor(...PdfColors.primary);
+  doc.roundedRect(totalsX, grandY - 1, totalsW, bandH, 2, 2, "F");
+  doc.setFontSize(12);
+  setFont(doc, "bold");
+  doc.setTextColor(...PdfColors.white);
+  doc.text("Grand Total", labelX, grandY + 5);
+  drawAlignedAmount(doc, formatCurrency(data.finalAmount), decimalX, grandY + 5);
+  y = grandY + bandH + 6;
+
+  // Ensure we have enough room for terms + signature on this page
+  if (y > pageH - 55) {
+    doc.addPage();
+    y = margin + 5;
+  }
+
+  // ── Section divider ──
+  drawDivider(doc, y, PdfColors.slate200, 0.3);
+  y += 5;
+
+  // ── Commercial terms ──
   if (data.paymentTerms || data.deliveryTerms || data.freightTerms || data.leadTimeDays) {
-    if (y > pageH - 30) {
-      doc.addPage();
-      y = margin + 5;
-    }
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(9);
+    setFont(doc, "bold");
+    doc.setTextColor(...PdfColors.slate500);
     doc.text("COMMERCIAL TERMS", margin, y);
     y += 5;
 
     const terms: Array<[string, string]> = [
-      ["Payment:", data.paymentTerms || "As per standard terms"],
-      ["Delivery:", data.deliveryTerms || "As per standard terms"],
-      ["Freight:", data.freightTerms || "Extra at actuals"],
-      ["Lead Time:", data.leadTimeDays ? `${data.leadTimeDays} days` : "As per standard"],
+      ["Payment", data.paymentTerms || "As per standard terms"],
+      ["Delivery", data.deliveryTerms || "As per standard terms"],
+      ["Freight", data.freightTerms || "Extra at actuals"],
+      ["Lead Time", data.leadTimeDays ? `${data.leadTimeDays} days` : "As per standard"],
     ];
 
-    const termColW = contentW / 2;
+    const termColW = (contentW - 6) / 2;
     for (let i = 0; i < terms.length; i++) {
       const col = i % 2;
       const row = Math.floor(i / 2);
-      const tx = margin + col * termColW;
-      const ty = y + row * 4;
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(71, 85, 105);
-      doc.text(terms[i][0], tx, ty);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100, 116, 139);
+      const tx = margin + col * (termColW + 6);
+      const ty = y + row * 6;
+      doc.setFontSize(8);
+      setFont(doc, "bold");
+      doc.setTextColor(...PdfColors.slate500);
+      doc.text(`${terms[i][0]}:`, tx, ty);
+      setFont(doc, "normal");
+      doc.setTextColor(...PdfColors.slate600);
       const valLines = doc.splitTextToSize(terms[i][1], termColW - 22);
-      doc.text(valLines[0] || "", tx + 20, ty);
+      doc.text(valLines[0] || "", tx + 22, ty);
     }
-    y += Math.ceil(terms.length / 2) * 4 + 4;
+    y += Math.ceil(terms.length / 2) * 6 + 4;
   }
 
-  addTermsBlock("TERMS & CONDITIONS", data.termsAndConditions || "");
+  // ── Terms & Conditions ──
+  y = formatTermsBlock(doc, "TERMS & CONDITIONS", data.termsAndConditions || "", y, pageH, margin);
 
-  // ── Signature line ──
-  if (y > pageH - 35) {
+  // ── Signature box ──
+  if (y > pageH - 42) {
     doc.addPage();
     y = margin + 5;
   }
-  y += 15;
-  doc.setDrawColor(203, 213, 225);
-  doc.setLineWidth(0.5);
-  doc.line(pageW - margin - 60, y, pageW - margin, y);
-  y += 4;
+  const sigW = 70;
+  const sigX = pageW - margin - sigW;
+  const sigH = 22;
+  const sigY = y + 4;
+
+  doc.setFillColor(...PdfColors.white);
+  doc.setDrawColor(...PdfColors.slate200);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(sigX, sigY, sigW, sigH, 1.5, 1.5, "FD");
+
   doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(71, 85, 105);
-  doc.text(`For ${companyName}`, pageW - margin, y, { align: "right" });
+  setFont(doc, "bold");
+  doc.setTextColor(...PdfColors.slate500);
+  doc.text("For", sigX + 3, sigY + 5);
+  doc.setTextColor(...PdfColors.primaryDark);
+  doc.text(companyName, sigX + 3, sigY + 10);
+
+  doc.setDrawColor(...PdfColors.slate400);
+  doc.setLineWidth(0.4);
+  doc.line(sigX + 3, sigY + 15, sigX + sigW - 3, sigY + 15);
+
+  doc.setFontSize(8);
+  setFont(doc, "normal");
+  doc.setTextColor(...PdfColors.slate500);
+  doc.text("Authorized Signature", sigX + 3, sigY + 19);
+
+  y = sigY + sigH + 4;
 
   // ── Generation info ──
-  y += 8;
-  if (y > pageH - 15) {
+  if (y > pageH - 18) {
     doc.addPage();
     y = margin + 5;
   }
   doc.setFontSize(7);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(148, 163, 184);
+  setFont(doc, "normal");
+  doc.setTextColor(...PdfColors.slate400);
   if (data.generatedByName) {
     doc.text(`Generated by ${data.generatedByName} on ${new Date().toLocaleString("en-IN")}`, margin, y);
-    y += 3;
+    y += 3.5;
   }
   doc.text(`Created by ${data.createdBy?.name || "—"}`, margin, y);
+
+  // Final footer pass on the last page if autoTable didn't add it
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    addPageFooter(doc, {
+      left: "This is a computer-generated quotation and does not require a physical signature.",
+      page: i,
+    });
+  }
 
   return doc;
 }

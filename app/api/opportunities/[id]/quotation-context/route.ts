@@ -71,6 +71,9 @@ export async function GET(
         ]
       : [];
 
+  const primaryContactId = contacts.find((c: any) => c.isPrimary)?.id || contacts[0]?.id || null;
+  const primaryContactName = contacts.find((c: any) => c.isPrimary)?.name || contacts[0]?.name || null;
+
   return NextResponse.json({
     success: true,
     data: {
@@ -81,8 +84,12 @@ export async function GET(
       accountId: deal.customer.id,
       accountName: deal.customer.name,
       accountGstin: deal.customer.gstin || null,
-      primaryContactId: contacts.find((c: any) => c.isPrimary)?.id || contacts[0]?.id || null,
-      primaryContactName: contacts.find((c: any) => c.isPrimary)?.name || contacts[0]?.name || null,
+      primaryContactId,
+      primaryContactName,
+      // Alias so downstream pages (quotation/new, rfq/new) can read contactId directly
+      contactId: primaryContactId,
+      contactName: primaryContactName,
+      assignedUserId: deal.assignedUserId || null,
       contacts,
       linkedRfqId: deal.rfqs?.[0]?.id || null,
       hasAcceptedQuotation: deal.quotations?.length > 0,

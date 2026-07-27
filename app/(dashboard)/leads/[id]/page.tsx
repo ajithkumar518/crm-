@@ -143,7 +143,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const openConvertModal = () => {
     if (!lead) return;
     setDealName(`${lead.name} - Initial Deal`);
-    setDealValue("150000");
+    setDealValue(lead.estimatedValue ? String(lead.estimatedValue) : "");
     const d = new Date();
     d.setDate(d.getDate() + 30);
     setExpectedCloseDate(d.toISOString().substring(0, 10));
@@ -302,11 +302,21 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       return;
     }
     setSqlSaving(true);
+    // Sync "Budget Asked" back into the lead's estimatedValue so the two
+    // fields never drift apart. budgetAsked is a free-text string (may
+    // contain "Confirmed - 500000"), so extract the first numeric token.
+    const budgetNum = budgetAsked.match(/(\d[\d,]*\.?\d*)/)?.[1]?.replace(/,/g, "");
+    const parsedBudget = budgetNum ? parseFloat(budgetNum) : NaN;
     const res = await updateLeadAction(lead.id, {
       status: "SQL",
       budgetAsked,
       timelineAsked,
       isGenuine,
+      // Only overwrite estimatedValue when a concrete budget number was
+      // captured; never wipe an existing value with NaN/0.
+      ...(Number.isFinite(parsedBudget) && parsedBudget > 0
+        ? { estimatedValue: parsedBudget }
+        : {}),
     });
     if (res.success) {
       toast.success("Lead qualified as SQL!");
@@ -390,7 +400,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
       gstNumber: "", accountType: "Customer", industryType: lead.industryType || "", billingAddress: "",
       contactName: lead.name || "", contactDesignation: lead.designation || "",
       contactEmail: lead.email || "", contactPhone: lead.phone || "", contactCategory: "Technical",
-      oppName: `Supply - ${lead.companyName || lead.name}`, oppValue: lead.estimatedValue ? String(lead.estimatedValue) : "",
+      oppName: lead.companyName || lead.name || "", oppValue: lead.estimatedValue ? String(lead.estimatedValue) : "",
       oppCloseDate: d.toISOString().substring(0, 10),
     });
     setConvertSection(0);
@@ -508,6 +518,7 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         // Pre-fill qualification fields
         const ld = res.data as any;
         if (ld.budgetAsked) setBudgetAsked(ld.budgetAsked);
+        else if (ld.estimatedValue) setBudgetAsked(String(ld.estimatedValue));
         if (ld.timelineAsked) setTimelineAsked(ld.timelineAsked);
         if (ld.isGenuine) setIsGenuine(true);
         // V2: Pre-fill BANT from existing lead data

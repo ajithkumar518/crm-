@@ -510,7 +510,7 @@ export default function LeadsPage() {
       }
     >
       {/* ── V2 KPI Cards (aligned with tab sections) ── */}
-      <div className={cn("grid grid-cols-2 gap-6", isV2 ? "md:grid-cols-3 lg:grid-cols-6" : "lg:grid-cols-3")}>
+      <div className={cn("grid grid-cols-2 gap-6", isV2 ? "md:grid-cols-6" : "md:grid-cols-4")}>
         <SummaryCard
           label="Total Leads"
           value={kpiTotal}
@@ -538,17 +538,15 @@ export default function LeadsPage() {
           isActive={activeTab === "TodayFollowUp" || activeTab === "TodaysFollowUp"}
           onClick={() => handleTabClick("TodayFollowUp")}
         />
-        {isV2 && (
-          <SummaryCard
-            label="SQL"
-            value={kpiSQL}
-            subtitle="Sales Qualified Leads"
-            icon={<TrendingUp size={20} />}
-            variant="light"
-            isActive={activeTab === "SQL"}
-            onClick={() => handleTabClick("SQL")}
-          />
-        )}
+        <SummaryCard
+          label="SQL"
+          value={kpiSQL}
+          subtitle="Sales Qualified Leads"
+          icon={<TrendingUp size={20} />}
+          variant="light"
+          isActive={activeTab === "SQL"}
+          onClick={() => handleTabClick("SQL")}
+        />
         {isV2 && (
           <SummaryCard
             label="Overdue"
@@ -614,7 +612,7 @@ export default function LeadsPage() {
               className="h-8 px-2.5 text-xs rounded-lg bg-surface-2 border border-theme text-theme-secondary focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] cursor-pointer shrink-0"
             >
               <option value="">All Status</option>
-              {LEAD_STATUSES.filter(s => isV2 || !["SQL", "Overdue", "Duplicate"].includes(s)).map(s => <option key={s} value={s}>{s}</option>)}
+              {LEAD_STATUSES.filter(s => isV2 || !["Overdue", "Duplicate"].includes(s)).map(s => <option key={s} value={s}>{s}</option>)}
             </select>
 
             {/* Follow-Up Status filter */}
@@ -836,7 +834,7 @@ export default function LeadsPage() {
                               } else if (wfActions.primary?.id === "reschedule-followup") {
                                 router.push(`/leads/${l.id}?tab=followups`);
                               } else if (wfActions.primary?.id === "mark-sql" || wfActions.primary?.id === "start-qualification") {
-                                router.push(`/leads/${l.id}?tab=bant`);
+                                router.push(`/leads/${l.id}?action=qualify`);
                               } else if (wfActions.primary?.id === "convert-lead") {
                                 router.push(`/leads/${l.id}?action=convert`);
                               } else if (wfActions.primary?.id === "view-opportunity") {

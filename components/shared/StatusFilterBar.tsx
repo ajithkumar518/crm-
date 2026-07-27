@@ -136,7 +136,7 @@ export function StatusFilterBar({
       role="tablist"
       aria-label="Status filter"
       className={cn(
-        "flex items-center gap-1.5 overflow-x-auto scrollbar-thin",
+        "flex items-center gap-1.5 overflow-x-auto scrollbar-thin flex-wrap",
         "border-b border-slate-100 dark:border-slate-800/60",
         "pb-px -mb-px",
         className

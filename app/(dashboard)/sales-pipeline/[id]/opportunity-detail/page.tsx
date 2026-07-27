@@ -16,7 +16,7 @@ import {
   ArrowLeft, CheckCircle, XCircle,
   ChevronRight, Save, AlertTriangle, Calendar, CalendarClock, Clock,
   Edit3, FileText, MessageSquare, Zap, Swords, FolderOpen, Briefcase, History,
-  Search, TrendingUp, User, Users, Info,
+  Search, TrendingUp, User, Users, Info, Download,
 } from "lucide-react";
 import { CompetitorIntelligenceTab } from "@/components/competitor-intelligence/CompetitorIntelligenceTab";
 import EntityDocumentTab from "@/components/documents/EntityDocumentTab";
@@ -65,6 +65,7 @@ const STAGE_FILTERS = [
   { label: "Req. gathering", value: "RequirementGathering" },
   { label: "Tech. discussion", value: "TechnicalDiscussion" },
   { label: "Meeting scheduled", value: "MeetingScheduled" },
+  { label: "Demo conducted", value: "DemoConducted" },
   { label: "Demo accepted", value: "DemoAccepted" },
   { label: "Rejected", value: "Rejected" },
   { label: "Lost", value: "Lost" },
@@ -156,8 +157,9 @@ const getStepState = (stageKey: string, currentStage: string): StepState => {
   if (currentStage === "Lost" || currentStage === "Rejected" || currentStage === "Won") {
     return "completed";
   }
-  const stageIndex = PIPELINE_STAGES.findIndex((s) => s.key === stageKey);
-  const currentIndex = PIPELINE_STAGES.findIndex((s) => s.key === currentStage);
+  const forwardStages = PIPELINE_STAGES.filter((s) => s.key !== "Won" && s.key !== "OnHold");
+  const stageIndex = forwardStages.findIndex((s) => s.key === stageKey);
+  const currentIndex = forwardStages.findIndex((s) => s.key === currentStage);
   if (stageIndex < currentIndex) return "completed";
   if (stageIndex === currentIndex) return "active";
   return "future";
@@ -314,6 +316,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   const [stageMoving, setStageMoving] = useState(false);
   const [linkedQuotations, setLinkedQuotations] = useState<any[]>([]);
   const [linkedQuotationsLoading, setLinkedQuotationsLoading] = useState(false);
+  const [reqPdfLoading, setReqPdfLoading] = useState(false);
   // V2: Sample management state
   const [products, setProducts] = useState<any[]>([]);
   const [linkedSample, setLinkedSample] = useState<any>(null);
@@ -345,6 +348,35 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
       setLinkedQuotationsLoading(false);
     }
   }, [id]);
+
+  // Download Requirements Summary PDF (available on DemoAccepted stage for all variants)
+  const handleDownloadRequirementsPdf = useCallback(async () => {
+    if (reqPdfLoading) return;
+    setReqPdfLoading(true);
+    try {
+      const res = await fetch(`/api/opportunities/${id}/requirements-pdf`);
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.message || "Failed to generate PDF");
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const disposition = res.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      a.download = match ? match[1] : `${deal?.opportunityCode || id}-Requirements-Summary.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      toast.success("Requirements summary downloaded.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to download requirements PDF.");
+    } finally {
+      setReqPdfLoading(false);
+    }
+  }, [id, deal, reqPdfLoading, toast]);
 
   const fetchDeal = useCallback(async (silent = false, resetForm = true) => {
     if (!silent) setLoading(true);
@@ -486,11 +518,14 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   // V2: Fetch products for sample creation
   const fetchProducts = useCallback(async () => {
     try {
+      console.log("[fetchProducts] starting fetch");
       const res = await fetch(`/api/catalogue/products?pageSize=100`);
+      console.log("[fetchProducts] response status:", res.status);
       const json = await res.json();
+      console.log("[fetchProducts] json.success:", json.success, "data length:", Array.isArray(json.data) ? json.data.length : "not array", "message:", json.message);
       if (json.success) setProducts(json.data || []);
-    } catch {
-      // silent
+    } catch (err) {
+      console.error("[fetchProducts] ERROR:", err);
     }
   }, []);
 
@@ -545,6 +580,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
     if (hasMod(MODULE_KEYS.COMPETITORS)) fetchCompetitors();
     fetchLinkedQuotations();
     if (hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT)) fetchLinkedSample();
+    console.log("[useEffect] hasMod(PRODUCT_CATALOGUE):", hasMod(MODULE_KEYS.PRODUCT_CATALOGUE), "user variant:", user?.variant, "company variant:", user?.company?.variant);
     if (hasMod(MODULE_KEYS.PRODUCT_CATALOGUE)) fetchProducts();
     fetchUsers();
   }, [fetchDeal, fetchContacts, fetchLossReasons, fetchCompetitors, fetchLinkedQuotations, fetchLinkedSample, fetchProducts, fetchUsers, hasMod]);
@@ -590,14 +626,17 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   const handleSaveAndMove = async (toStage: string, options?: { demoOutcome?: "Accepted" | "Rejected" | "Follow-up needed"; demoFollowUpDate?: string; rejectedReason?: string; extraFields?: Record<string, any> }) => {
     if (!toStage) return;
     setStageMoving(true);
+    // Reconcile Budget discussed ↔ Expected Budget before any save
+    const syncedRgForm = reconcileBudgetFields(rgForm);
+    setRgForm(syncedRgForm);
     try {
       // V2: Sample Management branch — only hold if company has sample_management module
-      if (deal.status === "Qualified" && rgForm.requiresSamples === "yes" && hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT) && toStage === "RequirementGathering") {
+      if (deal.status === "Qualified" && syncedRgForm.requiresSamples === "yes" && hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT) && toStage === "RequirementGathering") {
         // Save details with sampleStatus pending
         const saveRes = await fetch(`/api/opportunities/${id}/details`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...rgForm, sampleStatus: "pending" }),
+          body: JSON.stringify({ ...syncedRgForm, sampleStatus: "pending" }),
         });
         if (!saveRes.ok) {
           const json = await saveRes.json().catch(() => ({}));
@@ -617,7 +656,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...rgForm,
+          ...syncedRgForm,
           leadVerified,
           ...tdForm,
           ...(options?.extraFields || {}),
@@ -889,13 +928,35 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   // Checks that current stage's required fields are saved before moving forward.
   // Backward moves (reviewing) are always allowed (subject to Manager/Admin API check).
 
+  // Reconcile "Budget discussed" (free-text budgetRange) with "Expected Budget"
+  // (numeric expectedBudget) so the two never drift apart. Returns a merged
+  // rgForm with both fields aligned.
+  const reconcileBudgetFields = (form: any) => {
+    const merged = { ...form };
+    const budgetNum = merged.budgetRange?.match(/(\d[\d,]*\.?\d*)/)?.[1]?.replace(/,/g, "");
+    const parsedBudget = budgetNum ? parseFloat(budgetNum) : NaN;
+    const expectedNum = merged.expectedBudget ? parseFloat(String(merged.expectedBudget)) : NaN;
+
+    if (Number.isFinite(parsedBudget) && parsedBudget > 0) {
+      // Budget discussed has a number → sync into Expected Budget
+      merged.expectedBudget = String(parsedBudget);
+    } else if (Number.isFinite(expectedNum) && expectedNum > 0) {
+      // Expected Budget has a number but Budget discussed is empty/non-numeric
+      // → format Expected Budget back into Budget discussed
+      merged.budgetRange = `Rs. ${expectedNum.toLocaleString("en-IN")}`;
+    }
+    return merged;
+  };
+
   const handleSaveRG = async () => {
     setRgSaving(true);
+    const syncedForm = reconcileBudgetFields(rgForm);
+    setRgForm(syncedForm);
     const res = await fetch(`/api/opportunities/${id}/details`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...rgForm,
+        ...syncedForm,
         leadVerified,
         ...tdForm,
       }),
@@ -929,11 +990,13 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   const handleSaveCompletedStage = async () => {
     if (!viewingStage) return;
     setRgSaving(true);
+    const syncedForm = reconcileBudgetFields(rgForm);
+    setRgForm(syncedForm);
     const res = await fetch(`/api/opportunities/${id}/details`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...rgForm,
+        ...syncedForm,
         leadVerified,
         ...tdForm,
         stage_context: viewingStage,
@@ -996,7 +1059,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
 
     return (
       <div className="p-6 border-t border-slate-100">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-none">
         {isReviewingCompleted && (
           <div className="bg-[#EFF6FF] dark:bg-blue-950/30 border border-[#93C5FD] dark:border-blue-900/60 rounded-lg px-3.5 py-2.5 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
@@ -1297,9 +1360,14 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
             <p className="text-sm text-slate-600">
               Opportunity is qualified. Review or update the qualification details below.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <FormField label="Budget discussed">
-                <Input value={rgForm.budgetRange || ""} onChange={(e) => setRgForm({ ...rgForm, budgetRange: e.target.value })} />
+                <Input value={rgForm.budgetRange || ""} onChange={(e) => {
+                  const v = e.target.value;
+                  const num = v.match(/(\d[\d,]*\.?\d*)/)?.[1]?.replace(/,/g, "");
+                  const parsed = num ? parseFloat(num) : NaN;
+                  setRgForm({ ...rgForm, budgetRange: v, ...(Number.isFinite(parsed) && parsed > 0 ? { expectedBudget: String(parsed) } : {}) });
+                }} />
                 {deal?.lead?.budgetAsked && !deal?.opportunityDetail?.budgetRange && (
                   <p className="text-xs text-slate-400 mt-1">Auto-filled from lead</p>
                 )}
@@ -1310,7 +1378,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                   <p className="text-xs text-slate-400 mt-1">Auto-filled from lead</p>
                 )}
               </FormField>
-              <FormField label="Lead is genuine (verified requirement)" className="md:col-span-2">
+              <FormField label="Lead is genuine (verified requirement)" className="md:col-span-2 xl:col-span-3">
                 <Select
                   value={leadVerified ? "Yes" : "No"}
                   onChange={(e) => setLeadVerified(e.target.value === "Yes")}
@@ -1320,17 +1388,19 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                   <option value="No">No</option>
                 </Select>
               </FormField>
-              <FormField label="Customer requires samples?" className="md:col-span-2">
-                <Select
-                  value={rgForm.requiresSamples || ""}
-                  onChange={(e) => setRgForm({ ...rgForm, requiresSamples: e.target.value })}
-                >
-                  <option value="">Select...</option>
-                  <option value="yes">Yes — route to sample management</option>
-                  <option value="no">No — proceed to requirement gathering</option>
-                </Select>
-              </FormField>
-              <FormField label="Notes" className="md:col-span-2">
+              {hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT) && (
+                <FormField label="Customer requires samples?" className="md:col-span-2 xl:col-span-3">
+                  <Select
+                    value={rgForm.requiresSamples || ""}
+                    onChange={(e) => setRgForm({ ...rgForm, requiresSamples: e.target.value })}
+                  >
+                    <option value="">Select...</option>
+                    <option value="yes">Yes — route to sample management</option>
+                    <option value="no">No — proceed to requirement gathering</option>
+                  </Select>
+                </FormField>
+              )}
+              <FormField label="Notes" className="md:col-span-2 xl:col-span-3">
                 <Textarea rows={3} value={rgForm.internalSalesNotes || ""} onChange={(e) => setRgForm({ ...rgForm, internalSalesNotes: e.target.value })} />
               </FormField>
             </div>
@@ -1367,7 +1437,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                 <ChevronRight size={16} className={cn("transition-transform", rgExpanded.customer_info && "rotate-90")} />
               </button>
               {rgExpanded.customer_info && (
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                   <FormField label="Company Name">
                     <Input value={rgForm.companyName || ""} onChange={(e) => setRgForm({ ...rgForm, companyName: e.target.value })} />
                     {deal?.lead && !deal?.opportunityDetail?.companyName && rgForm.companyName && (
@@ -1399,8 +1469,8 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                     )}
                   </FormField>
                   <FormField label="Employee Count" error={rgForm.employeeCount ? validateNumeric(rgForm.employeeCount, "Employee Count") : ""}><Input type="number" value={rgForm.employeeCount || ""} onChange={(e) => setRgForm({ ...rgForm, employeeCount: e.target.value })} className={cn(rgForm.employeeCount && validateNumeric(rgForm.employeeCount, "Employee Count") && "border-rose-500")} /></FormField>
-                  <FormField label="Approval Process"><Textarea rows={2} value={rgForm.approvalProcess || ""} onChange={(e) => setRgForm({ ...rgForm, approvalProcess: e.target.value })} /></FormField>
-                  <FormField label="Buying Authority Notes"><Textarea rows={2} value={rgForm.buyingAuthorityNotes || ""} onChange={(e) => setRgForm({ ...rgForm, buyingAuthorityNotes: e.target.value })} /></FormField>
+                  <FormField label="Approval Process" className="xl:col-span-2"><Textarea rows={2} value={rgForm.approvalProcess || ""} onChange={(e) => setRgForm({ ...rgForm, approvalProcess: e.target.value })} /></FormField>
+                  <FormField label="Buying Authority Notes" className="xl:col-span-2"><Textarea rows={2} value={rgForm.buyingAuthorityNotes || ""} onChange={(e) => setRgForm({ ...rgForm, buyingAuthorityNotes: e.target.value })} /></FormField>
                 </div>
               )}
             </div>
@@ -1412,10 +1482,10 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                 <ChevronRight size={16} className={cn("transition-transform", rgExpanded.business_req && "rotate-90")} />
               </button>
               {rgExpanded.business_req && (
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField label="Current Challenges" required error={rgAttempted && !rgForm.currentChallenges ? "This field is required" : ""}><Textarea rows={3} value={rgForm.currentChallenges || ""} onChange={(e) => setRgForm({ ...rgForm, currentChallenges: e.target.value })} className={cn(rgAttempted && !rgForm.currentChallenges && "border-rose-500")} /></FormField>
-                  <FormField label="Business Need" required error={rgAttempted && !rgForm.businessNeed ? "This field is required" : ""}><Textarea rows={3} value={rgForm.businessNeed || ""} onChange={(e) => setRgForm({ ...rgForm, businessNeed: e.target.value })} className={cn(rgAttempted && !rgForm.businessNeed && "border-rose-500")} /></FormField>
-                  <FormField label="Expected Outcome"><Textarea rows={3} value={rgForm.expectedOutcome || ""} onChange={(e) => setRgForm({ ...rgForm, expectedOutcome: e.target.value })} /></FormField>
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <FormField label="Current Challenges" className="xl:col-span-2" required error={rgAttempted && !rgForm.currentChallenges ? "This field is required" : ""}><Textarea rows={3} value={rgForm.currentChallenges || ""} onChange={(e) => setRgForm({ ...rgForm, currentChallenges: e.target.value })} className={cn(rgAttempted && !rgForm.currentChallenges && "border-rose-500")} /></FormField>
+                  <FormField label="Business Need" className="xl:col-span-2" required error={rgAttempted && !rgForm.businessNeed ? "This field is required" : ""}><Textarea rows={3} value={rgForm.businessNeed || ""} onChange={(e) => setRgForm({ ...rgForm, businessNeed: e.target.value })} className={cn(rgAttempted && !rgForm.businessNeed && "border-rose-500")} /></FormField>
+                  <FormField label="Expected Outcome" className="xl:col-span-2"><Textarea rows={3} value={rgForm.expectedOutcome || ""} onChange={(e) => setRgForm({ ...rgForm, expectedOutcome: e.target.value })} /></FormField>
                   <FormField label="Required Departments"><Input value={rgForm.requiredDepartments || ""} onChange={(e) => setRgForm({ ...rgForm, requiredDepartments: e.target.value })} /></FormField>
                   <FormField label="Number of Users" error={rgForm.numberOfUsers ? validateNumeric(rgForm.numberOfUsers, "Number of Users") : ""}><Input type="number" value={rgForm.numberOfUsers || ""} onChange={(e) => setRgForm({ ...rgForm, numberOfUsers: e.target.value })} className={cn(rgForm.numberOfUsers && validateNumeric(rgForm.numberOfUsers, "Number of Users") && "border-rose-500")} /></FormField>
                   <FormField label="Urgency / Priority" required error={rgAttempted && !rgForm.urgencyPriority ? "This field is required" : ""}>
@@ -1462,24 +1532,36 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                 <ChevronRight size={16} className={cn("transition-transform", rgExpanded.commercial_info && "rotate-90")} />
               </button>
               {rgExpanded.commercial_info && (
-                <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField label="Budget Range (early qualified estimate)" required error={rgAttempted && !rgForm.budgetRange ? "This field is required" : ""}><Input value={rgForm.budgetRange || ""} onChange={(e) => setRgForm({ ...rgForm, budgetRange: e.target.value })} className={cn(rgAttempted && !rgForm.budgetRange && "border-rose-500")} /></FormField>
-                  <FormField label="Expected Budget" required error={rgAttempted && !rgForm.expectedBudget ? "This field is required" : ""}><Input type="number" value={rgForm.expectedBudget || ""} onChange={(e) => setRgForm({ ...rgForm, expectedBudget: e.target.value })} className={cn(rgAttempted && !rgForm.expectedBudget && "border-rose-500")} /></FormField>
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <FormField label="Budget Range (early qualified estimate)" required error={rgAttempted && !rgForm.budgetRange ? "This field is required" : ""}><Input value={rgForm.budgetRange || ""} onChange={(e) => {
+                    const v = e.target.value;
+                    const num = v.match(/(\d[\d,]*\.?\d*)/)?.[1]?.replace(/,/g, "");
+                    const parsed = num ? parseFloat(num) : NaN;
+                    setRgForm({ ...rgForm, budgetRange: v, ...(Number.isFinite(parsed) && parsed > 0 ? { expectedBudget: String(parsed) } : {}) });
+                  }} className={cn(rgAttempted && !rgForm.budgetRange && "border-rose-500")} /></FormField>
+                  <FormField label="Expected Budget" required error={rgAttempted && !rgForm.expectedBudget ? "This field is required" : ""}><Input type="number" value={rgForm.expectedBudget || ""} onChange={(e) => {
+                    const v = e.target.value;
+                    const parsed = v ? parseFloat(v) : NaN;
+                    // Only backfill Budget discussed if it's empty or non-numeric
+                    const existingNum = rgForm.budgetRange?.match(/(\d[\d,]*\.?\d*)/)?.[1]?.replace(/,/g, "");
+                    const hasNum = existingNum ? parseFloat(existingNum) : NaN;
+                    setRgForm({ ...rgForm, expectedBudget: v, ...(Number.isFinite(parsed) && parsed > 0 && !Number.isFinite(hasNum) ? { budgetRange: `Rs. ${parsed.toLocaleString("en-IN")}` } : {}) });
+                  }} className={cn(rgAttempted && !rgForm.expectedBudget && "border-rose-500")} /></FormField>
                   <FormField label="Final Discussed Budget"><Input type="number" value={rgForm.finalDiscussedBudget || ""} onChange={(e) => setRgForm({ ...rgForm, finalDiscussedBudget: e.target.value })} /></FormField>
                   <FormField label="Payment Terms"><Input value={rgForm.paymentTerms || ""} onChange={(e) => setRgForm({ ...rgForm, paymentTerms: e.target.value })} /></FormField>
                   <FormField label="Timeline"><Input value={rgForm.timeline || ""} onChange={(e) => setRgForm({ ...rgForm, timeline: e.target.value })} /></FormField>
-                  <FormField label="Procurement Process"><Textarea rows={2} value={rgForm.procurementProcess || ""} onChange={(e) => setRgForm({ ...rgForm, procurementProcess: e.target.value })} /></FormField>
+                  <FormField label="Procurement Process" className="xl:col-span-2"><Textarea rows={2} value={rgForm.procurementProcess || ""} onChange={(e) => setRgForm({ ...rgForm, procurementProcess: e.target.value })} /></FormField>
                   <FormField label="Expected Go-Live Date" error={validateNotInPast(rgForm.expectedGoLive, "Expected Go-Live Date") || ""}>
                     <Input type="date" min={getTodayDateInputValue()} value={rgForm.expectedGoLive || ""} onChange={(e) => setRgForm({ ...rgForm, expectedGoLive: e.target.value })} />
                   </FormField>
                   <FormField label="Current Vendor"><Input value={rgForm.currentVendor || ""} onChange={(e) => setRgForm({ ...rgForm, currentVendor: e.target.value })} /></FormField>
-                  <FormField label="Competitors Evaluated"><Textarea rows={2} value={rgForm.competitorsEvaluated || ""} onChange={(e) => setRgForm({ ...rgForm, competitorsEvaluated: e.target.value })} /></FormField>
-                  <FormField label="Competitor Info"><Textarea rows={2} value={rgForm.competitorInfo || ""} onChange={(e) => setRgForm({ ...rgForm, competitorInfo: e.target.value })} /></FormField>
-                  <FormField label="Commercial Risks"><Textarea rows={2} value={rgForm.commercialRisks || ""} onChange={(e) => setRgForm({ ...rgForm, commercialRisks: e.target.value })} /></FormField>
+                  <FormField label="Competitors Evaluated" className="xl:col-span-2"><Textarea rows={2} value={rgForm.competitorsEvaluated || ""} onChange={(e) => setRgForm({ ...rgForm, competitorsEvaluated: e.target.value })} /></FormField>
+                  <FormField label="Competitor Info" className="xl:col-span-2"><Textarea rows={2} value={rgForm.competitorInfo || ""} onChange={(e) => setRgForm({ ...rgForm, competitorInfo: e.target.value })} /></FormField>
+                  <FormField label="Commercial Risks" className="xl:col-span-2"><Textarea rows={2} value={rgForm.commercialRisks || ""} onChange={(e) => setRgForm({ ...rgForm, commercialRisks: e.target.value })} /></FormField>
                   <FormField label="Discount Requested"><Input type="number" value={rgForm.discountRequested || ""} onChange={(e) => setRgForm({ ...rgForm, discountRequested: e.target.value })} /></FormField>
                   <FormField label="Proposal Value"><Input type="number" value={rgForm.proposalValue || ""} onChange={(e) => setRgForm({ ...rgForm, proposalValue: e.target.value })} /></FormField>
                   {hasMod(MODULE_KEYS.NEGOTIATION) && (
-                  <FormField label="Negotiation Notes"><Textarea rows={2} value={rgForm.negotiationNotes || ""} onChange={(e) => setRgForm({ ...rgForm, negotiationNotes: e.target.value })} /></FormField>
+                  <FormField label="Negotiation Notes" className="xl:col-span-2"><Textarea rows={2} value={rgForm.negotiationNotes || ""} onChange={(e) => setRgForm({ ...rgForm, negotiationNotes: e.target.value })} /></FormField>
                   )}
                   <FormField label="Decision Maker" required error={rgAttempted && !rgForm.decisionMaker ? "This field is required" : ""}><Input value={rgForm.decisionMaker || ""} onChange={(e) => setRgForm({ ...rgForm, decisionMaker: e.target.value })} className={cn(rgAttempted && !rgForm.decisionMaker && "border-rose-500")} /></FormField>
                   <FormField label="Influencer"><Input value={rgForm.influencer || ""} onChange={(e) => setRgForm({ ...rgForm, influencer: e.target.value })} /></FormField>
@@ -1545,7 +1627,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
               <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 text-sm font-bold text-slate-700 flex items-center justify-between">
                 <span>Discussion Header Details</span>
               </div>
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 <FormField label="Discussion Date" error={validateNotInPast(tdForm.tdDiscussionDate, "Discussion Date") || ""}>
                   <Input
                     type="date"
@@ -1563,7 +1645,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                     readOnly={isReviewingCompleted || !canEditOpportunity(user, deal)}
                   />
                 </FormField>
-                <FormField label="Assigned Engineer" className="md:col-span-2">
+                <FormField label="Assigned Engineer" className="md:col-span-2 xl:col-span-3">
                   <Select
                     value={tdForm.tdEngineerId}
                     onChange={(e) => setTdForm({ ...tdForm, tdEngineerId: e.target.value })}
@@ -1686,7 +1768,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                   <div className="px-4 py-3 bg-[var(--primary)]/10 text-sm font-bold text-[var(--primary)] flex items-center gap-2">
                     <CalendarClock size={15} /> Schedule Meeting
                   </div>
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     <FormField label="Meeting Type" required error={rgAttempted && !rgForm.meetingType ? "Required" : ""}>
                       <Select value={rgForm.meetingType || ""} onChange={(e) => setRgForm({ ...rgForm, meetingType: e.target.value })} className={cn(rgAttempted && !rgForm.meetingType && "border-rose-500")}>
                         <option value="">Select...</option>
@@ -1748,11 +1830,11 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                     <span>Additional Meeting Details (Optional)</span>
                     <ChevronRight size={16} className="transform group-open:rotate-90 transition-transform" />
                   </summary>
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200">
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 border-t border-slate-200">
                     <FormField label="Duration (minutes)"><Input type="number" value={rgForm.meetingDuration || ""} onChange={(e) => setRgForm({ ...rgForm, meetingDuration: e.target.value })} /></FormField>
                     <FormField label="Location"><Input value={rgForm.meetingLocation || ""} onChange={(e) => setRgForm({ ...rgForm, meetingLocation: e.target.value })} /></FormField>
                     <FormField label="Participants"><Input value={rgForm.meetingParticipants || ""} onChange={(e) => setRgForm({ ...rgForm, meetingParticipants: e.target.value })} /></FormField>
-                    <FormField label="Agenda"><Textarea rows={2} value={rgForm.meetingAgenda || ""} onChange={(e) => setRgForm({ ...rgForm, meetingAgenda: e.target.value })} /></FormField>
+                    <FormField label="Agenda" className="xl:col-span-2"><Textarea rows={2} value={rgForm.meetingAgenda || ""} onChange={(e) => setRgForm({ ...rgForm, meetingAgenda: e.target.value })} /></FormField>
                   </div>
                   {/* Meeting Log / Demo UI is now handled in the DemoConducted stage */}
                 </details>
@@ -2092,11 +2174,11 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
 
                     {demoOutcomeChoice === "Follow-up needed" && (
                       <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800/80 animate-fadeIn">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                           <FormField label="Follow-up Date" required error={validateNotInPast(rgForm.demoFollowUpDate, "Follow-up Date") || ""}>
                             <Input type="date" min={getTodayDateInputValue()} value={rgForm.demoFollowUpDate || ""} onChange={(e) => setRgForm({ ...rgForm, demoFollowUpDate: e.target.value })} />
                           </FormField>
-                          <FormField label="Outcome Notes">
+                          <FormField label="Outcome Notes" className="xl:col-span-2">
                             <Textarea rows={2} value={rgForm.meetingOutcome || ""} onChange={(e) => setRgForm({ ...rgForm, meetingOutcome: e.target.value })} placeholder="Reason for follow-up or topics to cover..." />
                           </FormField>
                         </div>
@@ -2124,11 +2206,11 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
 
                     {demoOutcomeChoice === "Reschedule" && (
                       <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800/80 animate-fadeIn">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                           <FormField label="New Rescheduled Meeting Date" required error={validateNotInPast(rgForm.demoFollowUpDate, "New Rescheduled Meeting Date") || ""}>
                             <Input type="date" min={getTodayDateInputValue()} value={rgForm.demoFollowUpDate || ""} onChange={(e) => setRgForm({ ...rgForm, demoFollowUpDate: e.target.value })} />
                           </FormField>
-                          <FormField label="Reschedule Reason / Remarks">
+                          <FormField label="Reschedule Reason / Remarks" className="xl:col-span-2">
                             <Textarea rows={2} value={rgForm.meetingOutcome || ""} onChange={(e) => setRgForm({ ...rgForm, meetingOutcome: e.target.value })} placeholder="Reason for rescheduling (e.g. customer no-show)..." />
                           </FormField>
                         </div>
@@ -2155,7 +2237,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
 
                     {demoOutcomeChoice === "Rejected" && (
                       <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800/80 animate-fadeIn">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                           <FormField label="Rejection Reason" required>
                             <Select value={demoRejectionReason} onChange={(e) => setDemoRejectionReason(e.target.value)}>
                               <option value="">Select reason...</option>
@@ -2168,7 +2250,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                               <option value="Other">Other</option>
                             </Select>
                           </FormField>
-                          <FormField label="Rejection Remarks (optional)">
+                          <FormField label="Rejection Remarks (optional)" className="xl:col-span-2">
                             <Textarea rows={2} value={demoRejectionRemarks} onChange={(e) => setDemoRejectionRemarks(e.target.value)} placeholder="Additional context..." />
                           </FormField>
                         </div>
@@ -2239,6 +2321,22 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
             
             {effectiveStage === "DemoAccepted" && (
               <div className="mt-6">
+                <div className="mb-4 flex items-center justify-between rounded-xl bg-blue-50 border border-blue-200 p-4 dark:bg-blue-950/40 dark:border-blue-900/50">
+                  <div className="flex items-center gap-2">
+                    <Download size={18} className="text-blue-600" />
+                    <div>
+                      <p className="text-sm font-bold text-blue-800 dark:text-blue-300">Requirements Summary</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400">Download a PDF of all discussed requirements, commercial info, and demo/meeting notes.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleDownloadRequirementsPdf}
+                    disabled={reqPdfLoading}
+                    className="px-4 py-2 rounded-lg text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {reqPdfLoading ? <><span className="spinner-brand" /> Generating…</> : <><Download size={15} /> Download PDF</>}
+                  </button>
+                </div>
                 <ProposalQuotationGuide
                   opportunityId={deal.id}
                   linkedQuotations={linkedQuotations}
@@ -2504,7 +2602,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
 
     return (
       <div className="p-6 border-t border-slate-100 bg-slate-50/50">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-none">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-2 h-2 rounded-full bg-emerald-500" />
           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">Completed Requirement Gathering</h3>
@@ -2607,13 +2705,14 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
     );
   }
 
-  const currentStageIndex = PIPELINE_STAGES.findIndex((s) => s.key === deal.status);
+  const forwardPipelineStages = PIPELINE_STAGES.filter((s) => s.key !== "Won" && s.key !== "OnHold");
+  const currentStageIndex = forwardPipelineStages.findIndex((s) => s.key === deal.status);
   const hasAcceptedQuotation = deal.quotations?.some((q: any) => q.status === "Accepted");
   const isTerminalStage = deal.status === "DemoAccepted" || deal.status === "Won" || deal.status === "Lost" || deal.status === "Rejected";
-  const isValidStage = currentStageIndex !== -1 || isTerminalStage;
+  const isValidStage = currentStageIndex !== -1 || isTerminalStage || deal.status === "OnHold";
   const progressPercent = isTerminalStage
     ? (deal.status === "DemoAccepted" || deal.status === "Won" ? 100 : 0)
-    : Math.round(((currentStageIndex + 1) / PIPELINE_STAGES.length) * 100);
+    : Math.round(((currentStageIndex + 1) / forwardPipelineStages.length) * 100);
 
   const summaryRows: { label: string; value: React.ReactNode }[] = [
     {
@@ -2688,7 +2787,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
     <div className="flex h-full w-full overflow-hidden bg-card">
       {/* ── Column 2: Center — Main Detail ── */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-card h-full">
-        <div className="space-y-6 max-w-4xl mx-auto">
+        <div className="space-y-6">
           {/* Back button */}
           <button
             onClick={() => router.push("/sales-pipeline/pipeline-list")}
@@ -2801,6 +2900,15 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                   <FileText size={15} /> Direct Quotation
                 </button>
               )}
+              {user?.role !== "Customer" && deal.status === "DemoAccepted" && (
+                <button
+                  onClick={handleDownloadRequirementsPdf}
+                  disabled={reqPdfLoading}
+                  className="h-9 flex items-center justify-center px-4 bg-[var(--primary)] text-white border border-transparent text-xs font-bold rounded-lg hover:opacity-90 transition-colors gap-1.5 disabled:opacity-50"
+                >
+                  {reqPdfLoading ? <><span className="spinner-brand" /> Generating…</> : <><Download size={15} /> Requirements Summary</>}
+                </button>
+              )}
             </div>
           </div>
 
@@ -2811,7 +2919,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                 <Zap size={18} className="text-[var(--primary)]" />
                 <h3 className="text-lg font-bold text-text-primary">Stage Actions</h3>
               </div>
-              {deal.status !== "Won" && deal.status !== "Lost" && deal.status !== "Rejected" && canChangeStage(user, deal) && (
+              {deal.status !== "Won" && deal.status !== "Lost" && deal.status !== "Rejected" && deal.status !== "Qualified" && canChangeStage(user, deal) && (
                 <button
                   onClick={() => setShowRejectModal(true)}
                   className="px-3 py-1.5 bg-danger/10 text-danger-text font-bold text-xs rounded-lg hover:bg-danger/20 transition-colors flex items-center gap-1.5 border border-danger/25"
@@ -2825,7 +2933,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
             <div className="mb-6 px-4 py-3 bg-page-bg rounded-xl border border-border">
               <StatusStepper
                 compact
-                steps={PIPELINE_STAGES.map((stage, idx) => {
+                steps={forwardPipelineStages.map((stage, idx) => {
                   const stepState = getStepState(stage.key, deal.status);
                   const isTerminal = deal.status === "Lost" || deal.status === "Rejected";
                   const isClickable = stepState === "completed" || stepState === "active";
@@ -3247,9 +3355,17 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
         </div>
         <div className="p-4 space-y-1.5">
           {contacts.length === 0 ? (
-            <p className="text-xs text-text-muted italic text-center py-2">
-              No stakeholders linked
-            </p>
+            <div className="py-2 text-center space-y-2">
+              <p className="text-xs text-text-muted italic">
+                No stakeholders linked
+              </p>
+              <button
+                onClick={() => setShowStakeholderModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--primary)] bg-[var(--primary)]/10 rounded-lg hover:bg-[var(--primary)]/20 transition-colors"
+              >
+                <Users size={13} /> Add Stakeholder
+              </button>
+            </div>
           ) : (
             contacts.slice(0, 5).map((c: any) => (
               <div

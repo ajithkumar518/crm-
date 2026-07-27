@@ -8,10 +8,8 @@ import { PageShell } from "@/components/ui/PageShell";
 import PageContainer from "@/components/PageContainer";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { StatusFilterBar, useStatusFromUrl } from "@/components/shared/StatusFilterBar";
-import { PIPELINE_STATUS } from "@/lib/module-status-config";
+import { PIPELINE_STATUS, PIPELINE_STAGE_ORDER } from "@/lib/module-status-config";
 import { formatDate, cn } from "@/lib/ui-utils";
-import { useHasModule } from "@/components/ModuleGate";
-import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import {
   Search, AlertTriangle,
   Download, Zap, TrendingUp, DollarSign, Clock,
@@ -20,8 +18,11 @@ import {
 const STAGE_LABELS: Record<string, string> = {
   Qualified: "Qualified",
   RequirementGathering: "Req. Gathering",
+  TechnicalDiscussion: "Tech. Discussion",
   MeetingScheduled: "Meeting Scheduled",
   DemoConducted: "Demo Conducted",
+  DemoAccepted: "Demo Accepted",
+  Won: "Won",
   Lost: "Lost",
   Rejected: "Rejected",
 };
@@ -29,20 +30,29 @@ const STAGE_LABELS: Record<string, string> = {
 const STAGE_PILL_COLORS: Record<string, string> = {
   Qualified: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800/50",
   RequirementGathering: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800/50",
+  TechnicalDiscussion: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800/50",
   MeetingScheduled: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800/50",
   DemoConducted: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50",
+  DemoAccepted: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50",
+  Won: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800/50",
   Lost: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/50",
   Rejected: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/50",
 };
+
+function getStageProgress(status: string): number {
+  if (status === "Won" || status === "DemoAccepted") return 100;
+  if (status === "Lost" || status === "Rejected") return 0;
+  const order = PIPELINE_STAGE_ORDER[status] ?? 0;
+  const maxOrder = PIPELINE_STAGE_ORDER["DemoAccepted"] ?? 1;
+  if (order <= 0 || maxOrder <= 0) return 0;
+  return Math.round((order / maxOrder) * 100);
+}
 
 function SalesPipelineListContent() {
   const router = useRouter();
   const activeTab = useStatusFromUrl("stage");
   const toast = useToast();
   const { formatCurrency } = useCurrency();
-  const hasMod = useHasModule();
-  const isV2 = hasMod(MODULE_KEYS.RFQ);
-
   const [deals, setDeals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,7 +144,7 @@ function SalesPipelineListContent() {
       <div className="space-y-4">
         {/* ─── Status Filter Bar ─── */}
         <StatusFilterBar
-          statuses={PIPELINE_STATUS.filter(s => isV2 || !["TechnicalDiscussion", "DemoConducted"].includes(s.value))}
+          statuses={PIPELINE_STATUS}
           paramKey="stage"
           basePath="/sales-pipeline/pipeline-list"
         />
@@ -142,8 +152,8 @@ function SalesPipelineListContent() {
         {/* ─── Collapsible Summary Card with KPI Stats ─── */}
         <CollapsibleSection
           variant="accent"
-          title={STATUS_LABELS[activeTab] || activeTab}
-          subtitle="Pipeline overview and key metrics"
+          title="Key Metrics"
+          subtitle={STATUS_LABELS[activeTab] ? `${STATUS_LABELS[activeTab]} — Pipeline overview and key metrics` : "Pipeline overview and key metrics"}
           icon={<TrendingUp size={15} />}
           badge={
             <span className={cn(
@@ -281,18 +291,18 @@ function SalesPipelineListContent() {
                             <div className="flex-1 min-w-[60px] h-1.5 bg-slate-200 rounded-full overflow-hidden">
                               <div
                                 role="progressbar"
-                                aria-valuenow={deal.probabilityPercent}
+                                aria-valuenow={getStageProgress(deal.status)}
                                 aria-valuemin={0}
                                 aria-valuemax={100}
-                                aria-label={`${deal.dealName}, ${deal.probabilityPercent}% complete, ${STAGE_LABELS[deal.status] || deal.status} stage`}
+                                aria-label={`${deal.dealName}, ${getStageProgress(deal.status)}% pipeline progress, ${STAGE_LABELS[deal.status] || deal.status} stage`}
                                 className={cn(
                                   "h-full rounded-full transition-all duration-[350ms] ease-out",
-                                  deal.status === "Won" ? "bg-emerald-500" : deal.status === "Lost" ? "bg-rose-500" : "bg-[var(--primary)]"
+                                  deal.status === "Won" ? "bg-emerald-500" : deal.status === "Lost" || deal.status === "Rejected" ? "bg-rose-500" : "bg-[var(--primary)]"
                                 )}
-                                style={{ width: `${deal.probabilityPercent}%` }}
+                                style={{ width: `${getStageProgress(deal.status)}%` }}
                               />
                             </div>
-                            <span className="text-xs font-bold tabular-nums text-slate-600 shrink-0">{deal.probabilityPercent}%</span>
+                            <span className="text-xs font-bold tabular-nums text-slate-600 shrink-0">{getStageProgress(deal.status)}%</span>
                           </div>
                         </td>
                         <td className="crm-td">
