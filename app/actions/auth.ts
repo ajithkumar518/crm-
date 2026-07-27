@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { dispatchNotification } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
@@ -17,15 +17,26 @@ import {
   buildInternalActivationEmail,
 } from "@/lib/email";
 import { z } from "zod";
-import { verifyAuth, isInternalEmail, requiresInternalEmail, getRoleRedirect } from "@/lib/auth";
+import {
+  verifyAuth,
+  isInternalEmail,
+  requiresInternalEmail,
+  getRoleRedirect,
+} from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { DB_DEFAULT_THEME } from "@/lib/theme";
 import { getModulesForVariant } from "@/lib/config/moduleVariantMap";
 
 const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
-const ALLOWED_DOMAINS = (process.env.ALLOWED_DOMAIN || "sukisoftware.com,sukisoft.com,apexindustries.com,bharatmetalworks.com").split(",").map((d) => d.trim());
+const ALLOWED_DOMAINS = (
+  process.env.ALLOWED_DOMAIN ||
+  "sukisoftware.com,sukisoft.com,apexindustries.com,bharatmetalworks.com"
+)
+  .split(",")
+  .map((d) => d.trim());
 const RESET_EXPIRY_MIN = Number(process.env.RESET_TOKEN_EXPIRY_MINUTES) || 15;
-const ACTIVATION_EXPIRY_HRS = Number(process.env.ACTIVATION_TOKEN_EXPIRY_HOURS) || 24;
+const ACTIVATION_EXPIRY_HRS =
+  Number(process.env.ACTIVATION_TOKEN_EXPIRY_HOURS) || 24;
 
 // ─── Password Strength Schema ─────────────────────────────────────────────────
 const passwordSchema = z
@@ -36,21 +47,47 @@ const passwordSchema = z
   .regex(/[!@#$%^&*]/, "Must contain a special character (!@#$%^&*)");
 
 // ─── JWT Cookie Setter ────────────────────────────────────────────────────────
-async function issueAuthCookie(user: { id: string; email: string; role: string; companyId?: string | null; variant?: number | null; enabledModules?: string | null; serviceCrmEnabled?: boolean | null }, rememberMe = false) {
+async function issueAuthCookie(
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    companyId?: string | null;
+    variant?: number | null;
+    enabledModules?: string | null;
+    serviceCrmEnabled?: boolean | null;
+  },
+  rememberMe = false,
+) {
   // rememberMe=true → 7 days; default → 8 hours
   const expiresIn = rememberMe ? "7d" : "8h";
   const maxAge = rememberMe ? 7 * 24 * 60 * 60 : 8 * 60 * 60;
 
   const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, companyId: user.companyId, variant: user.variant || 1, enabledModules: user.enabledModules ?? undefined, serviceCrmEnabled: user.serviceCrmEnabled ?? false },
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId,
+      variant: user.variant || 1,
+      enabledModules: user.enabledModules ?? undefined,
+      serviceCrmEnabled: user.serviceCrmEnabled ?? false,
+    },
     JWT_SECRET,
-    { expiresIn }
+    { expiresIn },
   );
 
   const cookieStore = await cookies();
+  const h = await headers();
+  const forwardedProto = (h.get("x-forwarded-proto") ?? "http")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  const isSecure = forwardedProto === "https";
+
   cookieStore.set("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecure,
     sameSite: "strict",
     maxAge,
     path: "/",
@@ -89,7 +126,10 @@ export async function checkLoginType(email: string) {
     return { success: true, data: { isFirstLogin } };
   } catch (error) {
     console.error("checkLoginType error:", error);
-    return { success: false, message: "Something went wrong. Please try again." };
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
   }
 }
 
@@ -97,7 +137,11 @@ export async function checkLoginType(email: string) {
 // FLOW 2 — NORMAL LOGIN (EMAIL + PASSWORD)
 // ═══════════════════════════════════════════════════════════════
 
-export async function loginWithPassword(email: string, password: string, rememberMe: boolean) {
+export async function loginWithPassword(
+  email: string,
+  password: string,
+  rememberMe: boolean,
+) {
   try {
     const normalizedEmail = email.toLowerCase().trim();
     const user = await prisma.user.findFirst({
@@ -110,7 +154,12 @@ export async function loginWithPassword(email: string, password: string, remembe
 
     // Domain validation for internal roles
     if (requiresInternalEmail(user.role) && !isInternalEmail(normalizedEmail)) {
-      await logAudit(user.id, "AUTH", "LOGIN_DOMAIN_REJECTED", `Domain check failed for ${normalizedEmail}`);
+      await logAudit(
+        user.id,
+        "AUTH",
+        "LOGIN_DOMAIN_REJECTED",
+        `Domain check failed for ${normalizedEmail}`,
+      );
       return {
         success: false,
         message: `Only approved email domains (${ALLOWED_DOMAINS.join(", ")}) are allowed for internal accounts.`,
@@ -125,7 +174,12 @@ export async function loginWithPassword(email: string, password: string, remembe
     }
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      await logAudit(user.id, "AUTH", "LOGIN_FAILED", `Failed login attempt for ${user.email}`);
+      await logAudit(
+        user.id,
+        "AUTH",
+        "LOGIN_FAILED",
+        `Failed login attempt for ${user.email}`,
+      );
       return { success: false, message: "Invalid email or password." };
     }
 
@@ -144,7 +198,11 @@ export async function loginWithPassword(email: string, password: string, remembe
     if (user.companyId) {
       const company = await prisma.company.findUnique({
         where: { id: user.companyId },
-        select: { variant: true, enabledModules: true, serviceCrmEnabled: true },
+        select: {
+          variant: true,
+          enabledModules: true,
+          serviceCrmEnabled: true,
+        },
       });
       if (company) {
         variant = company.variant || 1;
@@ -153,15 +211,26 @@ export async function loginWithPassword(email: string, password: string, remembe
       }
     }
 
-    await issueAuthCookie({ ...user, variant, enabledModules, serviceCrmEnabled }, rememberMe);
-    await logAudit(user.id, "AUTH", "LOGIN", `Successful login for ${user.email}`);
+    await issueAuthCookie(
+      { ...user, variant, enabledModules, serviceCrmEnabled },
+      rememberMe,
+    );
+    await logAudit(
+      user.id,
+      "AUTH",
+      "LOGIN",
+      `Successful login for ${user.email}`,
+    );
 
     const redirectUrl = getRoleRedirect(user.role);
     return { success: true, redirectUrl };
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.error("loginWithPassword error:", error);
-    return { success: false, message: "Something went wrong. Please try again." };
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
   }
 }
 
@@ -172,7 +241,8 @@ export async function loginWithPassword(email: string, password: string, remembe
 export async function sendPasswordResetLink(email: string) {
   const genericResponse = {
     success: true,
-    message: "If an account exists with this email, a reset link has been sent.",
+    message:
+      "If an account exists with this email, a reset link has been sent.",
   };
 
   try {
@@ -197,7 +267,7 @@ export async function sendPasswordResetLink(email: string) {
     const resetToken = jwt.sign(
       { userId: user.id, purpose: "PASSWORD_RESET" },
       JWT_SECRET,
-      { expiresIn: `${RESET_EXPIRY_MIN}m` }
+      { expiresIn: `${RESET_EXPIRY_MIN}m` },
     );
 
     await prisma.user.update({
@@ -214,10 +284,15 @@ export async function sendPasswordResetLink(email: string) {
     await sendEmail(
       user.email,
       "Reset Your Password —  SUKI  Marketing CRM",
-      buildResetEmail(user.name, resetUrl)
+      buildResetEmail(user.name, resetUrl),
     );
 
-    await logAudit(user.id, "AUTH", "RESET_LINK_SENT", `Password reset link sent to ${user.email}`);
+    await logAudit(
+      user.id,
+      "AUTH",
+      "RESET_LINK_SENT",
+      `Password reset link sent to ${user.email}`,
+    );
 
     return genericResponse;
   } catch (error) {
@@ -233,7 +308,10 @@ export async function validateResetToken(token: string) {
     try {
       payload = jwt.verify(token, JWT_SECRET);
     } catch {
-      return { success: false, message: "Reset link is invalid or has expired." };
+      return {
+        success: false,
+        message: "Reset link is invalid or has expired.",
+      };
     }
 
     if (payload?.purpose !== "PASSWORD_RESET") {
@@ -249,7 +327,10 @@ export async function validateResetToken(token: string) {
     }
 
     if (!user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
-      return { success: false, message: "Reset link has expired. Please request a new one." };
+      return {
+        success: false,
+        message: "Reset link has expired. Please request a new one.",
+      };
     }
 
     return { success: true, message: "Token valid." };
@@ -266,7 +347,10 @@ export async function saveNewPassword(token: string, newPassword: string) {
     try {
       payload = jwt.verify(token, JWT_SECRET);
     } catch {
-      return { success: false, message: "Reset link is invalid or has expired." };
+      return {
+        success: false,
+        message: "Reset link is invalid or has expired.",
+      };
     }
 
     if (payload?.purpose !== "PASSWORD_RESET") {
@@ -282,14 +366,19 @@ export async function saveNewPassword(token: string, newPassword: string) {
     }
 
     if (!user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
-      return { success: false, message: "Reset link has expired. Please request a new one." };
+      return {
+        success: false,
+        message: "Reset link has expired. Please request a new one.",
+      };
     }
 
     const parsed = passwordSchema.safeParse(newPassword);
     if (!parsed.success) {
       return {
         success: false,
-        message: parsed.error.issues?.[0]?.message || "Password does not meet requirements.",
+        message:
+          parsed.error.issues?.[0]?.message ||
+          "Password does not meet requirements.",
       };
     }
 
@@ -306,12 +395,20 @@ export async function saveNewPassword(token: string, newPassword: string) {
       },
     });
 
-    await logAudit(user.id, "AUTH", "PASSWORD_RESET", `Password successfully reset for ${user.email}`);
+    await logAudit(
+      user.id,
+      "AUTH",
+      "PASSWORD_RESET",
+      `Password successfully reset for ${user.email}`,
+    );
 
     return { success: true, message: "Password updated successfully." };
   } catch (error) {
     console.error("saveNewPassword error:", error);
-    return { success: false, message: "Something went wrong. Please try again." };
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
   }
 }
 
@@ -328,8 +425,15 @@ export async function activateCustomerPortal(customerId: string) {
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (adminPayload.role === "SuperAdmin" && (!adminPayload.supportMode || !adminPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      adminPayload.role === "SuperAdmin" &&
+      (!adminPayload.supportMode || !adminPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     // Find customer record
@@ -343,21 +447,33 @@ export async function activateCustomerPortal(customerId: string) {
       return { success: false, message: "Unauthorized access" };
     }
 
-    if (!customer.email) return { success: false, message: "Customer does not have an email address." };
-    
+    if (!customer.email)
+      return {
+        success: false,
+        message: "Customer does not have an email address.",
+      };
+
     // Status check removed - portal activation should be allowed from any status
     // Status transitions are handled separately through deal Won or admin actions
 
     // Check for cross-tenant email uniqueness
     const existingUserGlobal = await prisma.user.findFirst({
-      where: { email: customer.email.toLowerCase() }
+      where: { email: customer.email.toLowerCase() },
     });
-    if (existingUserGlobal && existingUserGlobal.companyId !== customer.companyId) {
-      return { success: false, message: "A user with this email already exists in another company." };
+    if (
+      existingUserGlobal &&
+      existingUserGlobal.companyId !== customer.companyId
+    ) {
+      return {
+        success: false,
+        message: "A user with this email already exists in another company.",
+      };
     }
 
     // Find or create user record for customer
-    let user = await prisma.user.findUnique({ where: { email: customer.email } });
+    let user = await prisma.user.findUnique({
+      where: { email: customer.email },
+    });
 
     if (!user) {
       user = await prisma.user.create({
@@ -379,14 +495,16 @@ export async function activateCustomerPortal(customerId: string) {
     const activationToken = jwt.sign(
       { userId: user.id, purpose: "CUSTOMER_ACTIVATION" },
       JWT_SECRET,
-      { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` }
+      { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` },
     );
 
     await prisma.user.update({
       where: { id: user.id },
       data: {
         activationToken,
-        activationTokenExpiry: new Date(Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000),
+        activationTokenExpiry: new Date(
+          Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000,
+        ),
         isActive: true,
         isFirstLogin: true,
       },
@@ -398,17 +516,20 @@ export async function activateCustomerPortal(customerId: string) {
     await sendEmail(
       customer.email,
       "Welcome to  SUKI  Software Customer Portal",
-      buildCustomerActivationEmail(customer.name, activationUrl)
+      buildCustomerActivationEmail(customer.name, activationUrl),
     );
 
     await logAudit(
       adminPayload.id,
       "Customer Master",
       "PORTAL_ACTIVATED",
-      `Portal access activated for customer ${customer.name} (${customer.email})`
+      `Portal access activated for customer ${customer.name} (${customer.email})`,
     );
 
-    return { success: true, message: `Activation email sent to ${customer.email}.` };
+    return {
+      success: true,
+      message: `Activation email sent to ${customer.email}.`,
+    };
   } catch (error) {
     console.error("activateCustomerPortal error:", error);
     return { success: false, message: "Failed to activate portal access." };
@@ -416,13 +537,19 @@ export async function activateCustomerPortal(customerId: string) {
 }
 
 /** Customer sets their password via activation link */
-export async function completeCustomerActivation(token: string, password: string) {
+export async function completeCustomerActivation(
+  token: string,
+  password: string,
+) {
   try {
     let payload: any;
     try {
       payload = jwt.verify(token, JWT_SECRET);
     } catch {
-      return { success: false, message: "Activation link is invalid or has expired." };
+      return {
+        success: false,
+        message: "Activation link is invalid or has expired.",
+      };
     }
 
     if (payload?.purpose !== "CUSTOMER_ACTIVATION") {
@@ -434,18 +561,29 @@ export async function completeCustomerActivation(token: string, password: string
     });
 
     if (!user) {
-      return { success: false, message: "This activation link has already been used." };
+      return {
+        success: false,
+        message: "This activation link has already been used.",
+      };
     }
 
-    if (!user.activationTokenExpiry || user.activationTokenExpiry < new Date()) {
-      return { success: false, message: "Activation link has expired. Please contact support." };
+    if (
+      !user.activationTokenExpiry ||
+      user.activationTokenExpiry < new Date()
+    ) {
+      return {
+        success: false,
+        message: "Activation link has expired. Please contact support.",
+      };
     }
 
     const parsed = passwordSchema.safeParse(password);
     if (!parsed.success) {
       return {
         success: false,
-        message: parsed.error.issues?.[0]?.message || "Password does not meet requirements.",
+        message:
+          parsed.error.issues?.[0]?.message ||
+          "Password does not meet requirements.",
       };
     }
 
@@ -472,7 +610,11 @@ export async function completeCustomerActivation(token: string, password: string
     if (user.companyId) {
       const company = await prisma.company.findUnique({
         where: { id: user.companyId },
-        select: { variant: true, enabledModules: true, serviceCrmEnabled: true },
+        select: {
+          variant: true,
+          enabledModules: true,
+          serviceCrmEnabled: true,
+        },
       });
       if (company) {
         variant = company.variant || 1;
@@ -481,15 +623,26 @@ export async function completeCustomerActivation(token: string, password: string
       }
     }
 
-    await issueAuthCookie({ ...user, variant, enabledModules, serviceCrmEnabled }, false);
-    await logAudit(user.id, "AUTH", "CUSTOMER_ACTIVATION_COMPLETE", `Customer portal activated for ${user.email}`);
+    await issueAuthCookie(
+      { ...user, variant, enabledModules, serviceCrmEnabled },
+      false,
+    );
+    await logAudit(
+      user.id,
+      "AUTH",
+      "CUSTOMER_ACTIVATION_COMPLETE",
+      `Customer portal activated for ${user.email}`,
+    );
 
     revalidatePath("/customer/portal");
     redirect("/customer/portal");
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.error("completeCustomerActivation error:", error);
-    return { success: false, message: "Something went wrong. Please try again." };
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
   }
 }
 
@@ -546,14 +699,25 @@ export async function getMeAction() {
       return { success: false, message: "User not found or inactive" };
     }
 
-    let permissions: any[] | 'ALL' = 'ALL';
-    if (user.role !== 'Admin' && user.role !== 'SuperAdmin') {
+    let permissions: any[] | "ALL" = "ALL";
+    if (user.role !== "Admin" && user.role !== "SuperAdmin") {
       permissions = await prisma.rolePermission.findMany({
-        where: { role: user.role }
+        where: { role: user.role },
       });
     }
 
-    return { success: true, data: { ...user, lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null, variant: user.company?.variant || 1, enabledModules: user.company?.enabledModules || "[]", planLocked: user.company?.planLocked ?? true, serviceCrmEnabled: user.company?.serviceCrmEnabled ?? false, permissions } };
+    return {
+      success: true,
+      data: {
+        ...user,
+        lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null,
+        variant: user.company?.variant || 1,
+        enabledModules: user.company?.enabledModules || "[]",
+        planLocked: user.company?.planLocked ?? true,
+        serviceCrmEnabled: user.company?.serviceCrmEnabled ?? false,
+        permissions,
+      },
+    };
   } catch (error) {
     console.error("getMeAction error:", error);
     return { success: false, message: "Internal server error" };
@@ -572,7 +736,16 @@ export async function saveUserThemeAction(theme: string) {
     }
 
     // Accept both new direct keys (blue/green/purple/dark) and legacy DB names
-    const validThemes = ["blue", "green", "purple", "dark", "ocean", "forest", "obsidian", "ember"];
+    const validThemes = [
+      "blue",
+      "green",
+      "purple",
+      "dark",
+      "ocean",
+      "forest",
+      "obsidian",
+      "ember",
+    ];
     if (!validThemes.includes(theme)) {
       return { success: false, message: "Invalid theme" };
     }
@@ -616,7 +789,10 @@ export async function saveUserThemeModeAction(mode: string) {
 export async function updateCompanyVariantAction(variant: number) {
   try {
     const userPayload = await verifyAuth();
-    if (!userPayload || (userPayload.role !== "SuperAdmin" && userPayload.role !== "Admin")) {
+    if (
+      !userPayload ||
+      (userPayload.role !== "SuperAdmin" && userPayload.role !== "Admin")
+    ) {
       return { success: false, message: "Unauthorized: Admin only" };
     }
 
@@ -629,11 +805,17 @@ export async function updateCompanyVariantAction(variant: number) {
       select: { planLocked: true },
     });
     if (companyRecord?.planLocked) {
-      return { success: false, message: "Your plan is managed by Suki Software. Contact us to upgrade." };
+      return {
+        success: false,
+        message:
+          "Your plan is managed by Suki Software. Contact us to upgrade.",
+      };
     }
 
     const validVariant = Math.max(1, Math.min(4, Number(variant) || 1));
-    const recomputedModules = JSON.stringify(getModulesForVariant(validVariant));
+    const recomputedModules = JSON.stringify(
+      getModulesForVariant(validVariant),
+    );
 
     await prisma.company.update({
       where: { id: userPayload.companyId },
@@ -642,11 +824,22 @@ export async function updateCompanyVariantAction(variant: number) {
 
     // Re-issue JWT cookie with the new variant + modules so verifyAuth() sees it on reload
     await issueAuthCookie(
-      { id: userPayload.id, email: userPayload.email, role: userPayload.role, companyId: userPayload.companyId, variant: validVariant, enabledModules: recomputedModules, serviceCrmEnabled: userPayload.serviceCrmEnabled ?? false },
-      true
+      {
+        id: userPayload.id,
+        email: userPayload.email,
+        role: userPayload.role,
+        companyId: userPayload.companyId,
+        variant: validVariant,
+        enabledModules: recomputedModules,
+        serviceCrmEnabled: userPayload.serviceCrmEnabled ?? false,
+      },
+      true,
     );
 
-    return { success: true, message: `Company switched to Variant ${validVariant}` };
+    return {
+      success: true,
+      message: `Company switched to Variant ${validVariant}`,
+    };
   } catch (error) {
     console.error("updateCompanyVariantAction error:", error);
     return { success: false, message: "Failed to update company variant" };
@@ -661,7 +854,10 @@ export async function updateCompanyVariantAction(variant: number) {
 export async function updateCompanyModulesAction(moduleKeys: string[]) {
   try {
     const userPayload = await verifyAuth();
-    if (!userPayload || (userPayload.role !== "SuperAdmin" && userPayload.role !== "Admin")) {
+    if (
+      !userPayload ||
+      (userPayload.role !== "SuperAdmin" && userPayload.role !== "Admin")
+    ) {
       return { success: false, message: "Unauthorized: Admin only" };
     }
 
@@ -674,7 +870,11 @@ export async function updateCompanyModulesAction(moduleKeys: string[]) {
       select: { planLocked: true },
     });
     if (companyRecord?.planLocked) {
-      return { success: false, message: "Your plan is managed by Suki Software. Contact us to upgrade." };
+      return {
+        success: false,
+        message:
+          "Your plan is managed by Suki Software. Contact us to upgrade.",
+      };
     }
 
     const enabledModules = JSON.stringify(moduleKeys);
@@ -686,11 +886,24 @@ export async function updateCompanyModulesAction(moduleKeys: string[]) {
 
     // Re-issue JWT cookie with updated modules
     await issueAuthCookie(
-      { id: userPayload.id, email: userPayload.email, role: userPayload.role, companyId: userPayload.companyId, variant: userPayload.variant ?? 1, enabledModules, serviceCrmEnabled: userPayload.serviceCrmEnabled ?? false },
-      true
+      {
+        id: userPayload.id,
+        email: userPayload.email,
+        role: userPayload.role,
+        companyId: userPayload.companyId,
+        variant: userPayload.variant ?? 1,
+        enabledModules,
+        serviceCrmEnabled: userPayload.serviceCrmEnabled ?? false,
+      },
+      true,
     );
 
-    await logAudit(userPayload.id, "company-modules", "update", `Modules updated: ${moduleKeys.join(", ")}`);
+    await logAudit(
+      userPayload.id,
+      "company-modules",
+      "update",
+      `Modules updated: ${moduleKeys.join(", ")}`,
+    );
 
     return { success: true, message: "Modules updated successfully" };
   } catch (error) {
@@ -726,9 +939,17 @@ export async function unlockAccountAction(email: string) {
       data: { loginAttempts: 0, lockedUntil: null },
     });
 
-    await logAudit(adminPayload.id, "AUTH", "UNLOCK_ACCOUNT", `Admin unlocked account for ${user.email}`);
+    await logAudit(
+      adminPayload.id,
+      "AUTH",
+      "UNLOCK_ACCOUNT",
+      `Admin unlocked account for ${user.email}`,
+    );
 
-    return { success: true, message: `Account ${user.email} has been unlocked.` };
+    return {
+      success: true,
+      message: `Account ${user.email} has been unlocked.`,
+    };
   } catch (error) {
     console.error("unlockAccountAction error:", error);
     return { success: false, message: "Failed to unlock account." };
@@ -745,7 +966,11 @@ export async function unlockAccountAction(email: string) {
 export async function createInternalUserByAdmin(data: {
   name: string;
   email: string;
-  role: "SalesManager" | "SalesExecutive" | "ServiceEngineer" | "ServiceManager";
+  role:
+    | "SalesManager"
+    | "SalesExecutive"
+    | "ServiceEngineer"
+    | "ServiceManager";
 }) {
   try {
     const adminPayload = await verifyAuth();
@@ -754,8 +979,15 @@ export async function createInternalUserByAdmin(data: {
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (adminPayload.role === "SuperAdmin" && (!adminPayload.supportMode || !adminPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      adminPayload.role === "SuperAdmin" &&
+      (!adminPayload.supportMode || !adminPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const { name, email, role } = data;
@@ -773,20 +1005,30 @@ export async function createInternalUserByAdmin(data: {
       };
     }
 
-    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    const existing = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
     if (existing) {
-      return { success: false, message: "A user with this email already exists." };
+      return {
+        success: false,
+        message: "A user with this email already exists.",
+      };
     }
 
     // Generate a secure activation token (24 hours)
     const activationToken = jwt.sign(
       { email: normalizedEmail, purpose: "ACCOUNT_ACTIVATION" },
       JWT_SECRET,
-      { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` }
+      { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` },
     );
-    const activationTokenExpiry = new Date(Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000);
+    const activationTokenExpiry = new Date(
+      Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000,
+    );
 
-    const adminUser = await prisma.user.findUnique({ where: { id: adminPayload.id }, select: { name: true } });
+    const adminUser = await prisma.user.findUnique({
+      where: { id: adminPayload.id },
+      select: { name: true },
+    });
     const inviterName = adminUser?.name || " SUKI  CRM Admin";
 
     const newUser = await prisma.$transaction(async (tx) => {
@@ -811,22 +1053,22 @@ export async function createInternalUserByAdmin(data: {
 
       if (role === "ServiceEngineer") {
         let team = await tx.serviceTeam.findFirst({
-          where: { isActive: true }
+          where: { isActive: true },
         });
         if (!team) {
           team = await tx.serviceTeam.create({
             data: {
               name: "Default Field Service Team",
-              description: "Automatically created team for Service Engineers"
-            }
+              description: "Automatically created team for Service Engineers",
+            },
           });
         }
         await tx.serviceEngineer.create({
           data: {
             userId: u.id,
             teamId: team.id,
-            isActive: true
-          }
+            isActive: true,
+          },
         });
       }
 
@@ -839,11 +1081,21 @@ export async function createInternalUserByAdmin(data: {
     await sendEmail(
       normalizedEmail,
       "You've been added to  SUKI  CRM — Set Your Password",
-      buildInternalActivationEmail(name.trim(), activationUrl, inviterName)
+      buildInternalActivationEmail(name.trim(), activationUrl, inviterName),
     );
 
-    await logAudit(adminPayload.id, "User Master", "USER_CREATED", `Admin created internal user ${normalizedEmail} (${role})`);
-    await logAudit(adminPayload.id, "User Master", "ACTIVATION_SENT", `Activation link sent to ${normalizedEmail}`);
+    await logAudit(
+      adminPayload.id,
+      "User Master",
+      "USER_CREATED",
+      `Admin created internal user ${normalizedEmail} (${role})`,
+    );
+    await logAudit(
+      adminPayload.id,
+      "User Master",
+      "ACTIVATION_SENT",
+      `Activation link sent to ${normalizedEmail}`,
+    );
 
     return {
       success: true,
@@ -860,7 +1112,10 @@ export async function createInternalUserByAdmin(data: {
     };
   } catch (error) {
     console.error("createInternalUserByAdmin error:", error);
-    return { success: false, message: "Failed to create user. Please try again." };
+    return {
+      success: false,
+      message: "Failed to create user. Please try again.",
+    };
   }
 }
 
@@ -875,19 +1130,34 @@ export async function createCustomerPortalUser(customerId: string) {
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (adminPayload.role === "SuperAdmin" && (!adminPayload.supportMode || !adminPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      adminPayload.role === "SuperAdmin" &&
+      (!adminPayload.supportMode || !adminPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     // Delegate to the existing portal activation flow
     const result = await activateCustomerPortal(customerId);
     if (result.success) {
-      await logAudit(adminPayload.id, "User Master", "CUSTOMER_PORTAL_CREATED", `Portal user created for customer ${customerId}`);
+      await logAudit(
+        adminPayload.id,
+        "User Master",
+        "CUSTOMER_PORTAL_CREATED",
+        `Portal user created for customer ${customerId}`,
+      );
     }
     return result;
   } catch (error) {
     console.error("createCustomerPortalUser error:", error);
-    return { success: false, message: "Failed to create customer portal user." };
+    return {
+      success: false,
+      message: "Failed to create customer portal user.",
+    };
   }
 }
 
@@ -897,13 +1167,26 @@ export async function createCustomerPortalUser(customerId: string) {
 export async function resendInvitation(userId: string) {
   try {
     const adminPayload = await verifyAuth();
-    if (!adminPayload || !["Admin", "SalesManager", "SuperAdmin"].includes(adminPayload.role)) {
-      return { success: false, message: "Unauthorized: Admin or Marketing Lead only." };
+    if (
+      !adminPayload ||
+      !["Admin", "SalesManager", "SuperAdmin"].includes(adminPayload.role)
+    ) {
+      return {
+        success: false,
+        message: "Unauthorized: Admin or Marketing Lead only.",
+      };
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (adminPayload.role === "SuperAdmin" && (!adminPayload.supportMode || !adminPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      adminPayload.role === "SuperAdmin" &&
+      (!adminPayload.supportMode || !adminPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -914,30 +1197,41 @@ export async function resendInvitation(userId: string) {
       return { success: false, message: "Unauthorized access" };
     }
 
-    if (!user.isFirstLogin) return { success: false, message: "User has already completed setup." };
+    if (!user.isFirstLogin)
+      return { success: false, message: "User has already completed setup." };
 
-    const adminUser = await prisma.user.findUnique({ where: { id: adminPayload.id }, select: { name: true } });
+    const adminUser = await prisma.user.findUnique({
+      where: { id: adminPayload.id },
+      select: { name: true },
+    });
     const inviterName = adminUser?.name || " SUKI  CRM Admin";
 
     if (user.userType === "customer") {
       // For customer portal users, resend the portal activation email
       const result = await activateCustomerPortal(
         // Find the linked customer
-        (await prisma.customer.findFirst({ where: { email: user.email } }))?.id || ""
+        (await prisma.customer.findFirst({ where: { email: user.email } }))
+          ?.id || "",
       );
-      if (!result.success) return { success: false, message: result.message || "Failed to resend portal activation." };
+      if (!result.success)
+        return {
+          success: false,
+          message: result.message || "Failed to resend portal activation.",
+        };
     } else {
       // For internal users, regenerate activation token and resend
       const activationToken = jwt.sign(
         { email: user.email, purpose: "ACCOUNT_ACTIVATION" },
         JWT_SECRET,
-        { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` }
+        { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` },
       );
       await prisma.user.update({
         where: { id: userId },
         data: {
           activationToken,
-          activationTokenExpiry: new Date(Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000),
+          activationTokenExpiry: new Date(
+            Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000,
+          ),
           invitedBy: adminPayload.id,
           invitedAt: new Date(),
         },
@@ -949,11 +1243,16 @@ export async function resendInvitation(userId: string) {
       await sendEmail(
         user.email,
         "SUKI CRM — Set Your Password (resent)",
-        buildInternalActivationEmail(user.name, activationUrl, inviterName)
+        buildInternalActivationEmail(user.name, activationUrl, inviterName),
       );
     }
 
-    await logAudit(adminPayload.id, "User Master", "INVITATION_RESENT", `Invitation resent to ${user.email}`);
+    await logAudit(
+      adminPayload.id,
+      "User Master",
+      "INVITATION_RESENT",
+      `Invitation resent to ${user.email}`,
+    );
     return { success: true, message: `Invitation resent to ${user.email}.` };
   } catch (error) {
     console.error("resendInvitation error:", error);
@@ -972,10 +1271,16 @@ export async function activateAccountAction(token: string, password: string) {
     try {
       payload = jwt.verify(cleanToken, JWT_SECRET);
     } catch {
-      return { success: false, message: "Activation link is invalid or has expired." };
+      return {
+        success: false,
+        message: "Activation link is invalid or has expired.",
+      };
     }
 
-    if (payload?.purpose !== "ACCOUNT_ACTIVATION" && payload?.purpose !== "CUSTOMER_ACTIVATION") {
+    if (
+      payload?.purpose !== "ACCOUNT_ACTIVATION" &&
+      payload?.purpose !== "CUSTOMER_ACTIVATION"
+    ) {
       return { success: false, message: "Invalid activation link." };
     }
 
@@ -987,18 +1292,30 @@ export async function activateAccountAction(token: string, password: string) {
     }
 
     if (!user || user.activationToken !== cleanToken) {
-      return { success: false, message: "This activation link has already been used or is invalid." };
+      return {
+        success: false,
+        message: "This activation link has already been used or is invalid.",
+      };
     }
 
-    if (!user.activationTokenExpiry || user.activationTokenExpiry < new Date()) {
-      return { success: false, message: "Activation link has expired. Please contact your administrator." };
+    if (
+      !user.activationTokenExpiry ||
+      user.activationTokenExpiry < new Date()
+    ) {
+      return {
+        success: false,
+        message:
+          "Activation link has expired. Please contact your administrator.",
+      };
     }
 
     const parsed = passwordSchema.safeParse(password);
     if (!parsed.success) {
       return {
         success: false,
-        message: parsed.error.issues?.[0]?.message || "Password does not meet requirements.",
+        message:
+          parsed.error.issues?.[0]?.message ||
+          "Password does not meet requirements.",
       };
     }
 
@@ -1021,12 +1338,20 @@ export async function activateAccountAction(token: string, password: string) {
       },
     });
 
-    await logAudit(user.id, "AUTH", "ACCOUNT_ACTIVATED", `Account activated for ${user.email}`);
+    await logAudit(
+      user.id,
+      "AUTH",
+      "ACCOUNT_ACTIVATED",
+      `Account activated for ${user.email}`,
+    );
     return { success: true, message: "Account activated successfully." };
   } catch (error: any) {
     if (error?.digest?.startsWith("NEXT_REDIRECT")) throw error;
     console.error("activateAccountAction error:", error);
-    return { success: false, message: "Something went wrong. Please try again." };
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
   }
 }
 
@@ -1040,9 +1365,17 @@ export async function createUserByAdmin(data: {
   employeeId?: string;
 }) {
   if (data.role === "SalesManager" || data.role === "SalesExecutive") {
-    return createInternalUserByAdmin({ name: data.name, email: data.email, role: data.role });
+    return createInternalUserByAdmin({
+      name: data.name,
+      email: data.email,
+      role: data.role,
+    });
   }
-  return { success: false, message: "Use the split creation flow (createInternalUserByAdmin / createCustomerPortalUser)." };
+  return {
+    success: false,
+    message:
+      "Use the split creation flow (createInternalUserByAdmin / createCustomerPortalUser).",
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1054,40 +1387,54 @@ export async function requestNewActivationLink(email: string) {
       return { success: false, message: "Please provide your email address." };
     }
 
-    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+    const user = await prisma.user.findUnique({
+      where: { email: email.trim().toLowerCase() },
+    });
 
     // Always return success to prevent email enumeration
     if (!user || !user.isFirstLogin) {
-      return { success: true, message: "If that email is registered and pending activation, a new link has been sent." };
+      return {
+        success: true,
+        message:
+          "If that email is registered and pending activation, a new link has been sent.",
+      };
     }
 
     // Rate limit: max 3 requests per email per hour
     const recentRequests = await prisma.auditLog.count({
       where: {
         userId: user.id,
-        action: "PORTAL_ACTIVATION"
-      }
+        action: "PORTAL_ACTIVATION",
+      },
     });
 
     if (recentRequests >= 3) {
-      return { success: false, message: "Too many activation requests. Please wait before trying again." };
+      return {
+        success: false,
+        message:
+          "Too many activation requests. Please wait before trying again.",
+      };
     }
 
     // Find linked customer to use activateCustomerPortal flow
-    const customer = await prisma.customer.findFirst({ where: { email: user.email } });
+    const customer = await prisma.customer.findFirst({
+      where: { email: user.email },
+    });
 
     if (customer) {
       // Customer portal user — regenerate via activateCustomerPortal-style flow
       const activationToken = jwt.sign(
         { userId: user.id, purpose: "CUSTOMER_ACTIVATION" },
         JWT_SECRET,
-        { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` }
+        { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` },
       );
       await prisma.user.update({
         where: { id: user.id },
         data: {
           activationToken,
-          activationTokenExpiry: new Date(Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000),
+          activationTokenExpiry: new Date(
+            Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000,
+          ),
           isActive: true,
           isFirstLogin: true,
         },
@@ -1095,31 +1442,52 @@ export async function requestNewActivationLink(email: string) {
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       const activationUrl = `${appUrl}/activate-account?token=${activationToken}`;
-      await sendEmail(user.email, "Your New  SUKI  Portal Activation Link", buildCustomerActivationEmail(customer.name, activationUrl));
+      await sendEmail(
+        user.email,
+        "Your New  SUKI  Portal Activation Link",
+        buildCustomerActivationEmail(customer.name, activationUrl),
+      );
     } else {
       // Internal user — regenerate internal activation
       const activationToken = jwt.sign(
         { email: user.email, purpose: "ACCOUNT_ACTIVATION" },
         JWT_SECRET,
-        { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` }
+        { expiresIn: `${ACTIVATION_EXPIRY_HRS}h` },
       );
       await prisma.user.update({
         where: { id: user.id },
         data: {
           activationToken,
-          activationTokenExpiry: new Date(Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000),
+          activationTokenExpiry: new Date(
+            Date.now() + ACTIVATION_EXPIRY_HRS * 60 * 60 * 1000,
+          ),
         },
       });
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
       const activationUrl = `${appUrl}/activate-account?token=${activationToken}`;
-      await sendEmail(user.email, "Your New  SUKI  CRM Activation Link", buildInternalActivationEmail(user.name, activationUrl, " SUKI  CRM Admin"));
+      await sendEmail(
+        user.email,
+        "Your New  SUKI  CRM Activation Link",
+        buildInternalActivationEmail(
+          user.name,
+          activationUrl,
+          " SUKI  CRM Admin",
+        ),
+      );
     }
 
-    return { success: true, message: "If that email is registered and pending activation, a new link has been sent." };
+    return {
+      success: true,
+      message:
+        "If that email is registered and pending activation, a new link has been sent.",
+    };
   } catch (error) {
     console.error("requestNewActivationLink error:", error);
-    return { success: false, message: "Something went wrong. Please try again." };
+    return {
+      success: false,
+      message: "Something went wrong. Please try again.",
+    };
   }
 }
 
@@ -1145,10 +1513,19 @@ export async function verifyFirstLoginOtp(email: string, code: string) {
   }
 }
 
-export async function completeFirstLogin(email: string, otp: string, password: string, rememberMe: boolean) {
+export async function completeFirstLogin(
+  email: string,
+  otp: string,
+  password: string,
+  rememberMe: boolean,
+) {
   try {
     // Stub implementation
-    return { success: true, message: "Login completed.", redirectUrl: "/dashboard" };
+    return {
+      success: true,
+      message: "Login completed.",
+      redirectUrl: "/dashboard",
+    };
   } catch (error) {
     console.error("completeFirstLogin error:", error);
     return { success: false, message: "Failed to complete login." };
