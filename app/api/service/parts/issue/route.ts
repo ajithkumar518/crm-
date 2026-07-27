@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
 import { logAudit } from "@/lib/audit";
 import { recordPartMovement } from "@/lib/spare-parts-inventory";
 
 // POST — Issue parts to an engineer (creates "Issued" PartMovement rows)
 export async function POST(request: NextRequest) {
   const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();

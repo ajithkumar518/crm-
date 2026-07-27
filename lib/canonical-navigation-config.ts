@@ -49,7 +49,7 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'contacts', label: 'Contacts', href: '/contacts', iconEmoji: '📋', keywords: ['contact', 'person', 'people'], type: 'module' },
   { key: 'activities', label: 'Activities', href: '/activities', iconEmoji: '📞', keywords: ['call', 'meeting', 'email', 'note', 'log'], type: 'module' },
   { key: 'pipeline', label: 'Sales Pipeline', href: '/sales-pipeline/pipeline-list', iconEmoji: '📈', keywords: ['deal', 'opportunity', 'pipeline'], type: 'module' },
-  { key: 'quotations', label: 'Quotation Management', href: '/quotations', iconEmoji: '💰', keywords: ['quote', 'quotation', 'proposal'], type: 'module' },
+  { key: 'quotations', label: 'Quotations', href: '/quotations', iconEmoji: '💰', keywords: ['quote', 'quotation', 'proposal'], type: 'module' },
   { key: 'tasks', label: 'Tasks', href: '/tasks', iconEmoji: '✅', keywords: ['task', 'todo', 'pending'], type: 'module' },
   { key: 'follow-ups', label: 'Follow Ups', href: '/follow-up', iconEmoji: '🔔', keywords: ['follow', 'followup', 'reminder'], type: 'module' },
   { key: 'reports', label: 'Reports', href: '/reports', iconEmoji: '📑', keywords: ['report', 'analytics', 'export'], type: 'module' },
@@ -83,10 +83,10 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'pipeline-overdue', label: 'Overdue', href: '/sales-pipeline/pipeline-list?stage=overdue', iconEmoji: '📈', keywords: ['overdue', 'stale'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-rejected', label: 'Rejected', href: '/sales-pipeline/pipeline-list?stage=Rejected', iconEmoji: '📈', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   // Quotation sub-modules
-  { key: 'quotations-draft', label: 'Draft', href: '/quotations?status=Draft', iconEmoji: '💰', keywords: ['draft', 'not sent'], type: 'submodule', parentLabel: 'Quotation Management', parentKey: 'quotations' },
-  { key: 'quotations-sent', label: 'Sent', href: '/quotations?status=Sent', iconEmoji: '💰', keywords: ['sent', 'delivered'], type: 'submodule', parentLabel: 'Quotation Management', parentKey: 'quotations' },
-  { key: 'quotations-accepted', label: 'Accepted', href: '/quotations?status=Accepted', iconEmoji: '💰', keywords: ['accepted', 'won'], type: 'submodule', parentLabel: 'Quotation Management', parentKey: 'quotations' },
-  { key: 'quotations-rejected', label: 'Rejected', href: '/quotations?status=Rejected', iconEmoji: '💰', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Quotation Management', parentKey: 'quotations' },
+  { key: 'quotations-draft', label: 'Draft', href: '/quotations?status=Draft', iconEmoji: '💰', keywords: ['draft', 'not sent'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
+  { key: 'quotations-sent', label: 'Sent', href: '/quotations?status=Sent', iconEmoji: '💰', keywords: ['sent', 'delivered'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
+  { key: 'quotations-accepted', label: 'Accepted', href: '/quotations?status=Accepted', iconEmoji: '💰', keywords: ['accepted', 'won'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
+  { key: 'quotations-rejected', label: 'Rejected', href: '/quotations?status=Rejected', iconEmoji: '💰', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   // Reports sub-modules
   { key: 'reports-leads', label: 'Lead Report', href: '/reports/leads', iconEmoji: '📑', keywords: ['lead', 'prospect'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' },
   { key: 'reports-followups', label: 'Follow-Up Report', href: '/reports/followups', iconEmoji: '📑', keywords: ['followup', 'follow-up'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' },
@@ -102,7 +102,7 @@ export const V1_ITEMS: NavItem[] = [
 // ─── V2 extras ────────────────────────────────────────────────────────────────
 
 export const V2_EXTRAS: NavItem[] = [
-  { key: 'rfq', label: 'RFQ Management', href: '/rfq', iconEmoji: '📄', keywords: ['rfq', 'request for quote', 'costing'], type: 'module' , variantMin: 2 },
+  { key: 'rfq', label: 'RFQ', href: '/rfq', iconEmoji: '📄', keywords: ['rfq', 'request for quote', 'costing'], type: 'module' , variantMin: 2 },
   { key: 'visits', label: 'Customer Visits', href: '/visits', iconEmoji: '🚗', keywords: ['visit', 'field', 'site visit'], type: 'module' , variantMin: 2 },
   { key: 'catalogue', label: 'Product Catalogue', href: '/catalogue', iconEmoji: '📦', keywords: ['product', 'catalogue', 'catalog'], type: 'module' , variantMin: 2 },
   // V2 leads extras
@@ -130,13 +130,13 @@ export const V2_EXTRAS: NavItem[] = [
   { key: 'catalogue-datasheets', label: 'Datasheets', href: '/catalogue/datasheets', iconEmoji: '📦', keywords: ['datasheet', 'technical'], type: 'submodule', parentLabel: 'Product Catalogue', parentKey: 'catalogue' , variantMin: 2 },
   { key: 'catalogue-brochures', label: 'Brochures', href: '/catalogue/brochures', iconEmoji: '📦', keywords: ['brochure', 'marketing'], type: 'submodule', parentLabel: 'Product Catalogue', parentKey: 'catalogue' , variantMin: 2 },
   // V2 RFQ sub-modules
-  { key: 'rfq-new', label: 'New RFQ', href: '/rfq?status=New', iconEmoji: '📄', keywords: ['new', 'request'], type: 'submodule', parentLabel: 'RFQ Management', parentKey: 'rfq' , variantMin: 2 },
-  { key: 'rfq-review', label: 'Under Review', href: '/rfq?status=UnderReview', iconEmoji: '📄', keywords: ['review', 'pending'], type: 'submodule', parentLabel: 'RFQ Management', parentKey: 'rfq' , variantMin: 2 },
-  { key: 'rfq-costing', label: 'Costing Pending', href: '/rfq?status=CostingPending', iconEmoji: '📄', keywords: ['costing', 'price'], type: 'submodule', parentLabel: 'RFQ Management', parentKey: 'rfq' , variantMin: 2 },
-  { key: 'rfq-quotation', label: 'Quotation Created', href: '/rfq?status=QuotationCreated', iconEmoji: '📄', keywords: ['quotation', 'quote created'], type: 'submodule', parentLabel: 'RFQ Management', parentKey: 'rfq' , variantMin: 2 },
-  { key: 'rfq-closed', label: 'Closed RFQ', href: '/rfq?status=Closed', iconEmoji: '📄', keywords: ['closed', 'completed'], type: 'submodule', parentLabel: 'RFQ Management', parentKey: 'rfq' , variantMin: 2 },
+  { key: 'rfq-new', label: 'New RFQ', href: '/rfq?status=New', iconEmoji: '📄', keywords: ['new', 'request'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },
+  { key: 'rfq-review', label: 'Under Review', href: '/rfq?status=UnderReview', iconEmoji: '📄', keywords: ['review', 'pending'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },
+  { key: 'rfq-costing', label: 'Costing Pending', href: '/rfq?status=CostingPending', iconEmoji: '📄', keywords: ['costing', 'price'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },
+  { key: 'rfq-quotation', label: 'Quotation Created', href: '/rfq?status=QuotationCreated', iconEmoji: '📄', keywords: ['quotation', 'quote created'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },
+  { key: 'rfq-closed', label: 'Closed RFQ', href: '/rfq?status=Closed', iconEmoji: '📄', keywords: ['closed', 'completed'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },
   // V2 quotations extras
-  { key: 'quotations-expired', label: 'Expired', href: '/quotations?status=Expired', iconEmoji: '💰', keywords: ['expired', 'timed out'], type: 'submodule', parentLabel: 'Quotation Management', parentKey: 'quotations' , variantMin: 2 },
+  { key: 'quotations-expired', label: 'Expired', href: '/quotations?status=Expired', iconEmoji: '💰', keywords: ['expired', 'timed out'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' , variantMin: 2 },
   // V2 tasks cancelled
   { key: 'tasks-cancelled', label: 'Cancelled', href: '/tasks?status=Cancelled', iconEmoji: '✅', keywords: ['cancelled', 'aborted'], type: 'submodule', parentLabel: 'Tasks', parentKey: 'tasks' , variantMin: 2 },
   // V2 follow-ups cancelled
@@ -157,12 +157,12 @@ export const V2_EXTRAS: NavItem[] = [
 // ─── V3 extras ────────────────────────────────────────────────────────────────
 
 export const V3_EXTRAS: NavItem[] = [
-  { key: 'samples', label: 'Sample Management', href: '/samples', iconEmoji: '🧪', keywords: ['sample', 'test sample', 'sample request'], type: 'module' , variantMin: 3 },
-  { key: 'negotiations', label: 'Negotiation Management', href: '/negotiations', iconEmoji: '🤝', keywords: ['negotiation', 'negotiate', 'deal terms'], type: 'module' , variantMin: 3 },
+  { key: 'samples', label: 'Samples', href: '/samples', iconEmoji: '🧪', keywords: ['sample', 'test sample', 'sample request'], type: 'module' , variantMin: 3 },
+  { key: 'negotiations', label: 'Negotiations', href: '/negotiations', iconEmoji: '🤝', keywords: ['negotiation', 'negotiate', 'deal terms'], type: 'module' , variantMin: 3 },
   { key: 'deals', label: 'Deals', href: '/deals', iconEmoji: '💼', keywords: ['deal', 'contract', 'agreement', 'business'], type: 'module', variantMin: 3 },
   { key: 'purchase-orders', label: 'Purchase Orders', href: '/purchase-orders', iconEmoji: '📋', keywords: ['po', 'purchase order', 'order'], type: 'module', variantMin: 4 },
   { key: 'approvals', label: 'Approval Center', href: '/approvals', iconEmoji: '✔️', keywords: ['approval', 'approve', 'pending approval'], type: 'module' , variantMin: 3 },
-  { key: 'documents', label: 'Document Management', href: '/documents', iconEmoji: '📄', keywords: ['document', 'file'], type: 'module' , variantMin: 3 },
+  { key: 'documents', label: 'Documents', href: '/documents', iconEmoji: '📄', keywords: ['document', 'file'], type: 'module' , variantMin: 3 },
   // V3 deals sub-modules
   { key: 'deals-overview', label: 'Overview', href: '/deals', iconEmoji: '💼', keywords: ['all deals', 'deals list', 'overview'], type: 'submodule', parentLabel: 'Deals', parentKey: 'deals', variantMin: 3 },
   { key: 'deals-active', label: 'Active Deals', href: '/deals?status=Active', iconEmoji: '💼', keywords: ['active', 'ongoing', 'open deals'], type: 'submodule', parentLabel: 'Deals', parentKey: 'deals', variantMin: 3 },
@@ -170,19 +170,19 @@ export const V3_EXTRAS: NavItem[] = [
   { key: 'deals-won', label: 'Won Deals', href: '/deals?status=Won', iconEmoji: '💼', keywords: ['won', 'closed won', 'success'], type: 'submodule', parentLabel: 'Deals', parentKey: 'deals', variantMin: 3 },
   { key: 'deals-lost', label: 'Lost Deals', href: '/deals?status=Lost', iconEmoji: '💼', keywords: ['lost', 'closed lost', 'failed'], type: 'submodule', parentLabel: 'Deals', parentKey: 'deals', variantMin: 3 },
   // V3 samples sub-modules
-  { key: 'samples-new', label: 'New Sample Request', href: '/samples?status=New', iconEmoji: '🧪', keywords: ['new', 'request'], type: 'submodule', parentLabel: 'Sample Management', parentKey: 'samples' , variantMin: 3 },
-  { key: 'samples-review', label: 'Under Review', href: '/samples?status=UnderReview', iconEmoji: '🧪', keywords: ['review', 'pending'], type: 'submodule', parentLabel: 'Sample Management', parentKey: 'samples' , variantMin: 3 },
-  { key: 'samples-sent', label: 'Sent To Customer', href: '/samples?status=SentToCustomer', iconEmoji: '🧪', keywords: ['sent', 'shipped'], type: 'submodule', parentLabel: 'Sample Management', parentKey: 'samples' , variantMin: 3 },
-  { key: 'samples-approved', label: 'Approved', href: '/samples?status=Approved', iconEmoji: '🧪', keywords: ['approved', 'accepted'], type: 'submodule', parentLabel: 'Sample Management', parentKey: 'samples' , variantMin: 3 },
-  { key: 'samples-rejected', label: 'Rejected', href: '/samples?status=Rejected', iconEmoji: '🧪', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Sample Management', parentKey: 'samples' , variantMin: 3 },
-  { key: 'samples-revision', label: 'Revisions', href: '/samples?status=Revision', iconEmoji: '🧪', keywords: ['revision', 'change'], type: 'submodule', parentLabel: 'Sample Management', parentKey: 'samples' , variantMin: 3 },
+  { key: 'samples-new', label: 'New Sample Request', href: '/samples?status=New', iconEmoji: '🧪', keywords: ['new', 'request'], type: 'submodule', parentLabel: 'Samples', parentKey: 'samples' , variantMin: 3 },
+  { key: 'samples-review', label: 'Under Review', href: '/samples?status=UnderReview', iconEmoji: '🧪', keywords: ['review', 'pending'], type: 'submodule', parentLabel: 'Samples', parentKey: 'samples' , variantMin: 3 },
+  { key: 'samples-sent', label: 'Sent To Customer', href: '/samples?status=SentToCustomer', iconEmoji: '🧪', keywords: ['sent', 'shipped'], type: 'submodule', parentLabel: 'Samples', parentKey: 'samples' , variantMin: 3 },
+  { key: 'samples-approved', label: 'Approved', href: '/samples?status=Approved', iconEmoji: '🧪', keywords: ['approved', 'accepted'], type: 'submodule', parentLabel: 'Samples', parentKey: 'samples' , variantMin: 3 },
+  { key: 'samples-rejected', label: 'Rejected', href: '/samples?status=Rejected', iconEmoji: '🧪', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Samples', parentKey: 'samples' , variantMin: 3 },
+  { key: 'samples-revision', label: 'Revisions', href: '/samples?status=Revision', iconEmoji: '🧪', keywords: ['revision', 'change'], type: 'submodule', parentLabel: 'Samples', parentKey: 'samples' , variantMin: 3 },
   // V3 negotiations sub-modules
-  { key: 'negotiations-active', label: 'Active Negotiation', href: '/negotiations?status=Active', iconEmoji: '🤝', keywords: ['active', 'ongoing'], type: 'submodule', parentLabel: 'Negotiation Management', parentKey: 'negotiations' , variantMin: 3 },
-  { key: 'negotiations-price', label: 'Price Revision', href: '/negotiations?status=PriceRevision', iconEmoji: '🤝', keywords: ['price', 'revision'], type: 'submodule', parentLabel: 'Negotiation Management', parentKey: 'negotiations' , variantMin: 3 },
-  { key: 'negotiations-commercial', label: 'Commercial Discussion', href: '/negotiations?status=CommercialDiscussion', iconEmoji: '🤝', keywords: ['commercial', 'terms'], type: 'submodule', parentLabel: 'Negotiation Management', parentKey: 'negotiations' , variantMin: 3 },
-  { key: 'negotiations-approval', label: 'Pending Approval', href: '/negotiations?status=PendingApproval', iconEmoji: '🤝', keywords: ['approval', 'pending'], type: 'submodule', parentLabel: 'Negotiation Management', parentKey: 'negotiations' , variantMin: 3 },
-  { key: 'negotiations-won', label: 'Won', href: '/negotiations?status=Closed-Success', iconEmoji: '🤝', keywords: ['won', 'successful'], type: 'submodule', parentLabel: 'Negotiation Management', parentKey: 'negotiations' , variantMin: 3 },
-  { key: 'negotiations-lost', label: 'Lost', href: '/negotiations?status=Closed-Failure', iconEmoji: '🤝', keywords: ['lost', 'failed'], type: 'submodule', parentLabel: 'Negotiation Management', parentKey: 'negotiations' , variantMin: 3 },
+  { key: 'negotiations-active', label: 'Active Negotiation', href: '/negotiations?status=Active', iconEmoji: '🤝', keywords: ['active', 'ongoing'], type: 'submodule', parentLabel: 'Negotiations', parentKey: 'negotiations' , variantMin: 3 },
+  { key: 'negotiations-price', label: 'Price Revision', href: '/negotiations?status=PriceRevision', iconEmoji: '🤝', keywords: ['price', 'revision'], type: 'submodule', parentLabel: 'Negotiations', parentKey: 'negotiations' , variantMin: 3 },
+  { key: 'negotiations-commercial', label: 'Commercial Discussion', href: '/negotiations?status=CommercialDiscussion', iconEmoji: '🤝', keywords: ['commercial', 'terms'], type: 'submodule', parentLabel: 'Negotiations', parentKey: 'negotiations' , variantMin: 3 },
+  { key: 'negotiations-approval', label: 'Pending Approval', href: '/negotiations?status=PendingApproval', iconEmoji: '🤝', keywords: ['approval', 'pending'], type: 'submodule', parentLabel: 'Negotiations', parentKey: 'negotiations' , variantMin: 3 },
+  { key: 'negotiations-won', label: 'Won', href: '/negotiations?status=Closed-Success', iconEmoji: '🤝', keywords: ['won', 'successful'], type: 'submodule', parentLabel: 'Negotiations', parentKey: 'negotiations' , variantMin: 3 },
+  { key: 'negotiations-lost', label: 'Lost', href: '/negotiations?status=Closed-Failure', iconEmoji: '🤝', keywords: ['lost', 'failed'], type: 'submodule', parentLabel: 'Negotiations', parentKey: 'negotiations' , variantMin: 3 },
   // V3 purchase orders sub-modules
   { key: 'purchase-orders-overview', label: 'PO Overview', href: '/purchase-orders', iconEmoji: '📋', keywords: ['all purchase orders', 'po list', 'overview'], type: 'submodule', parentLabel: 'Purchase Orders', parentKey: 'purchase-orders' , variantMin: 3 },
   { key: 'purchase-orders-new', label: 'New PO', href: '/purchase-orders?status=New', iconEmoji: '📋', keywords: ['new', 'created'], type: 'submodule', parentLabel: 'Purchase Orders', parentKey: 'purchase-orders' , variantMin: 3 },
@@ -197,19 +197,19 @@ export const V3_EXTRAS: NavItem[] = [
   { key: 'approvals-negotiation', label: 'Negotiation Approvals', href: '/approvals?type=Negotiation', iconEmoji: '✔️', keywords: ['negotiation', 'terms'], type: 'submodule', parentLabel: 'Approval Center', parentKey: 'approvals' , variantMin: 3 },
   { key: 'approvals-po', label: 'PO Approvals', href: '/approvals?type=PO', iconEmoji: '✔️', keywords: ['po', 'purchase order'], type: 'submodule', parentLabel: 'Approval Center', parentKey: 'approvals', variantMin: 4 },
   // V3 documents sub-modules
-  { key: 'documents-drawings', label: 'Drawings', href: '/documents?type=Drawing', iconEmoji: '📄', keywords: ['drawing', 'technical'], type: 'submodule', parentLabel: 'Document Management', parentKey: 'documents' , variantMin: 3 },
-  { key: 'documents-specs', label: 'Technical Specifications', href: '/documents?type=TechnicalSpec', iconEmoji: '📄', keywords: ['spec', 'technical'], type: 'submodule', parentLabel: 'Document Management', parentKey: 'documents' , variantMin: 3 },
-  { key: 'documents-nda', label: 'NDA', href: '/documents?type=NDA', iconEmoji: '📄', keywords: ['nda', 'confidential'], type: 'submodule', parentLabel: 'Document Management', parentKey: 'documents' , variantMin: 3 },
-  { key: 'documents-quotations', label: 'Quotations', href: '/documents?type=Quotation', iconEmoji: '📄', keywords: ['quotation', 'quote'], type: 'submodule', parentLabel: 'Document Management', parentKey: 'documents' , variantMin: 3 },
-  { key: 'documents-agreements', label: 'Agreements', href: '/documents?type=Agreement', iconEmoji: '📄', keywords: ['agreement', 'contract'], type: 'submodule', parentLabel: 'Document Management', parentKey: 'documents' , variantMin: 3 },
-  { key: 'documents-brochures', label: 'Brochures', href: '/documents?type=Brochure', iconEmoji: '📄', keywords: ['brochure', 'marketing'], type: 'submodule', parentLabel: 'Document Management', parentKey: 'documents' , variantMin: 3 },
+  { key: 'documents-drawings', label: 'Drawings', href: '/documents?type=Drawing', iconEmoji: '📄', keywords: ['drawing', 'technical'], type: 'submodule', parentLabel: 'Documents', parentKey: 'documents' , variantMin: 3 },
+  { key: 'documents-specs', label: 'Technical Specifications', href: '/documents?type=TechnicalSpec', iconEmoji: '📄', keywords: ['spec', 'technical'], type: 'submodule', parentLabel: 'Documents', parentKey: 'documents' , variantMin: 3 },
+  { key: 'documents-nda', label: 'NDA', href: '/documents?type=NDA', iconEmoji: '📄', keywords: ['nda', 'confidential'], type: 'submodule', parentLabel: 'Documents', parentKey: 'documents' , variantMin: 3 },
+  { key: 'documents-quotations', label: 'Quotations', href: '/documents?type=Quotation', iconEmoji: '📄', keywords: ['quotation', 'quote'], type: 'submodule', parentLabel: 'Documents', parentKey: 'documents' , variantMin: 3 },
+  { key: 'documents-agreements', label: 'Agreements', href: '/documents?type=Agreement', iconEmoji: '📄', keywords: ['agreement', 'contract'], type: 'submodule', parentLabel: 'Documents', parentKey: 'documents' , variantMin: 3 },
+  { key: 'documents-brochures', label: 'Brochures', href: '/documents?type=Brochure', iconEmoji: '📄', keywords: ['brochure', 'marketing'], type: 'submodule', parentLabel: 'Documents', parentKey: 'documents' , variantMin: 3 },
   // V3 reports extras
   { key: 'reports-negotiations', label: 'Negotiation Report', href: '/reports/negotiations', iconEmoji: '📑', keywords: ['negotiation', 'terms'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' , variantMin: 3 },
   // V3 contacts extras
   { key: 'contacts-finance', label: 'Finance Contacts', href: '/contacts?type=Finance', iconEmoji: '📋', keywords: ['finance', 'billing', 'accounting'], type: 'submodule', parentLabel: 'Contacts', parentKey: 'contacts', variantMin: 3 },
   { key: 'contacts-management', label: 'Management Contacts', href: '/contacts?type=Management', iconEmoji: '📋', keywords: ['management', 'executive', 'director'], type: 'submodule', parentLabel: 'Contacts', parentKey: 'contacts', variantMin: 3 },
   // V3 quotations extras
-  { key: 'quotations-review', label: 'Under Review', href: '/quotations?status=UnderReview', iconEmoji: '💰', keywords: ['review', 'pending approval'], type: 'submodule', parentLabel: 'Quotation Management', parentKey: 'quotations', variantMin: 3 },
+  { key: 'quotations-review', label: 'Under Review', href: '/quotations?status=UnderReview', iconEmoji: '💰', keywords: ['review', 'pending approval'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations', variantMin: 3 },
   // V3 settings
   { key: 'settings-approval', label: 'Approval Matrix', href: '/settings/approval-matrix', iconEmoji: '⚙️', keywords: ['approval', 'approve', 'matrix'], type: 'setting' , variantMin: 3 },
   { key: 'settings-loss', label: 'Loss Reason Master', href: '/settings/loss-reason-master', iconEmoji: '⚙️', keywords: ['loss reason', 'lost reason', 'why lost'], type: 'setting' , variantMin: 3 },
@@ -223,6 +223,7 @@ export const V4_EXTRAS: NavItem[] = [
   { key: 'key-accounts', label: 'Key Accounts', href: '/key-accounts', iconEmoji: '👑', keywords: ['key account', 'strategic', 'kam'], type: 'module' , variantMin: 4 },
   { key: 'territories', label: 'Territories', href: '/territories', iconEmoji: '🗺️', keywords: ['territory', 'region', 'zone', 'area'], type: 'module' , variantMin: 4 },
   { key: 'targets', label: 'Targets', href: '/targets', iconEmoji: '🏆', keywords: ['target', 'quota', 'achievement'], type: 'module' , variantMin: 4 },
+  { key: 'forecast', label: 'Forecasts', href: '/forecast', iconEmoji: '📈', keywords: ['forecast', 'projection', 'target vs achievement'], type: 'module' , variantMin: 4 },
   // V4 competitors sub-modules
   { key: 'competitors-overview', label: 'Competitor Overview', href: '/competitors', iconEmoji: '⚔️', keywords: ['all competitors', 'competitors list', 'overview'], type: 'submodule', parentLabel: 'Competitors', parentKey: 'competitors' , variantMin: 4 },
   { key: 'competitors-products', label: 'Competitor Products', href: '/competitors/products', iconEmoji: '⚔️', keywords: ['product', 'offering'], type: 'submodule', parentLabel: 'Competitors', parentKey: 'competitors' , variantMin: 4 },
@@ -231,24 +232,25 @@ export const V4_EXTRAS: NavItem[] = [
   // V4 key accounts sub-modules
   { key: 'key-accounts-overview', label: 'KAM Overview', href: '/key-accounts', iconEmoji: '👑', keywords: ['all key accounts', 'kam list', 'overview'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
   { key: 'key-accounts-strategic', label: 'Strategic Accounts', href: '/key-accounts?importance=Critical', iconEmoji: '👑', keywords: ['strategic', 'critical'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
-  { key: 'key-accounts-revenue', label: 'Revenue Potential', href: '/key-accounts?view=revenue', iconEmoji: '👑', keywords: ['revenue', 'potential'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
-  { key: 'key-accounts-visits', label: 'Visit Schedule', href: '/key-accounts/visits', iconEmoji: '👑', keywords: ['visit', 'schedule'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
-  { key: 'key-accounts-relationships', label: 'Relationship Mapping', href: '/key-accounts/relationships', iconEmoji: '👑', keywords: ['relationship', 'mapping'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
+  { key: 'key-accounts-revenue', label: 'Revenue Potential', href: '/key-accounts/revenue-potential', iconEmoji: '👑', keywords: ['revenue', 'potential', 'pipeline'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
+  { key: 'key-accounts-visits', label: 'Visit Schedule', href: '/key-accounts/visit-schedule', iconEmoji: '👑', keywords: ['visit', 'schedule', 'review'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
+  { key: 'key-accounts-relationships', label: 'Relationship Mapping', href: '/key-accounts/relationships', iconEmoji: '👑', keywords: ['relationship', 'mapping', 'contacts'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
   // V4 territories sub-modules
   { key: 'territories-overview', label: 'Territory Overview', href: '/territories', iconEmoji: '🗺️', keywords: ['all territories', 'territories list', 'overview'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
   { key: 'territories-regions', label: 'Regions', href: '/territories?view=regions', iconEmoji: '🗺️', keywords: ['region', 'area'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
-  { key: 'territories-sales', label: 'Sales Territories', href: '/territories', iconEmoji: '🗺️', keywords: ['sales territory', 'zone'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
   { key: 'territories-accounts', label: 'Territory Accounts', href: '/territories/accounts', iconEmoji: '🗺️', keywords: ['territory account', 'customer'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
   { key: 'territories-performance', label: 'Territory Performance', href: '/territories/performance', iconEmoji: '🗺️', keywords: ['performance', 'metrics'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
   // V4 targets sub-modules
   { key: 'targets-overview', label: 'Target Overview', href: '/targets', iconEmoji: '🏆', keywords: ['all targets', 'targets list', 'overview'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
-  { key: 'targets-monthly', label: 'Monthly Targets', href: '/targets?type=Monthly', iconEmoji: '🏆', keywords: ['monthly', 'month'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
-  { key: 'targets-quarterly', label: 'Quarterly Targets', href: '/targets?type=Quarterly', iconEmoji: '🏆', keywords: ['quarterly', 'quarter'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
-  { key: 'targets-yearly', label: 'Yearly Targets', href: '/targets?type=Yearly', iconEmoji: '🏆', keywords: ['yearly', 'annual'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
-  { key: 'targets-achievement', label: 'Achievement Tracking', href: '/targets/achievement', iconEmoji: '🏆', keywords: ['achievement', 'tracking'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
+  { key: 'targets-achievement', label: 'Achievement Tracking', href: '/targets/achievement', iconEmoji: '🏆', keywords: ['achievement', 'tracking', 'vs target'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
+  { key: 'targets-new', label: 'Set New Target', href: '/targets/new', iconEmoji: '🏆', keywords: ['new target', 'create target'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
+  // V4 forecast sub-modules
+  { key: 'forecast-overview', label: 'Forecast Overview', href: '/forecast', iconEmoji: '📈', keywords: ['all forecasts', 'forecast list', 'overview'], type: 'submodule', parentLabel: 'Forecasts', parentKey: 'forecast' , variantMin: 4 },
+  { key: 'forecast-vs-achievement', label: 'Target vs Achievement', href: '/forecast/target-vs-achievement', iconEmoji: '📈', keywords: ['target vs achievement', 'comparison'], type: 'submodule', parentLabel: 'Forecasts', parentKey: 'forecast' , variantMin: 4 },
+  { key: 'forecast-new', label: 'Add Forecast Entry', href: '/forecast/new', iconEmoji: '📈', keywords: ['new forecast', 'add entry'], type: 'submodule', parentLabel: 'Forecasts', parentKey: 'forecast' , variantMin: 4 },
   // V4 reports extras
-  { key: 'reports-competitor', label: 'Competitor Analysis', href: '/reports/competitor-analysis', iconEmoji: '📑', keywords: ['competitor', 'competition'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' , variantMin: 4 },
-  { key: 'reports-target', label: 'Target Achievement Report', href: '/reports/target-achievement', iconEmoji: '📑', keywords: ['target', 'achievement'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' , variantMin: 4 },
+  { key: 'reports-competitor', label: 'Competitor Loss Report', href: '/reports/competitor-analysis', iconEmoji: '📑', keywords: ['competitor', 'competition', 'loss report'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' , variantMin: 4 },
+  { key: 'reports-target', label: 'Target KPI Report', href: '/reports/target-achievement', iconEmoji: '📑', keywords: ['target', 'achievement', 'kpi report'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' , variantMin: 4 },
   // V4 settings
   { key: 'settings-territory', label: 'Territories', href: '/settings/territories', iconEmoji: '⚙️', keywords: ['territory', 'region', 'zone'], type: 'setting' , variantMin: 4 },
   { key: 'settings-competitor', label: 'Competitor Master', href: '/settings/competitor-master', iconEmoji: '⚙️', keywords: ['competitor', 'competition', 'rival'], type: 'setting' , variantMin: 4 },

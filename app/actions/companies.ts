@@ -103,6 +103,9 @@ export async function updateCompanyAction(companyId: string, data: {
     }
 
     const { name, variant, baseCurrency, domain } = data;
+    if (variant !== undefined && company.planLocked) {
+      return { success: false, message: "Cannot modify variant of a locked company plan." };
+    }
     const updateData: any = {};
     if (name) updateData.name = name.trim();
     if (variant !== undefined) updateData.variant = variant;

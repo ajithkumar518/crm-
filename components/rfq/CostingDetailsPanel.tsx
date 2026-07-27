@@ -469,7 +469,7 @@ export function CostingDetailsPanel({
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
         {/* Specifications carryover box */}
         {(lineItem.specifications || lineItem.notes) && (
-          <div className="p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-100 dark:border-slate-850 text-xs">
+          <div className="p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-100 dark:border-slate-800 text-xs">
             <h4 className="font-bold text-slate-400 uppercase tracking-wider mb-1">Specifications / Notes</h4>
             <p className="text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
               {lineItem.specifications || lineItem.notes}
@@ -524,7 +524,7 @@ export function CostingDetailsPanel({
               value={currentForm.material_cost}
               onChange={(e) => handleFieldChange("material_cost", e.target.value)}
               placeholder="0.00"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
             />
             <div className="flex items-center gap-1.5">{getSourceLabel("material")}</div>
           </div>
@@ -540,7 +540,7 @@ export function CostingDetailsPanel({
               value={currentForm.labour_cost}
               onChange={(e) => handleFieldChange("labour_cost", e.target.value)}
               placeholder="0.00"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
             />
             <div className="flex items-center gap-1.5">{getSourceLabel("labour")}</div>
           </div>
@@ -556,7 +556,7 @@ export function CostingDetailsPanel({
               value={currentForm.overhead_percent}
               onChange={(e) => handleFieldChange("overhead_percent", e.target.value)}
               placeholder="0"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
             />
             <div className="flex items-center gap-1.5">{getSourceLabel("overhead")}</div>
           </div>
@@ -572,7 +572,7 @@ export function CostingDetailsPanel({
               value={currentForm.margin_percent}
               onChange={(e) => handleFieldChange("margin_percent", e.target.value)}
               placeholder="0"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
             />
             <div className="flex items-center gap-1.5">{getSourceLabel("margin")}</div>
           </div>
@@ -587,7 +587,7 @@ export function CostingDetailsPanel({
               value={currentForm.freight_cost}
               onChange={(e) => handleFieldChange("freight_cost", e.target.value)}
               placeholder="0.00"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
             />
           </div>
 
@@ -601,7 +601,7 @@ export function CostingDetailsPanel({
               value={currentForm.packaging_cost}
               onChange={(e) => handleFieldChange("packaging_cost", e.target.value)}
               placeholder="0.00"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
             />
           </div>
 
@@ -615,7 +615,7 @@ export function CostingDetailsPanel({
               value={currentForm.tooling_cost}
               onChange={(e) => handleFieldChange("tooling_cost", e.target.value)}
               placeholder="0.00"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
             />
           </div>
 
@@ -629,7 +629,7 @@ export function CostingDetailsPanel({
               value={currentForm.other_cost}
               onChange={(e) => handleFieldChange("other_cost", e.target.value)}
               placeholder="0.00"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+              className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
             />
           </div>
         </div>
@@ -644,7 +644,7 @@ export function CostingDetailsPanel({
             onChange={(e) => handleFieldChange("notes", e.target.value)}
             placeholder="Describe any tooling modifications, raw materials deviations, or specific labor operations involved..."
             rows={3}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent resize-none"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100 resize-none"
           />
         </div>
 
@@ -695,7 +695,7 @@ export function CostingDetailsPanel({
           <button
             onClick={handleSaveAll}
             disabled={saving}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 disabled:opacity-50 transition-colors shadow-sm"
+            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 disabled:opacity-50 transition-colors shadow-sm"
           >
             {saving ? "Saving..." : <><Save size={13} /> Save All Tiers ({lineItem.quantityBreaks.length})</>}
           </button>

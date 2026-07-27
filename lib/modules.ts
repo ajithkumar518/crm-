@@ -38,15 +38,19 @@ function parseEnabledModules(raw: string | string[] | null | undefined): string[
 export function hasModule(subject: ModuleCheckSubject | null | undefined, moduleKey: ModuleKey): boolean {
   if (!subject) return false;
 
+  // 1. Base tier check: if the module is included in the user's active variant preset, grant access immediately.
+  const variant = subject.variant ?? 1;
+  if (getModulesForVariant(variant).includes(moduleKey)) {
+    return true;
+  }
+
+  // 2. Add-on check: if not in the base tier, check if explicitly granted as a custom add-on in enabledModules.
   const parsed = parseEnabledModules(subject.enabledModules);
   if (parsed !== null) {
     return parsed.includes(moduleKey);
   }
 
-  // Fail-open fallback: no enabledModules data yet, use the current
-  // variant-based logic so behavior matches the existing sidebar exactly.
-  const variant = subject.variant ?? 1;
-  return getModulesForVariant(variant).includes(moduleKey);
+  return false;
 }
 
 /**

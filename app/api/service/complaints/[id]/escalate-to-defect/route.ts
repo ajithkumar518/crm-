@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
 import { logAudit } from "@/lib/audit";
 
 export async function POST(request: Request, { params }: { params: any }) {
   try {
     const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;

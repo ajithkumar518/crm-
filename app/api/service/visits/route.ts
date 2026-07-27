@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
+import { checkAmcQuota } from "@/lib/amcQuota";
 
 export async function GET(request: Request) {
   try {
     const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
     const { searchParams } = new URL(request.url);
     const engineerId = searchParams.get("engineerId");
     const statusId = searchParams.get("statusId");
@@ -14,6 +18,7 @@ export async function GET(request: Request) {
     const complaintId = searchParams.get("complaintId");
     const defectId = searchParams.get("defectId");
     const installationId = searchParams.get("installationId");
+    const projectId = searchParams.get("projectId");
     const dateFrom = searchParams.get("dateFrom");
     const dateTo = searchParams.get("dateTo");
     
@@ -38,6 +43,7 @@ export async function GET(request: Request) {
     if (complaintId) whereClause.complaintId = complaintId;
     if (defectId) whereClause.defectId = defectId;
     if (installationId) whereClause.installationId = installationId;
+    if (projectId) whereClause.projectId = projectId;
     if (dateFrom || dateTo) {
       whereClause.scheduledDate = {};
       if (dateFrom) whereClause.scheduledDate.gte = new Date(dateFrom);
@@ -56,6 +62,7 @@ export async function GET(request: Request) {
         complaint: { include: { customer: true, customerAsset: true } },
         defect: { include: { customer: true, customerAsset: true } },
         installation: { include: { customer: true, customerAsset: true } },
+        project: { select: { id: true, projectCode: true, name: true } },
         partsUsed: true,
         photos: true,
       },
@@ -71,6 +78,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = await verifyAuth();
+    const _svcGuard2 = await enforceServiceEntitlement(user);
+    if (_svcGuard2) return _svcGuard2;
+
     const body = await request.json();
     const {
       title,
@@ -84,6 +95,7 @@ export async function POST(request: Request) {
       complaintId,
       defectId,
       installationId,
+      projectId,
       createdById,
     } = body;
 
@@ -100,16 +112,17 @@ export async function POST(request: Request) {
       }
     }
 
-    // If source record is linked and customerId/customerAssetId not provided, derive from source
+    // If source record is linked and customerId/customerAssetId/projectId not provided, derive from source
     let finalCustomerId = customerId;
     let finalCustomerAssetId = customerAssetId;
-    if ((!finalCustomerId || !finalCustomerAssetId) && (requestId || complaintId || defectId || installationId)) {
+    let finalProjectId = projectId;
+    if ((!finalCustomerId || !finalCustomerAssetId || !finalProjectId) && (requestId || complaintId || defectId || installationId)) {
       if (requestId) {
-        const req = await prisma.serviceRequest.findUnique({ where: { id: requestId }, select: { customerId: true, customerAssetId: true } });
-        if (req) { finalCustomerId = finalCustomerId || req.customerId; finalCustomerAssetId = finalCustomerAssetId || req.customerAssetId; }
+        const req = await prisma.serviceRequest.findUnique({ where: { id: requestId }, select: { customerId: true, customerAssetId: true, projectId: true } });
+        if (req) { finalCustomerId = finalCustomerId || req.customerId; finalCustomerAssetId = finalCustomerAssetId || req.customerAssetId; finalProjectId = finalProjectId || req.projectId; }
       } else if (complaintId) {
-        const comp = await prisma.complaint.findUnique({ where: { id: complaintId }, select: { customerId: true, customerAssetId: true } });
-        if (comp) { finalCustomerId = finalCustomerId || comp.customerId; finalCustomerAssetId = finalCustomerAssetId || comp.customerAssetId; }
+        const comp = await prisma.complaint.findUnique({ where: { id: complaintId }, select: { customerId: true, customerAssetId: true, projectId: true } });
+        if (comp) { finalCustomerId = finalCustomerId || comp.customerId; finalCustomerAssetId = finalCustomerAssetId || comp.customerAssetId; finalProjectId = finalProjectId || comp.projectId; }
       } else if (defectId) {
         const def = await prisma.defect.findUnique({ where: { id: defectId }, select: { customerId: true, customerAssetId: true } });
         if (def) { finalCustomerId = finalCustomerId || def.customerId; finalCustomerAssetId = finalCustomerAssetId || def.customerAssetId; }
@@ -117,6 +130,18 @@ export async function POST(request: Request) {
         const inst = await prisma.installation.findUnique({ where: { id: installationId }, select: { customerId: true, customerAssetId: true } });
         if (inst) { finalCustomerId = finalCustomerId || inst.customerId; finalCustomerAssetId = finalCustomerAssetId || inst.customerAssetId; }
       }
+    }
+
+    if (finalCustomerAssetId) {
+      const isBreakdown = !!(complaintId || defectId);
+      const visitType = isBreakdown ? "breakdown" : "preventive";
+      const quotaErr = await checkAmcQuota({
+        customerAssetId: finalCustomerAssetId,
+        type: visitType,
+        user: user as any,
+        overrideQuota: body.overrideQuota === true,
+      });
+      if (quotaErr) return quotaErr;
     }
 
     const visitTitle = title || "Service Visit";
@@ -134,6 +159,7 @@ export async function POST(request: Request) {
         complaintId,
         defectId,
         installationId,
+        projectId: finalProjectId || null,
         createdById: finalCreatedById,
       },
       include: {
@@ -146,6 +172,7 @@ export async function POST(request: Request) {
         complaint: { include: { customer: true, customerAsset: true } },
         defect: { include: { customer: true, customerAsset: true } },
         installation: { include: { customer: true, customerAsset: true } },
+        project: { select: { id: true, projectCode: true, name: true } },
       }
     });
 

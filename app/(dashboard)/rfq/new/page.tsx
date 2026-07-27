@@ -315,14 +315,14 @@ export default function NewRFQPage() {
             <button
               type="button"
               onClick={() => setUploadMode("manual")}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg ${uploadMode === "manual" ? "bg-[var(--surface-1)] border-b-2 border-primary-600 text-primary-700" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg ${uploadMode === "manual" ? "bg-[var(--surface-1)] border-b-2 border-[var(--primary)] text-[var(--primary)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
             >
               <div className="flex items-center gap-2"><Edit3 size={16} /> Manual Entry</div>
             </button>
             <button
               type="button"
               onClick={() => setUploadMode("template")}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg ${uploadMode === "template" ? "bg-[var(--surface-1)] border-b-2 border-primary-600 text-primary-700" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg ${uploadMode === "template" ? "bg-[var(--surface-1)] border-b-2 border-[var(--primary)] text-[var(--primary)]" : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
             >
               <div className="flex items-center gap-2"><Upload size={16} /> Upload Template</div>
             </button>
@@ -335,9 +335,9 @@ export default function NewRFQPage() {
           ) : (
             <div className="space-y-4">
               {templateFileName && (
-                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded flex justify-between items-center">
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-300 px-4 py-3 rounded flex justify-between items-center">
                   <span className="text-sm font-medium">Imported from template: {templateFileName}</span>
-                  <button type="button" onClick={() => { setTemplateFileName(null); setTemplateFileUrl(null); }} className="text-blue-500 hover:text-blue-700 text-xs font-semibold">
+                  <button type="button" onClick={() => { setTemplateFileName(null); setTemplateFileUrl(null); }} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-semibold">
                     Remove Link
                   </button>
                 </div>

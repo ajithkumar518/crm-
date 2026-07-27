@@ -1052,6 +1052,8 @@ model Company {
   enabledModules         String                  @default("[]")
   baseCurrency           String                  @default("INR")
   domain                 String?                 @unique
+  planLocked             Boolean                 @default(true)
+  serviceCrmEnabled      Boolean                 @default(false)
   approvalHistories      ApprovalHistory[]
   ApprovalRequest        ApprovalRequest[]
   auditLogs              AuditLog[]
@@ -2650,6 +2652,7 @@ model ServiceRequest {
   statusId           String
   customerId         String
   customerAssetId    String?
+  projectId          String?
   assignedTeamId     String?
   assignedEngineerId String?
   createdById        String
@@ -2662,12 +2665,15 @@ model ServiceRequest {
   status           ServiceStatus    @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   customer         Customer         @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   customerAsset    CustomerAsset?   @relation(fields: [customerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  project          Project?         @relation("ProjectRequests", fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedTeam     ServiceTeam?     @relation(fields: [assignedTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   visits ServiceVisit[]
   review ServiceReview? @relation("RequestReview")
+
+  @@index([projectId])
 }
 
 model Complaint {
@@ -2680,6 +2686,7 @@ model Complaint {
   statusId           String
   customerId         String
   customerAssetId    String?
+  projectId          String?
   assignedTeamId     String?
   assignedEngineerId String?
   createdById        String
@@ -2693,12 +2700,15 @@ model Complaint {
   status           ServiceStatus    @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   customer         Customer         @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   customerAsset    CustomerAsset?   @relation(fields: [customerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  project          Project?         @relation("ProjectComplaints", fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedTeam     ServiceTeam?     @relation(fields: [assignedTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   visits ServiceVisit[]
   review ServiceReview? @relation("ComplaintReview")
+
+  @@index([projectId])
 }
 
 model Defect {
@@ -2832,6 +2842,7 @@ model ServiceVisit {
   complaintId    String?
   defectId       String?
   installationId String?
+  projectId      String?
 
   createdById String
   createdAt   DateTime @default(now())
@@ -2845,11 +2856,14 @@ model ServiceVisit {
   complaint    Complaint?      @relation(fields: [complaintId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   defect       Defect?         @relation(fields: [defectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   installation Installation?   @relation(fields: [installationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  project      Project?        @relation("ProjectVisits", fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy    User            @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   review       ServiceReview?  @relation("VisitReview")
   partsUsed    ServicePartUsed[]
   photos       ServiceVisitPhoto[]
   partMovements PartMovement[]
+
+  @@index([projectId])
 }
 
 model EscalationRule {
@@ -2909,7 +2923,6 @@ model ServiceReview {
   status             String    @default("Pending") // Pending | Submitted
   isEscalation       Boolean   @default(false)
   escalationResolved Boolean   @default(false)
-  token              String    @unique @default(uuid()) // For public submission link
   
   customerId         String
   engineerId         String
@@ -2961,6 +2974,10 @@ model Project {
   deal       Deal?            @relation(fields: [dealId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy  User             @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assets     CustomerAsset[]  @relation("ProjectAssets")
+  requests   ServiceRequest[] @relation("ProjectRequests")
+  complaints Complaint[]      @relation("ProjectComplaints")
+  visits     ServiceVisit[]   @relation("ProjectVisits")
+  partMovements PartMovement[] @relation("ProjectPartMovements")
 
   @@index([customerId])
   @@index([dealId])
@@ -3038,11 +3055,12 @@ model ServiceVisitPhoto {
 model PartMovement {
   id              String   @id @default(uuid())
   sparePartId     String
-  type            String   // "Issued" | "Used" | "Returned" | "Damaged"
+  type            String   // "Issued" | "Used" | "Returned" | "Damaged" | "Restocked"
   quantity        Int
   engineerId      String?
   serviceVisitId  String?
   customerAssetId String?
+  projectId       String?
   notes           String?
   createdById     String
   createdAt       DateTime @default(now())
@@ -3051,10 +3069,12 @@ model PartMovement {
   engineer      ServiceEngineer? @relation(fields: [engineerId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   serviceVisit  ServiceVisit?    @relation(fields: [serviceVisitId], references: [id], onDelete: SetNull, onUpdate: NoAction)
   customerAsset CustomerAsset?   @relation(fields: [customerAssetId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  project       Project?         @relation("ProjectPartMovements", fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy     User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([sparePartId])
   @@index([engineerId])
   @@index([serviceVisitId])
+  @@index([projectId])
   @@index([type])
 }

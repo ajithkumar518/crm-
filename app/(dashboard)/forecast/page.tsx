@@ -1,20 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/ToastProvider";
 import PageContainer from "@/components/PageContainer";
-
-const Ico = ({ d, size = 16, className }: { d: string; size?: number; className?: string }) => (
-  <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d={d} />
-  </svg>
-);
-
-const icons = { plus: "M12 4v16m8-8H4", edit: "M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7 M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z", x: "M6 18L18 6M6 6l12 12", chart: "M9 19v-6m3 6V6m3 12v-4M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" };
+import {
+  AnalyticsPageHeader, KPICard, LoadingState, EmptyState,
+} from "@/components/shared/AnalyticsComponents";
+import { Plus, Pencil, Trash2, BarChart3, Target, TrendingUp, ListChecks } from "lucide-react";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const forecastTypes = ["Revenue", "Opportunity", "Sales"];
@@ -51,6 +47,13 @@ export default function ForecastListPage() {
 
   useEffect(() => { loadEntries(); }, [filters.year, filters.forecastType, filters.assignedUserId]);
 
+  const summary = useMemo(() => {
+    const totalTarget = entries.reduce((s, e) => s + (e.targetAmount ?? 0), 0);
+    const totalAchieved = entries.reduce((s, e) => s + (e.achievedAmount ?? 0), 0);
+    const overallPct = totalTarget > 0 ? Math.round((totalAchieved / totalTarget) * 100) : 0;
+    return { totalTarget, totalAchieved, overallPct, totalEntries: entries.length };
+  }, [entries]);
+
   const handleDelete = (id: string) => {
     setConfirmState({
       isOpen: true, title: "Delete Forecast Entry", message: "Are you sure?",
@@ -73,60 +76,72 @@ export default function ForecastListPage() {
   };
 
   return (
-    <PageContainer className="space-y-4 p-0">
-      <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-slate-800">Forecast Overview</h1><p className="text-sm text-slate-500 mt-0.5">Manage forecast targets and track achievement</p></div>
+    <PageContainer className="space-y-5 p-0">
+      <AnalyticsPageHeader title="Forecast Overview" subtitle="Manage forecast targets and track achievement">
         <div className="flex gap-2">
-          <button onClick={() => router.push("/forecast/target-vs-achievement")} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 cursor-pointer"><Ico d={icons.chart} size={16} /> Target vs Achievement</button>
-          <button onClick={() => router.push("/forecast/new")} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"><Ico d={icons.plus} size={16} /> Add Forecast Entry</button>
+          <button onClick={() => router.push("/forecast/target-vs-achievement")} className="btn-secondary"><BarChart3 size={16} /> Target vs Achievement</button>
+          <button onClick={() => router.push("/forecast/new")} className="btn-primary"><Plus size={16} /> Add Forecast Entry</button>
         </div>
+      </AnalyticsPageHeader>
+
+      {/* Summary KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KPICard label="Total Target" value={formatCurrency(summary.totalTarget)} icon={<Target size={20} />} />
+        <KPICard label="Total Achieved" value={formatCurrency(summary.totalAchieved)} icon={<TrendingUp size={20} />} />
+        <KPICard label="Overall Achievement" value={`${summary.overallPct}%`} icon={<BarChart3 size={20} />} />
+        <KPICard label="Total Entries" value={summary.totalEntries} icon={<ListChecks size={20} />} />
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-4 flex gap-3 flex-wrap items-end">
-        <div><label className="block text-xs font-semibold text-slate-600 mb-1">Year</label><input type="number" value={filters.year} onChange={(e) => setFilters({ ...filters, year: e.target.value })} className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20" /></div>
-        <div><label className="block text-xs font-semibold text-slate-600 mb-1">Forecast Type</label><select value={filters.forecastType} onChange={(e) => setFilters({ ...filters, forecastType: e.target.value })} className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"><option value="">All</option>{forecastTypes.map(t => <option key={t}>{t}</option>)}</select></div>
-        <div><label className="block text-xs font-semibold text-slate-600 mb-1">Assigned User</label><select value={filters.assignedUserId} onChange={(e) => setFilters({ ...filters, assignedUserId: e.target.value })} className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"><option value="">All Users</option>{users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></div>
+      {/* Filter bar */}
+      <div className="analytics-chart-card flex gap-3 flex-wrap items-end">
+        <div><label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Year</label><input type="number" value={filters.year} onChange={(e) => setFilters({ ...filters, year: e.target.value })} className="input-field" /></div>
+        <div><label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Forecast Type</label><select value={filters.forecastType} onChange={(e) => setFilters({ ...filters, forecastType: e.target.value })} className="select-field"><option value="">All</option>{forecastTypes.map(t => <option key={t}>{t}</option>)}</select></div>
+        <div><label className="block text-[12px] font-medium text-[var(--text-secondary)] mb-1">Assigned User</label><select value={filters.assignedUserId} onChange={(e) => setFilters({ ...filters, assignedUserId: e.target.value })} className="select-field"><option value="">All Users</option>{users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}</select></div>
       </div>
 
-      <div className="crm-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="crm-table">
-            <thead>
-              <tr>
-                <th className="crm-th">Month</th>
-                <th className="crm-th">Year</th>
-                <th className="crm-th">Type</th>
-                <th className="crm-th text-right">Target ({preferredCurrency})</th>
-                <th className="crm-th text-right">Achieved ({preferredCurrency})</th>
-                <th className="crm-th text-center">Achievement %</th>
-                <th className="crm-th">Assigned To</th>
-                <th className="crm-th text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? <tr><td colSpan={8} className="crm-td text-center py-8 text-muted-foreground">Loading...</td></tr>
-              : entries.length === 0 ? <tr><td colSpan={8} className="crm-td text-center py-8 text-muted-foreground">No forecast entries found</td></tr>
-              : entries.map((e: any) => (
-                <tr key={e.id} className="crm-tr">
-                  <td className="crm-td text-foreground">{months[e.month - 1]}</td>
-                  <td className="crm-td text-foreground">{e.year}</td>
-                  <td className="crm-td text-foreground">{e.forecastType}</td>
-                  <td className="crm-td text-right text-foreground">{formatCurrency(e.targetAmount)}</td>
-                  <td className="crm-td text-right text-foreground">{formatCurrency(e.achievedAmount)}</td>
-                  <td className="crm-td text-center"><span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${achievementColor(e.targetAmount > 0 ? (e.achievedAmount / e.targetAmount) * 100 : 0)}`}>{e.targetAmount > 0 ? Math.round((e.achievedAmount / e.targetAmount) * 100) : 0}%</span></td>
-                  <td className="crm-td text-foreground">{e.assignedUser?.name || "—"}</td>
-                  <td className="crm-td text-right">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => router.push(`/forecast/${e.id}`)} className="p-1.5 rounded-lg hover:bg-muted text-slate-600 cursor-pointer"><Ico d={icons.edit} size={15} /></button>
-                      <button onClick={() => handleDelete(e.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer"><Ico d={icons.x} size={15} /></button>
-                    </div>
-                  </td>
+      {loading ? (
+        <LoadingState />
+      ) : entries.length === 0 ? (
+        <EmptyState message="No forecast entries found." />
+      ) : (
+        <div className="analytics-chart-card !p-0 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="crm-table">
+              <thead>
+                <tr>
+                  <th className="crm-th">Month</th>
+                  <th className="crm-th">Year</th>
+                  <th className="crm-th">Type</th>
+                  <th className="crm-th text-right">Target ({preferredCurrency})</th>
+                  <th className="crm-th text-right">Achieved ({preferredCurrency})</th>
+                  <th className="crm-th text-center">Achievement %</th>
+                  <th className="crm-th">Assigned To</th>
+                  <th className="crm-th text-right">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {entries.map((e: any) => (
+                  <tr key={e.id} className="crm-tr">
+                    <td className="crm-td text-[var(--text-primary)]">{months[e.month - 1]}</td>
+                    <td className="crm-td text-[var(--text-primary)]">{e.year}</td>
+                    <td className="crm-td text-[var(--text-primary)]">{e.forecastType}</td>
+                    <td className="crm-td text-right text-[var(--text-primary)]">{formatCurrency(e.targetAmount)}</td>
+                    <td className="crm-td text-right text-[var(--text-primary)]">{formatCurrency(e.achievedAmount)}</td>
+                    <td className="crm-td text-center"><span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${achievementColor(e.targetAmount > 0 ? (e.achievedAmount / e.targetAmount) * 100 : 0)}`}>{e.targetAmount > 0 ? Math.round((e.achievedAmount / e.targetAmount) * 100) : 0}%</span></td>
+                    <td className="crm-td text-[var(--text-primary)]">{e.assignedUser?.name || "—"}</td>
+                    <td className="crm-td text-right">
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => router.push(`/forecast/${e.id}`)} className="action-icon-btn" title="Edit"><Pencil size={15} /></button>
+                        <button onClick={() => handleDelete(e.id)} className="action-icon-btn row-action-btn-danger" title="Delete"><Trash2 size={15} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
       <ConfirmModal isOpen={confirmState.isOpen} title={confirmState.title} message={confirmState.message} onConfirm={confirmState.action} onCancel={() => setConfirmState({ isOpen: false, title: "", message: "", action: () => {} })} isDestructive={true} />
     </PageContainer>

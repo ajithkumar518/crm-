@@ -21,7 +21,7 @@ import {
   ChevronDown, ChevronUp, Building2, ShieldCheck, PieChart, Activity, ContactRound, ListTodo,
   Package, FileText, IndianRupee, MessageSquare, Clock, Target, Layers, MapPin, Search,
   Swords, Crown, Globe, Trophy, Wrench, ShieldAlert, Hammer, LifeBuoy, AlertTriangle, HelpCircle, Calendar,
-  HardDrive, Award, ChartBar, Star, FolderKanban, Boxes
+  HardDrive, Award, ChartBar, Star, FolderKanban, Boxes, Lock
 } from "lucide-react";
 
 // ─── Nav definitions ─────────────────────────────────────────────────────────
@@ -772,6 +772,8 @@ function SidebarModuleSearch({
 export function CrmToggle({ className }: { className?: string }) {
   const pathname = usePathname();
   const isServiceWorkspace = pathname?.startsWith("/service");
+  const { user } = useAuth();
+  const isServiceEntitled = !user || user.serviceCrmEnabled === true || user.company?.serviceCrmEnabled === true;
 
   return (
     <div className={cn("relative flex items-center bg-black/40 dark:bg-white/5 border border-white/10 p-[3px] rounded-full select-none w-[220px]", className)}>
@@ -800,12 +802,15 @@ export function CrmToggle({ className }: { className?: string }) {
       <Link
         href="/service/dashboard/my"
         className={cn(
-          "flex-1 flex items-center justify-center gap-2 py-1 text-[10px] font-bold z-10 transition-colors duration-200",
+          "flex-1 flex items-center justify-center gap-1.5 py-1 text-[10px] font-bold z-10 transition-colors duration-200",
           isServiceWorkspace ? "text-white" : "text-white/40 hover:text-white/70"
         )}
       >
         <Wrench size={14} className="shrink-0" />
         <span>Service CRM</span>
+        {!isServiceEntitled && (
+          <Lock size={12} className="text-amber-400 shrink-0" />
+        )}
       </Link>
     </div>
   );
@@ -939,6 +944,7 @@ function SidebarContent({
   const taskSubItems = getSub("tasks");
   const followUpSubItems = getSub("follow-ups");
   const salesPipelineSubItems = getSub("pipeline");
+  const quotationSubItems = getSub("quotations");
   const dealSubItems = getSub("deals");
   const customerAssetSubItems = [{ href: "/customer-assets", label: "Overview" }];
   const reportsSubItems = getSub("reports");
@@ -950,14 +956,7 @@ function SidebarContent({
   const customerVisitsSubItems = getSub("visits");
   const productCatalogueSubItems = getSub("catalogue");
   const rfqSubItems = getSub("rfq");
-  const quotationSubItems = getSub("quotations");
-  const forecastSubItems = [
-    { href: "/forecast", label: "Overview" },
-    { href: "/forecast?type=Revenue", label: "Revenue Forecast" },
-    { href: "/forecast?type=Opportunity", label: "Opportunity Forecast" },
-    { href: "/forecast?type=Sales", label: "Sales Forecast" },
-    { href: "/forecast/target-vs-achievement", label: "Target vs Achievement" },
-  ];
+  const forecastSubItems = getSub("forecast");
   const sampleMgmtSubItems = getSub("samples");
   const negotiationMgmtSubItems = getSub("negotiations");
   const purchaseOrderMgmtSubItems = getSub("purchase-orders");
@@ -1019,7 +1018,14 @@ function SidebarContent({
         )}
 
         {isServiceWorkspace ? (
-          user?.role === "ServiceEngineer" ? (
+          <>
+            {(!user || (user.serviceCrmEnabled !== true && user.company?.serviceCrmEnabled !== true)) && !collapsed && (
+              <div className="mx-3 my-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-medium flex items-center gap-2 shadow-sm">
+                <Lock size={14} className="shrink-0 text-amber-500" />
+                <span>Service Add-on Required</span>
+              </div>
+            )}
+            {user?.role === "ServiceEngineer" ? (
             <>
               <ExpandableNavSection
                 label="Engineer Portal"
@@ -1071,7 +1077,8 @@ function SidebarContent({
               <div className="border-t border-white/[0.06] my-2 pt-1" />
               <NavLink item={{ href: "/service/settings", label: "Settings", icon: <Settings size={17} /> }} active={pathname.startsWith("/service/settings")} onClick={onNavClick} collapsed={collapsed} />
             </>
-          )
+          )}
+          </>
         ) : (
           <>
             {/* Dashboards - Expandable section */}
@@ -1107,21 +1114,21 @@ function SidebarContent({
                 )}
 
                 {hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT) && hasPerm("Samples") && (
-                  <ExpandableNavSection label="Sample Management" icon={<Package size={17} />} subItems={sampleMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Sample Management"} onToggle={makeToggle("Sample Management")} onOpen={openSectionLabel("Sample Management")} />
+                  <ExpandableNavSection label="Samples" icon={<Package size={17} />} subItems={sampleMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Samples"} onToggle={makeToggle("Samples")} onOpen={openSectionLabel("Samples")} />
                 )}
 
                 {hasPerm("Sales Pipeline") && <ExpandableNavSection label="Sales Pipeline" icon={<TrendingUp size={17} />} subItems={salesPipelineSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Sales Pipeline"} onToggle={makeToggle("Sales Pipeline")} onOpen={openSectionLabel("Sales Pipeline")} />}
 
                 {hasMod(MODULE_KEYS.RFQ) && hasPerm("RFQ") && (
-                  <ExpandableNavSection label="RFQ Management" icon={<FileText size={17} />} subItems={rfqSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "RFQ Management"} onToggle={makeToggle("RFQ Management")} onOpen={openSectionLabel("RFQ Management")} />
+                  <ExpandableNavSection label="RFQ" icon={<FileText size={17} />} subItems={rfqSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "RFQ"} onToggle={makeToggle("RFQ")} onOpen={openSectionLabel("RFQ")} />
                 )}
 
                 {hasMod(MODULE_KEYS.COMPETITORS) && hasPerm("Competitors") && (
                   <ExpandableNavSection label="Competitors" icon={<Swords size={17} />} subItems={competitorMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Competitors"} onToggle={makeToggle("Competitors")} onOpen={openSectionLabel("Competitors")} />
                 )}
-                {hasPerm("Quotations") && <ExpandableNavSection label="Quotation Management" icon={<IndianRupee size={17} />} subItems={quotationSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Quotation Management"} onToggle={makeToggle("Quotation Management")} onOpen={openSectionLabel("Quotation Management")} />}
+                {hasPerm("Quotations") && <ExpandableNavSection label="Quotations" icon={<IndianRupee size={17} />} subItems={quotationSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Quotations"} onToggle={makeToggle("Quotations")} onOpen={openSectionLabel("Quotations")} />}
                 {hasMod(MODULE_KEYS.NEGOTIATION) && hasPerm("Negotiations") && (
-                  <ExpandableNavSection label="Negotiation Management" icon={<MessageSquare size={17} />} subItems={negotiationMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Negotiation Management"} onToggle={makeToggle("Negotiation Management")} onOpen={openSectionLabel("Negotiation Management")} />
+                  <ExpandableNavSection label="Negotiations" icon={<MessageSquare size={17} />} subItems={negotiationMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Negotiations"} onToggle={makeToggle("Negotiations")} onOpen={openSectionLabel("Negotiations")} />
                 )}
                 {hasMod(MODULE_KEYS.PURCHASE_ORDERS) && hasPerm("Purchase Orders") && (
                   <ExpandableNavSection label="Purchase Orders" icon={<FileText size={17} />} subItems={purchaseOrderMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Purchase Orders"} onToggle={makeToggle("Purchase Orders")} onOpen={openSectionLabel("Purchase Orders")} />
@@ -1137,7 +1144,7 @@ function SidebarContent({
                 {hasPerm("Follow Ups") && <ExpandableNavSection label="Follow Ups" icon={<CalendarClock size={17} />} subItems={followUpSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Follow Ups"} onToggle={makeToggle("Follow Ups")} onOpen={openSectionLabel("Follow Ups")} />}
 
                 {hasMod(MODULE_KEYS.DOCUMENTS) && hasPerm("Documents") && (
-                  <ExpandableNavSection label="Document Management" icon={<FileText size={17} />} subItems={documentMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Document Management"} onToggle={makeToggle("Document Management")} onOpen={openSectionLabel("Document Management")} />
+                  <ExpandableNavSection label="Documents" icon={<FileText size={17} />} subItems={documentMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Documents"} onToggle={makeToggle("Documents")} onOpen={openSectionLabel("Documents")} />
                 )}
                 {hasMod(MODULE_KEYS.KEY_ACCOUNTS) && hasPerm("Key Accounts") && (
                   <ExpandableNavSection label="Key Accounts" icon={<Crown size={17} />} subItems={keyAccountMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Key Accounts"} onToggle={makeToggle("Key Accounts")} onOpen={openSectionLabel("Key Accounts")} />

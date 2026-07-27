@@ -25,6 +25,165 @@ const prisma = new PrismaClient();
 function daysAgo(n: number): Date { const d = new Date(); d.setDate(d.getDate() - n); return d; }
 function daysFromNow(n: number): Date { const d = new Date(); d.setDate(d.getDate() + n); return d; }
 
+async function seedStrategicModules(prisma: PrismaClient, company: any, users: any[], customers: any[], deals: any[], tag: string, now: Date) {
+  console.log(`Seeding strategic modules (Competitors, Key Accounts, Territories, Targets, Forecasts) for ${company.name}...`);
+
+  // 1. Competitors, Competitor Products, Competitor Involvements
+  const competitorsData = [
+    { name: `Siemens Industrial (${tag})`, website: `https://siemens-${tag.toLowerCase()}.demo.com`, strengths: "Strong brand authority, comprehensive turnkey solutions, deep industry integration.", weaknesses: "High licensing costs, slower customization turnaround.", threat: "High" },
+    { name: `Rockwell Automation (${tag})`, website: `https://rockwell-${tag.toLowerCase()}.demo.com`, strengths: "Excellent PLC integration, robust hardware ecosystem.", weaknesses: "Limited local software support, premium pricing structure.", threat: "Medium" },
+    { name: `L&T Electrical & Automation (${tag})`, website: `https://lte-automation-${tag.toLowerCase()}.demo.com`, strengths: "Strong local presence, competitive pricing, extensive distributor network.", weaknesses: "Legacy software interfaces, slower feature updates.", threat: "Low" },
+  ];
+  const createdCompetitors: any[] = [];
+  for (let i = 0; i < competitorsData.length; i++) {
+    const cd = competitorsData[i];
+    const comp = await prisma.competitor.create({
+      data: { id: uuidv4(), name: cd.name, website: cd.website, description: `Key market competitor in industrial automation and electrical systems.`, strengths: cd.strengths, weaknesses: cd.weaknesses, isActive: true, companyId: company.id },
+    });
+    createdCompetitors.push(comp);
+
+    const prod1 = await prisma.competitorProduct.create({
+      data: { id: uuidv4(), competitorId: comp.id, name: `${cd.name.split(" ")[0]} Controller Suite`, description: "Enterprise controller and automation platform", priceRange: "₹15L - ₹35L", ourAdvantage: "Our solution offers 30% faster deployment and lower TCO." },
+    });
+    await prisma.competitorProduct.create({
+      data: { id: uuidv4(), competitorId: comp.id, name: `${cd.name.split(" ")[0]} Drive Package`, description: "Heavy duty variable frequency drive package", priceRange: "₹8L - ₹20L", ourAdvantage: "Superior IoT telemetry and predictive maintenance built-in." },
+    });
+
+    if (deals.length > 0) {
+      const targetDeal = deals[i % deals.length];
+      await prisma.competitorInvolvement.create({
+        data: {
+          id: uuidv4(),
+          competitorId: comp.id,
+          competitorProductId: prod1.id,
+          dealId: targetDeal.id,
+          customerId: targetDeal.customerId,
+          discoveredAtStage: "TechnicalDiscussion",
+          discoveredThrough: "Customer Feedback",
+          competitorStatus: "Active",
+          threatLevel: cd.threat,
+          finalResult: ["Win", "Loss", "Open"][i % 3],
+          ourAdvantages: prod1.ourAdvantage,
+          competitorStrengths: cd.strengths,
+          competitorWeaknesses: cd.weaknesses,
+          createdById: users[0].id,
+          companyId: company.id,
+          updatedAt: now,
+        },
+      });
+    }
+  }
+
+  // 2. Territories & Territory Accounts
+  const territoriesData = [
+    { name: `West India (${tag})`, region: "West", states: "Maharashtra, Gujarat, Goa", assignIdx: 0 },
+    { name: `South India (${tag})`, region: "South", states: "Tamil Nadu, Karnataka, Telangana", assignIdx: 1 % users.length },
+    { name: `North & East (${tag})`, region: "North", states: "Delhi, Haryana, West Bengal", assignIdx: 2 % users.length },
+  ];
+  const createdTerritories: any[] = [];
+  for (const td of territoriesData) {
+    const terr = await prisma.territory.create({
+      data: { id: uuidv4(), name: td.name, region: td.region, states: td.states, assignedUserId: users[td.assignIdx].id, isActive: true, companyId: company.id },
+    });
+    createdTerritories.push(terr);
+  }
+  if (customers.length >= 5 && createdTerritories.length >= 3) {
+    const accountLinks = [
+      { terrIdx: 0, custIdx: 0 },
+      { terrIdx: 0, custIdx: 2 },
+      { terrIdx: 1, custIdx: 1 },
+      { terrIdx: 1, custIdx: 4 },
+      { terrIdx: 2, custIdx: 3 },
+    ];
+    for (const link of accountLinks) {
+      await prisma.territoryAccount.create({
+        data: { id: uuidv4(), territoryId: createdTerritories[link.terrIdx].id, customerId: customers[link.custIdx].id, assignedAt: now },
+      });
+    }
+  }
+
+  // 3. Key Accounts
+  if (customers.length >= 3 && users.length >= 1) {
+    const keyAccountsData = [
+      { custIdx: 0, mgrIdx: 0, rev: 15000000, imp: "Critical", rel: "Strong", nextReviewDays: 15, notes: "Primary automotive key account with high expansion potential in hydraulic systems." },
+      { custIdx: 1, mgrIdx: 1 % users.length, rev: 8000000, imp: "High", rel: "Growing", nextReviewDays: 30, notes: "Fast-growing account in heavy commercial vehicles division." },
+      { custIdx: 4, mgrIdx: 2 % users.length, rev: 12000000, imp: "Critical", rel: "Developing", nextReviewDays: -5, notes: "Strategic technology partner. Quarterly business review overdue." },
+    ];
+    for (const kad of keyAccountsData) {
+      await prisma.keyAccount.create({
+        data: {
+          id: uuidv4(),
+          customerId: customers[kad.custIdx].id,
+          accountManagerId: users[kad.mgrIdx].id,
+          revenuePotential: kad.rev,
+          strategicImportance: kad.imp,
+          relationshipStatus: kad.rel,
+          nextReviewDate: daysFromNow(kad.nextReviewDays),
+          notes: kad.notes,
+          companyId: company.id,
+        },
+      });
+    }
+  }
+
+  // 4. Sales Targets
+  const targetConfigs = [
+    { targetType: "Monthly", period: "Jul 2026", targetAmount: 2500000, achievedAmount: 2100000 },
+    { targetType: "Monthly", period: "Aug 2026", targetAmount: 3000000, achievedAmount: 1500000 },
+    { targetType: "Quarterly", period: "Q3 2026", targetAmount: 8000000, achievedAmount: 6500000 },
+    { targetType: "Yearly", period: "FY 2026", targetAmount: 30000000, achievedAmount: 24000000 },
+  ];
+  for (let uIdx = 0; uIdx < Math.min(users.length, 3); uIdx++) {
+    const u = users[uIdx];
+    const terr = createdTerritories[uIdx % createdTerritories.length];
+    for (const tc of targetConfigs) {
+      await prisma.salesTarget.create({
+        data: {
+          id: uuidv4(),
+          targetType: tc.targetType,
+          period: tc.period,
+          targetAmount: tc.targetAmount * (uIdx === 0 ? 1.2 : 1.0),
+          achievedAmount: tc.achievedAmount * (uIdx === 0 ? 1.15 : 0.95),
+          assignedUserId: u.id,
+          territoryId: terr ? terr.id : null,
+          notes: `${tc.period} quota allocation for ${u.name}`,
+          companyId: company.id,
+        },
+      });
+    }
+  }
+
+  // 5. Forecast Entries
+  const forecastMonths = [6, 7, 8, 9];
+  const forecastTypesList = ["Revenue", "Opportunity", "Sales"];
+  for (const m of forecastMonths) {
+    for (let tIdx = 0; tIdx < forecastTypesList.length; tIdx++) {
+      const fType = forecastTypesList[tIdx];
+      const u = users[tIdx % users.length];
+      const baseTarget = fType === "Revenue" ? 7500000 : fType === "Opportunity" ? 12000000 : 5000000;
+      let achieved = 0;
+      if (m === 6) achieved = baseTarget * 1.05;
+      else if (m === 7) achieved = baseTarget * 0.92;
+      else if (m === 8) achieved = baseTarget * 0.45;
+      else achieved = 0;
+
+      await prisma.forecastEntry.create({
+        data: {
+          id: uuidv4(),
+          month: m,
+          year: 2026,
+          forecastType: fType,
+          targetAmount: baseTarget,
+          achievedAmount: achieved,
+          assignedUserId: u.id,
+          notes: `${fType} projection for Month ${m}/2026`,
+          companyId: company.id,
+        },
+      });
+    }
+  }
+}
+
 /**
  * Seeds the same shape of CRM + catalog sample data (customers, contacts, leads, deals,
  * follow-ups, tasks, communication logs, notes, notifications, product categories,
@@ -76,19 +235,22 @@ async function seedVariantCompanyData(prisma: PrismaClient, company: any, adminU
     createdLeads.push({ id: leadId, ...ld });
   }
 
+  const createdDeals: any[] = [];
   const dealNames = [
     "CNC Machine Parts Supply — Tata Motors", "Hydraulic Press Maintenance Contract", "Precision Components Annual AMC",
     "Steel Fabrication Q3 Order — JSW", "Industrial Automation Pilot — Bosch",
   ];
   for (let i = 0; i < dealNames.length; i++) {
-    await prisma.deal.create({
+    const dealId = uuidv4();
+    const deal = await prisma.deal.create({
       data: {
-        id: uuidv4(), dealName: dealNames[i], customerId: createdCustomers[i].id,
+        id: dealId, dealName: dealNames[i], customerId: createdCustomers[i].id,
         assignedUserId: adminUser.id, status: ["Qualified", "TechnicalDiscussion", "DemoConducted", "Won", "Lost"][i],
         dealValue: [7500000, 3000000, 5000000, 2000000, 4000000][i], expectedCloseDate: daysFromNow(30 + i * 15),
         companyId: company.id,
       },
     });
+    createdDeals.push(deal);
   }
 
   const fuData = [
@@ -236,7 +398,9 @@ async function seedVariantCompanyData(prisma: PrismaClient, company: any, adminU
     }
   }
 
-  console.log(`  ${company.name}: sample data seeded (5 customers, 5 contacts, 5 leads, 5 deals, 5 follow-ups, 5 tasks, 5 comm logs, 3 notes, 3 notifications, 6 categories, 8 products, 4 material rates, 4 labor rates, 4 BOM items, 6 routing ops).`);
+  await seedStrategicModules(prisma, company, [adminUser], createdCustomers, createdDeals, tag, now);
+
+  console.log(`  ${company.name}: sample data seeded (5 customers, 5 contacts, 5 leads, 5 deals, 5 follow-ups, 5 tasks, 5 comm logs, 3 notes, 3 notifications, 6 categories, 8 products, 4 material rates, 4 labor rates, 4 BOM items, 6 routing ops, + strategic modules).`);
 }
 
 async function main() {
@@ -281,6 +445,11 @@ async function main() {
   await prisma.quotation.updateMany({ data: { negotiationId: null, parentQuotationId: null } });
   await prisma.negotiation.updateMany({ data: { quotationId: null } });
   await prisma.negotiation.deleteMany({});
+  await prisma.quotationStatusHistory.deleteMany({});
+  await prisma.quotationRevisionSnapshot.deleteMany({});
+  await prisma.quotationApproval.deleteMany({});
+  await prisma.quotationDocument.deleteMany({});
+  await prisma.quotationItem.deleteMany({});
   await prisma.quotation.deleteMany({});
   await prisma.sampleRequest.deleteMany({});
   await prisma.contact.deleteMany({});
@@ -291,8 +460,10 @@ async function main() {
   await prisma.opportunityTechnicalNote.deleteMany({});
   await prisma.proposal.deleteMany({});
   await prisma.approvalHistory.deleteMany({});
+  await prisma.rFQStatusHistory.deleteMany({});
+  await prisma.rFQCostingSheet.deleteMany({});
+  await prisma.rFQLineItem.deleteMany({});
   await prisma.rFQ.deleteMany({});
-  await prisma.quotationItem.deleteMany({});
   await prisma.negotiationRevision.deleteMany({});
   await prisma.purchaseOrderItem.deleteMany({});
   await prisma.deal.deleteMany({});
@@ -318,6 +489,7 @@ async function main() {
   await prisma.competitorProduct.deleteMany({});
   await prisma.competitor.deleteMany({});
   await prisma.forecastEntry.deleteMany({});
+  await prisma.accountStatusHistory.deleteMany({});
   await prisma.customer.deleteMany({});
   await prisma.cRMDocument.deleteMany({});
   await prisma.approvalRequest.deleteMany({});
@@ -344,18 +516,26 @@ async function main() {
 
   // ---- Company ----
   console.log("Seeding default company...");
-  const findOrCreateCompany = async (data: { name: string; variant?: number; domain?: string }) => {
+  const findOrCreateCompany = async (data: { name: string; variant?: number; domain?: string; planLocked?: boolean; serviceCrmEnabled?: boolean }) => {
     const existing = await prisma.company.findFirst({ where: { name: data.name } });
-    if (existing) return existing;
+    if (existing) {
+      const updates: any = {};
+      if (data.planLocked !== undefined && (existing as any).planLocked !== data.planLocked) updates.planLocked = data.planLocked;
+      if (data.serviceCrmEnabled !== undefined && (existing as any).serviceCrmEnabled !== data.serviceCrmEnabled) updates.serviceCrmEnabled = data.serviceCrmEnabled;
+      if (Object.keys(updates).length > 0) {
+        return prisma.company.update({ where: { id: existing.id }, data: updates });
+      }
+      return existing;
+    }
     return prisma.company.create({ data: { id: uuidv4(), ...data } });
   };
-  const defaultCompany = await findOrCreateCompany({ name: "Suki Software Solutions Pvt. Ltd." });
+  const defaultCompany = await findOrCreateCompany({ name: "Suki Software Solutions Pvt. Ltd.", planLocked: false, serviceCrmEnabled: true });
 
   // ---- Variant demo companies (3) ----
   console.log("Seeding variant demo companies...");
-  const demoVariant1Company = await findOrCreateCompany({ name: "Demo Variant 1 Company", variant: 1, domain: "demo-variant1.sukisoftware.com" });
-  const demoVariant2Company = await findOrCreateCompany({ name: "Demo Variant 2 Company", variant: 2, domain: "demo-variant2.sukisoftware.com" });
-  const demoVariant3Company = await findOrCreateCompany({ name: "Demo Variant 3 Company", variant: 3, domain: "demo-variant3.sukisoftware.com" });
+  const demoVariant1Company = await findOrCreateCompany({ name: "Demo Variant 1 Company", variant: 1, domain: "demo-variant1.sukisoftware.com", planLocked: true, serviceCrmEnabled: false });
+  const demoVariant2Company = await findOrCreateCompany({ name: "Demo Variant 2 Company", variant: 2, domain: "demo-variant2.sukisoftware.com", planLocked: true, serviceCrmEnabled: false });
+  const demoVariant3Company = await findOrCreateCompany({ name: "Demo Variant 3 Company", variant: 3, domain: "demo-variant3.sukisoftware.com", planLocked: true, serviceCrmEnabled: false });
 
   // ---- Users (6 + 4 demo) ----
   console.log("Seeding users...");
@@ -454,19 +634,22 @@ async function main() {
 
   // ---- Deals (5) ----
   console.log("Seeding deals...");
+  const createdDeals: any[] = [];
   const dealNames = [
     "CNC Machine Parts Supply — Tata Motors", "Hydraulic Press Maintenance Contract", "Precision Components Annual AMC",
     "Steel Fabrication Q3 Order — JSW", "Industrial Automation Pilot — Bosch",
   ];
   for (let i = 0; i < dealNames.length; i++) {
-    await prisma.deal.create({
+    const dealId = uuidv4();
+    const deal = await prisma.deal.create({
       data: {
-        id: uuidv4(), dealName: dealNames[i], customerId: createdCustomers[i].id,
+        id: dealId, dealName: dealNames[i], customerId: createdCustomers[i].id,
         assignedUserId: execs[i % execs.length].id, status: ["Qualified", "TechnicalDiscussion", "DemoConducted", "Won", "Lost"][i],
         dealValue: [7500000, 3000000, 5000000, 2000000, 4000000][i], expectedCloseDate: daysFromNow(30 + i * 15),
         companyId: defaultCompany.id,
       },
     });
+    createdDeals.push(deal);
   }
   console.log("5 deals created.");
 
@@ -666,6 +849,9 @@ async function main() {
     }
   }
   console.log("6 routing operations created.");
+
+  const defaultUsersList = [execs[0], execs[1], execs[2], createdUsers["lead@sukisoftware.com"], createdUsers["admin@sukisoftware.com"]].filter(Boolean);
+  await seedStrategicModules(prisma, defaultCompany, defaultUsersList, createdCustomers, createdDeals, "DEFAULT", now);
 
   // ---- Variant demo company sample data (Customers, Contacts, Leads, Deals, Follow-ups,
   //      Tasks, Comm Logs, Notes, Notifications, Product Catalog) ----
@@ -898,6 +1084,11 @@ async function main() {
     leads: await prisma.lead.count(),
     deals: await prisma.deal.count(),
     contacts: await prisma.contact.count(),
+    competitors: await prisma.competitor.count(),
+    keyAccounts: await prisma.keyAccount.count(),
+    territories: await prisma.territory.count(),
+    salesTargets: await prisma.salesTarget.count(),
+    forecastEntries: await prisma.forecastEntry.count(),
     products: await prisma.product.count(),
     productCategories: await prisma.productCategory.count(),
     customerAssets: await prisma.customerAsset.count(),

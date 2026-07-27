@@ -376,7 +376,8 @@ export default function SettingsPage() {
   };
 
   const canAccessSettings = user?.role === "Admin" || user?.role === "SuperAdmin";
-  const canEditVariant = user?.role === "SuperAdmin" || user?.role === "Admin";
+  const isPlanLocked = user?.company?.planLocked ?? true;
+  const canEditVariant = (user?.role === "SuperAdmin" || user?.role === "Admin") && !isPlanLocked;
 
   useEffect(() => {
     if (!authLoading && !canAccessSettings) {
@@ -554,23 +555,54 @@ export default function SettingsPage() {
         <Card title="Module Management" icon={icons.shield}>
           <div className="space-y-1">
             <p className="text-xs text-slate-500 mb-3">
-              Toggle individual add-on modules on or off. The variant preset above sets the default selection — use this to customize beyond the preset.
+              {canEditVariant
+                ? "Toggle individual add-on modules on or off. The variant preset above sets the default selection — use this to customize beyond the preset."
+                : "View enabled add-on modules for your company plan."}
             </p>
-            {allModuleKeys.map((key) => (
-              <Toggle
-                key={key}
-                label={moduleLabels[key] ?? key}
-                checked={enabledModuleKeys.includes(key)}
-                onChange={() => toggleModule(key)}
-              />
-            ))}
-            <button
-              onClick={handleSaveModules}
-              disabled={savingModules}
-              className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-colors shadow-sm disabled:opacity-70 cursor-pointer"
-            >
-              {savingModules ? "Saving..." : "Save Modules"}
-            </button>
+            {allModuleKeys.map((key) => {
+              const isEnabled = enabledModuleKeys.includes(key);
+              if (!canEditVariant) {
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50/70 border border-slate-100 text-sm"
+                  >
+                    <span className="font-medium text-slate-700">{moduleLabels[key] ?? key}</span>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        isEnabled
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-slate-100 text-slate-500 border border-slate-200"
+                      }`}
+                    >
+                      {isEnabled ? "Enabled" : "Disabled"}
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <Toggle
+                  key={key}
+                  label={moduleLabels[key] ?? key}
+                  checked={isEnabled}
+                  onChange={() => toggleModule(key)}
+                />
+              );
+            })}
+            {canEditVariant ? (
+              <button
+                onClick={handleSaveModules}
+                disabled={savingModules}
+                className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-colors shadow-sm disabled:opacity-70 cursor-pointer"
+              >
+                {savingModules ? "Saving..." : "Save Modules"}
+              </button>
+            ) : (
+              <div className="mt-4 py-3 px-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600 text-center">
+                Add-on modules are managed by Suki Software.{" "}
+                <span className="font-bold text-slate-800">Contact support to enable new modules.</span>
+              </div>
+            )}
           </div>
         </Card>
 

@@ -510,7 +510,7 @@ export default function LeadsPage() {
       }
     >
       {/* ── V2 KPI Cards (aligned with tab sections) ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className={cn("grid grid-cols-2 gap-6", isV2 ? "md:grid-cols-3 lg:grid-cols-6" : "lg:grid-cols-3")}>
         <SummaryCard
           label="Total Leads"
           value={kpiTotal}
@@ -839,6 +839,26 @@ export default function LeadsPage() {
                                 router.push(`/leads/${l.id}?tab=bant`);
                               } else if (wfActions.primary?.id === "convert-lead") {
                                 router.push(`/leads/${l.id}?action=convert`);
+                              } else if (wfActions.primary?.id === "view-opportunity") {
+                                if ((l as any).convertedOpportunityId) {
+                                  router.push(`/sales-pipeline/${(l as any).convertedOpportunityId}/opportunity-detail`);
+                                } else {
+                                  router.push(`/sales-pipeline/pipeline-list?search=${encodeURIComponent(l.name)}`);
+                                }
+                              } else if (wfActions.primary?.id === "view-account") {
+                                if ((l as any).convertedAccountId) {
+                                  router.push(`/customer-master/${(l as any).convertedAccountId}`);
+                                } else {
+                                  router.push("/customer-master");
+                                }
+                              } else if (wfActions.primary?.id === "view-contact") {
+                                if ((l as any).convertedContactId) {
+                                  router.push(`/contacts/${(l as any).convertedContactId}`);
+                                } else {
+                                  router.push("/contacts");
+                                }
+                              } else if (wfActions.primary?.id === "view-sql-leads") {
+                                router.push("/leads?status=SQL");
                               } else {
                                 router.push(`/leads/${l.id}`);
                               }

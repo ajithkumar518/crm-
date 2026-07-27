@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
 
 export async function GET(request: Request, { params }: { params: any }) {
   try {
     const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
@@ -34,6 +37,8 @@ export async function GET(request: Request, { params }: { params: any }) {
 export async function PATCH(request: Request, { params }: { params: any }) {
   try {
     const user = await verifyAuth();
+    const _svcGuard2 = await enforceServiceEntitlement(user);
+    if (_svcGuard2) return _svcGuard2;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
@@ -79,6 +84,8 @@ export async function PATCH(request: Request, { params }: { params: any }) {
 export async function DELETE(request: Request, { params }: { params: any }) {
   try {
     const user = await verifyAuth();
+    const _svcGuard3 = await enforceServiceEntitlement(user);
+    if (_svcGuard3) return _svcGuard3;
     if (!user || !["Admin", "SuperAdmin"].includes(user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }

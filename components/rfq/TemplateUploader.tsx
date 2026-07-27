@@ -100,8 +100,8 @@ export function TemplateUploader({ onParsed }: TemplateUploaderProps) {
         onClick={() => fileInputRef.current?.click()}
         className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors duration-200 ease-in-out ${
           isDragging
-            ? "border-primary-500 bg-primary-50"
-            : "border-slate-300 hover:border-slate-400 hover:bg-slate-50"
+            ? "border-[var(--primary)] bg-[var(--primary)]/10"
+            : "border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50"
         }`}
       >
         <input
@@ -114,18 +114,18 @@ export function TemplateUploader({ onParsed }: TemplateUploaderProps) {
 
         {uploading ? (
           <div className="flex flex-col items-center justify-center space-y-3">
-            <Loader2 className="w-10 h-10 text-primary-600 animate-spin" />
-            <p className="text-sm font-medium text-slate-700">Extracting Line Items...</p>
+            <Loader2 className="w-10 h-10 text-[var(--primary)] animate-spin" />
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Extracting Line Items...</p>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center space-y-3">
-            <div className="w-14 h-14 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center mb-2">
+            <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full flex items-center justify-center mb-2">
               <UploadCloud className="w-7 h-7" />
             </div>
-            <p className="text-base font-semibold text-slate-800">
+            <p className="text-base font-semibold text-slate-800 dark:text-slate-100">
               Click or drag template to upload
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Supports PDF, Excel (.xlsx/.xls), and CSV
             </p>
           </div>
@@ -133,7 +133,7 @@ export function TemplateUploader({ onParsed }: TemplateUploaderProps) {
       </div>
 
       {error && (
-        <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-md text-sm font-medium flex items-start gap-2">
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-md text-sm font-medium flex items-start gap-2">
           <X className="w-4 h-4 mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>

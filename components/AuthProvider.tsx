@@ -14,12 +14,16 @@ export interface UserProfile {
   themeMode?: string;
   variant?: number;
   enabledModules?: string | string[];
+  planLocked?: boolean;
+  serviceCrmEnabled?: boolean;
   permissions?: any[] | 'ALL';
   company?: {
     id: string;
     name: string;
     variant?: number;
     enabledModules?: string | string[];
+    planLocked?: boolean;
+    serviceCrmEnabled?: boolean;
   } | null;
 }
 

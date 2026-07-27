@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/ToastProvider";
@@ -20,14 +21,15 @@ import { Plus, Pencil, Trash2, Search, DollarSign, AlertTriangle, Building2, Cal
 type SortField = "customer" | "revenue" | "importance" | "nextReview";
 type SortDir = "asc" | "desc";
 
-export default function KeyAccountsPage() {
+function KeyAccountsPageInner() {
   const { user } = useAuth();
   const toast = useToast();
   const { formatCurrency } = useCurrency();
+  const searchParams = useSearchParams();
   const [keyAccounts, setKeyAccounts] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [importanceFilter, setImportanceFilter] = useState("All");
+  const [importanceFilter, setImportanceFilter] = useState(searchParams.get("importance") || "All");
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("revenue");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -432,5 +434,13 @@ export default function KeyAccountsPage() {
 
       <ConfirmModal {...confirmState} onCancel={() => setConfirmState({ ...confirmState, isOpen: false })} />
     </PageContainer>
+  );
+}
+
+export default function KeyAccountsPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <KeyAccountsPageInner />
+    </Suspense>
   );
 }

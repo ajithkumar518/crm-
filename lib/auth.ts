@@ -17,6 +17,7 @@ export interface TokenPayload {
   companyId?: string | null;
   variant?: number;
   enabledModules?: string;
+  serviceCrmEnabled?: boolean;
   supportMode?: boolean;
   iat: number;
   exp: number;

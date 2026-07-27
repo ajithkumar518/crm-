@@ -633,13 +633,25 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         router.push("/leads?status=SQL");
         break;
       case "view-opportunity":
-        router.push("/deals");
+        if (lead.convertedOpportunityId) {
+          router.push(`/sales-pipeline/${lead.convertedOpportunityId}/opportunity-detail`);
+        } else {
+          router.push(`/sales-pipeline/pipeline-list?search=${encodeURIComponent(lead.name)}`);
+        }
         break;
       case "view-account":
-        router.push("/customer-master");
+        if (lead.convertedAccountId) {
+          router.push(`/customer-master/${lead.convertedAccountId}`);
+        } else {
+          router.push("/customer-master");
+        }
         break;
       case "view-contact":
-        router.push("/contacts");
+        if (lead.convertedContactId) {
+          router.push(`/contacts/${lead.convertedContactId}`);
+        } else {
+          router.push("/contacts");
+        }
         break;
       default:
         break;

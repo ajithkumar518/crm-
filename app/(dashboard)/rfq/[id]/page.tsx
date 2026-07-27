@@ -1004,21 +1004,23 @@ export default function RFQDetailPage() {
         onClose={() => setShowAssignModal(false)}
         footer={
           <>
-            <button onClick={() => setShowAssignModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer">Cancel</button>
+            <button onClick={() => setShowAssignModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">Cancel</button>
             <button onClick={handleAssignCosting} disabled={assigning || !assignCostingUser} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50 cursor-pointer">
               {assigning ? "Assigning..." : "Assign & Move to Costing"}
             </button>
           </>
         }
       >
-        <FormField label="Costing Owner" required>
-          <Select value={assignCostingUser} onChange={(e: any) => setAssignCostingUser(e.target.value)}>
-            <option value="">-- Select User --</option>
-            {users.map((u: any) => (
-              <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-            ))}
-          </Select>
-        </FormField>
+        <div className="p-6 space-y-4">
+          <FormField label="Costing Owner" required>
+            <Select value={assignCostingUser} onChange={(e: any) => setAssignCostingUser(e.target.value)}>
+              <option value="">-- Select User --</option>
+              {users.map((u: any) => (
+                <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
+              ))}
+            </Select>
+          </FormField>
+        </div>
       </Modal>
 
       {/* Line Item Modal (Add / Edit) */}
@@ -1029,14 +1031,14 @@ export default function RFQDetailPage() {
         onClose={() => setShowLineItemModal(false)}
         footer={
           <>
-            <button onClick={() => setShowLineItemModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer">Cancel</button>
+            <button onClick={() => setShowLineItemModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">Cancel</button>
             <button onClick={handleSaveLineItem} disabled={savingLineItem} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50 cursor-pointer">
               {savingLineItem ? "Saving..." : "Save"}
             </button>
           </>
         }
       >
-        <div className="space-y-4">
+        <div className="p-6 space-y-4">
           <FormField label="Description" required>
             <Input
               type="text"
@@ -1112,14 +1114,14 @@ export default function RFQDetailPage() {
         onClose={() => setShowEditModal(false)}
         footer={
           <>
-            <button onClick={() => setShowEditModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer">Cancel</button>
+            <button onClick={() => setShowEditModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">Cancel</button>
             <button onClick={handleSaveEdit} disabled={savingEdit} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] disabled:opacity-50 cursor-pointer">
               {savingEdit ? "Saving..." : "Save Changes"}
             </button>
           </>
         }
       >
-        <div className="space-y-4">
+        <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Customer Due Date">
               <Input
@@ -1168,16 +1170,16 @@ export default function RFQDetailPage() {
         onClose={() => setShowReopenModal(false)}
         footer={
           <>
-            <button onClick={() => setShowReopenModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 cursor-pointer">Cancel</button>
+            <button onClick={() => setShowReopenModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer">Cancel</button>
             <button onClick={handleReopen} disabled={reopening} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 cursor-pointer">
               {reopening ? "Reopening..." : "Reopen RFQ"}
             </button>
           </>
         }
       >
-        <div className="space-y-4">
-          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-            <p className="text-xs text-amber-800">
+        <div className="p-6 space-y-4">
+          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50">
+            <p className="text-xs text-amber-800 dark:text-amber-300">
               Reopening will change the status from <strong>Closed</strong> to <strong>Under Review</strong>.
               The costing owner will be notified if one is assigned.
             </p>

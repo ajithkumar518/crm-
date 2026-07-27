@@ -180,7 +180,7 @@ export function GenerateQuotationModal({
             {/* Checklist */}
             <div className="space-y-3">
               {/* Check 1: Costing completion */}
-              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-100 dark:border-slate-850">
+              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-100 dark:border-slate-800">
                 {hasPending ? (
                   <AlertTriangle className="text-amber-500 mt-0.5 flex-shrink-0" size={16} />
                 ) : (
@@ -190,7 +190,7 @@ export function GenerateQuotationModal({
                   <p className="font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
                     Costing Status Check
                   </p>
-                  <p className="text-slate-500">
+                  <p className="text-slate-500 dark:text-slate-400">
                     {costingCount.costed} of {costingCount.total} line items fully costed.
                   </p>
                   {hasPending && (
@@ -209,7 +209,7 @@ export function GenerateQuotationModal({
               </div>
 
               {/* Check 2: Margin floor */}
-              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-100 dark:border-slate-850">
+              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-slate-100 dark:border-slate-800">
                 {hasLowMargin ? (
                   isManagerOrAdmin ? (
                     <AlertTriangle className="text-amber-500 mt-0.5 flex-shrink-0" size={16} />
@@ -223,14 +223,14 @@ export function GenerateQuotationModal({
                   <p className="font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wide">
                     Margin Floor Threshold ({marginFloor}%)
                   </p>
-                  <p className="text-slate-500">
+                  <p className="text-slate-500 dark:text-slate-400">
                     {hasLowMargin
                       ? `${lowMarginItems.length} price tier(s) fall below the floor limit.`
                       : "All costed items satisfy the minimum margin requirements."}
                   </p>
                   {hasLowMargin && (
                     <div className="mt-2 space-y-1">
-                      <p className={isManagerOrAdmin ? "text-amber-600 font-medium" : "text-rose-600 font-medium"}>
+                      <p className={isManagerOrAdmin ? "text-amber-600 dark:text-amber-400 font-medium" : "text-rose-600 dark:text-rose-400 font-medium"}>
                         {isManagerOrAdmin
                           ? "Low-margin items (Manager override permitted):"
                           : "Low-margin items (Approval required):"}
@@ -257,7 +257,7 @@ export function GenerateQuotationModal({
             {/* Inputs: Validity */}
             {!isBlocked && (
               <div className="space-y-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
                   <Calendar size={12} /> Quote Validity (Days)
                 </label>
                 <input
@@ -265,14 +265,14 @@ export function GenerateQuotationModal({
                   value={validityDays}
                   onChange={(e) => setValidityDays(e.target.value)}
                   placeholder="30"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:border-[var(--primary)] focus:outline-none bg-transparent"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 focus:border-[var(--primary)] focus:outline-none bg-transparent text-slate-800 dark:text-slate-100"
                 />
               </div>
             )}
 
             {/* Error Message */}
             {errorMsg && (
-              <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-lg text-xs text-rose-600">
+              <div className="p-2.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/50 rounded-lg text-xs text-rose-600 dark:text-rose-400">
                 {errorMsg}
               </div>
             )}
@@ -293,7 +293,7 @@ export function GenerateQuotationModal({
             disabled={loading || generating || isBlocked}
             className={`px-4 py-2 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 ${
               isBlocked
-                ? "bg-slate-100 dark:bg-slate-850 text-slate-400 cursor-not-allowed border border-slate-200 dark:border-slate-800"
+                ? "bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-200 dark:border-slate-800"
                 : "bg-emerald-600 hover:bg-emerald-700"
             }`}
           >

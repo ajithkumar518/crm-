@@ -282,10 +282,6 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   const hasMod = useHasModule();
 
   const [deal, setDeal] = useState<any>(null);
-  const [oppSearch, setOppSearch] = useState("");
-  const [oppStageFilter, setOppStageFilter] = useState("");
-  const [opportunities, setOpportunities] = useState<any[]>([]);
-  const [oppsLoading, setOppsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [contacts, setContacts] = useState<any[]>([]);
@@ -337,28 +333,6 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   // V5: lead-verified flag (Qualified stage)
   const [leadVerified, setLeadVerified] = useState(false);
 
-  const fetchOpportunities = useCallback(async () => {
-    setOppsLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (oppSearch) params.set("search", oppSearch);
-      if (oppStageFilter) params.set("stage", oppStageFilter);
-      const res = await fetch(`/api/opportunities?${params.toString()}`);
-      if (res.ok) {
-        const json = await res.json();
-        setOpportunities(json.data || []);
-      }
-    } catch {
-      // silent
-    } finally {
-      setOppsLoading(false);
-    }
-  }, [oppSearch, oppStageFilter]);
-
-  useEffect(() => {
-    fetchOpportunities();
-  }, [fetchOpportunities]);
-
   const fetchLinkedQuotations = useCallback(async () => {
     setLinkedQuotationsLoading(true);
     try {
@@ -380,7 +354,6 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
       const json = await res.json();
       if (res.ok && json.success) {
         setDeal(json.data);
-        fetchOpportunities();
       setEditForm({
         dealName: json.data.dealName,
         dealValue: json.data.dealValue,
@@ -493,7 +466,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
       toast.error(msg);
     }
     setLoading(false);
-  }, [id, fetchOpportunities]);
+  }, [id]);
 
   // V2: Fetch linked sample for this opportunity
   const fetchLinkedSample = useCallback(async () => {
@@ -569,12 +542,12 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
     fetchDeal();
     fetchContacts();
     fetchLossReasons();
-    fetchCompetitors();
+    if (hasMod(MODULE_KEYS.COMPETITORS)) fetchCompetitors();
     fetchLinkedQuotations();
-    fetchLinkedSample();
+    if (hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT)) fetchLinkedSample();
     if (hasMod(MODULE_KEYS.PRODUCT_CATALOGUE)) fetchProducts();
     fetchUsers();
-  }, [fetchDeal, fetchContacts, fetchLossReasons, fetchCompetitors, fetchLinkedQuotations, fetchLinkedSample, fetchProducts, fetchUsers]);
+  }, [fetchDeal, fetchContacts, fetchLossReasons, fetchCompetitors, fetchLinkedQuotations, fetchLinkedSample, fetchProducts, fetchUsers, hasMod]);
 
   // Sync the URL `stage` param with deal.status so the sidebar highlights correctly
   const searchParams = useSearchParams();
@@ -2873,48 +2846,26 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
           </div>
 
       {/* ─── Competitor Intelligence ─── */}
-      {hasMod(MODULE_KEYS.COMPETITORS) ? (
-      <CollapsibleSection
-        title="Competitor Intelligence"
-        subtitle="Track competitors and win/loss insights"
-        icon={<Swords size={15} />}
-        defaultOpen={false}
-        bodyClassName="pt-4"
-      >
-        <CompetitorIntelligenceTab entity={{ dealId: deal.id, customerId: deal.customerId, currentStage: deal.status }} />
-      </CollapsibleSection>
-      ) : (
       <LockedSection
         title="Competitor Intelligence"
         subtitle="Track competitors and win/loss insights"
         icon={<Swords size={15} />}
         moduleKey={MODULE_KEYS.COMPETITORS}
+        defaultOpen={false}
       >
         <CompetitorIntelligenceTab entity={{ dealId: deal.id, customerId: deal.customerId, currentStage: deal.status }} />
       </LockedSection>
-      )}
 
       {/* ─── Documents ─── */}
-      {hasMod(MODULE_KEYS.DOCUMENTS) ? (
-      <CollapsibleSection
-        title="Documents"
-        subtitle="Upload and manage deal-related files"
-        icon={<FolderOpen size={15} />}
-        defaultOpen={false}
-        bodyClassName="pt-4"
-      >
-        <EntityDocumentTab entityType="Deal" entityId={deal.id} />
-      </CollapsibleSection>
-      ) : (
       <LockedSection
         title="Documents"
         subtitle="Upload and manage deal-related files"
         icon={<FolderOpen size={15} />}
         moduleKey={MODULE_KEYS.DOCUMENTS}
+        defaultOpen={false}
       >
         <EntityDocumentTab entityType="Deal" entityId={deal.id} />
       </LockedSection>
-      )}
 
       {/* ─── Stage History Timeline ─── */}
       {deal.stageHistories && deal.stageHistories.length > 0 && (

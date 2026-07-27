@@ -2,19 +2,25 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeEscalations } from "@/lib/escalationService";
 import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
+import { checkAmcQuota } from "@/lib/amcQuota";
 
 export async function GET(request: Request) {
   try {
     const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get("customerId");
     const statusId = searchParams.get("statusId");
+    const projectId = searchParams.get("projectId");
     
     let whereClause: any = {};
     if (customerId) whereClause.customerId = customerId;
     if (statusId) whereClause.statusId = statusId;
+    if (projectId) whereClause.projectId = projectId;
 
     const requests = await prisma.serviceRequest.findMany({
       where: whereClause,
@@ -32,6 +38,7 @@ export async function GET(request: Request) {
         assignedEngineer: {
           include: { user: true }
         },
+        project: { select: { id: true, projectCode: true, name: true } },
         createdBy: true,
       },
       orderBy: { createdAt: "desc" },
@@ -48,6 +55,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const user = await verifyAuth();
+    const _svcGuard2 = await enforceServiceEntitlement(user);
+    if (_svcGuard2) return _svcGuard2;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await request.json();
@@ -59,6 +68,7 @@ export async function POST(request: Request) {
       statusId,
       customerId,
       customerAssetId,
+      projectId,
       assignedTeamId,
       assignedEngineerId,
       createdById,
@@ -66,6 +76,16 @@ export async function POST(request: Request) {
 
     if (!title || !categoryId || !priorityId || !statusId || !customerId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    if (customerAssetId) {
+      const quotaErr = await checkAmcQuota({
+        customerAssetId,
+        type: "preventive",
+        user: user as any,
+        overrideQuota: body.overrideQuota === true,
+      });
+      if (quotaErr) return quotaErr;
     }
 
     // Use authenticated user, or fall back to provided createdById
@@ -106,6 +126,7 @@ export async function POST(request: Request) {
         statusId,
         customerId,
         customerAssetId,
+        projectId: projectId || null,
         assignedTeamId: actualTeamId,
         assignedEngineerId: actualEngineerId,
         createdById: finalCreatedById,
@@ -124,6 +145,7 @@ export async function POST(request: Request) {
         assignedEngineer: {
           include: { user: true }
         },
+        project: { select: { id: true, projectCode: true, name: true } },
         createdBy: true,
       }
     });

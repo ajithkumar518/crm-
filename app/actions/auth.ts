@@ -36,13 +36,13 @@ const passwordSchema = z
   .regex(/[!@#$%^&*]/, "Must contain a special character (!@#$%^&*)");
 
 // ─── JWT Cookie Setter ────────────────────────────────────────────────────────
-async function issueAuthCookie(user: { id: string; email: string; role: string; companyId?: string | null; variant?: number | null; enabledModules?: string | null }, rememberMe = false) {
+async function issueAuthCookie(user: { id: string; email: string; role: string; companyId?: string | null; variant?: number | null; enabledModules?: string | null; serviceCrmEnabled?: boolean | null }, rememberMe = false) {
   // rememberMe=true → 7 days; default → 8 hours
   const expiresIn = rememberMe ? "7d" : "8h";
   const maxAge = rememberMe ? 7 * 24 * 60 * 60 : 8 * 60 * 60;
 
   const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role, companyId: user.companyId, variant: user.variant || 1, enabledModules: user.enabledModules ?? undefined },
+    { id: user.id, email: user.email, role: user.role, companyId: user.companyId, variant: user.variant || 1, enabledModules: user.enabledModules ?? undefined, serviceCrmEnabled: user.serviceCrmEnabled ?? false },
     JWT_SECRET,
     { expiresIn }
   );
@@ -140,18 +140,20 @@ export async function loginWithPassword(email: string, password: string, remembe
     // Fetch company variant + enabledModules for the auth cookie
     let variant = 1;
     let enabledModules: string | undefined;
+    let serviceCrmEnabled = false;
     if (user.companyId) {
       const company = await prisma.company.findUnique({
         where: { id: user.companyId },
-        select: { variant: true, enabledModules: true },
+        select: { variant: true, enabledModules: true, serviceCrmEnabled: true },
       });
       if (company) {
         variant = company.variant || 1;
         enabledModules = company.enabledModules;
+        serviceCrmEnabled = company.serviceCrmEnabled;
       }
     }
 
-    await issueAuthCookie({ ...user, variant, enabledModules }, rememberMe);
+    await issueAuthCookie({ ...user, variant, enabledModules, serviceCrmEnabled }, rememberMe);
     await logAudit(user.id, "AUTH", "LOGIN", `Successful login for ${user.email}`);
 
     const redirectUrl = getRoleRedirect(user.role);
@@ -466,18 +468,20 @@ export async function completeCustomerActivation(token: string, password: string
     // Fetch company variant + enabledModules for the auth cookie
     let variant = 1;
     let enabledModules: string | undefined;
+    let serviceCrmEnabled = false;
     if (user.companyId) {
       const company = await prisma.company.findUnique({
         where: { id: user.companyId },
-        select: { variant: true, enabledModules: true },
+        select: { variant: true, enabledModules: true, serviceCrmEnabled: true },
       });
       if (company) {
         variant = company.variant || 1;
         enabledModules = company.enabledModules;
+        serviceCrmEnabled = company.serviceCrmEnabled;
       }
     }
 
-    await issueAuthCookie({ ...user, variant, enabledModules }, false);
+    await issueAuthCookie({ ...user, variant, enabledModules, serviceCrmEnabled }, false);
     await logAudit(user.id, "AUTH", "CUSTOMER_ACTIVATION_COMPLETE", `Customer portal activated for ${user.email}`);
 
     revalidatePath("/customer/portal");
@@ -531,6 +535,8 @@ export async function getMeAction() {
             name: true,
             variant: true,
             enabledModules: true,
+            planLocked: true,
+            serviceCrmEnabled: true,
           },
         },
       },
@@ -547,7 +553,7 @@ export async function getMeAction() {
       });
     }
 
-    return { success: true, data: { ...user, lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null, variant: user.company?.variant || 1, enabledModules: user.company?.enabledModules || "[]", permissions } };
+    return { success: true, data: { ...user, lastLoginAt: user.lastLoginAt ? user.lastLoginAt.toISOString() : null, variant: user.company?.variant || 1, enabledModules: user.company?.enabledModules || "[]", planLocked: user.company?.planLocked ?? true, serviceCrmEnabled: user.company?.serviceCrmEnabled ?? false, permissions } };
   } catch (error) {
     console.error("getMeAction error:", error);
     return { success: false, message: "Internal server error" };
@@ -618,6 +624,14 @@ export async function updateCompanyVariantAction(variant: number) {
       return { success: false, message: "No company associated" };
     }
 
+    const companyRecord = await prisma.company.findUnique({
+      where: { id: userPayload.companyId },
+      select: { planLocked: true },
+    });
+    if (companyRecord?.planLocked) {
+      return { success: false, message: "Your plan is managed by Suki Software. Contact us to upgrade." };
+    }
+
     const validVariant = Math.max(1, Math.min(4, Number(variant) || 1));
     const recomputedModules = JSON.stringify(getModulesForVariant(validVariant));
 
@@ -628,7 +642,7 @@ export async function updateCompanyVariantAction(variant: number) {
 
     // Re-issue JWT cookie with the new variant + modules so verifyAuth() sees it on reload
     await issueAuthCookie(
-      { id: userPayload.id, email: userPayload.email, role: userPayload.role, companyId: userPayload.companyId, variant: validVariant, enabledModules: recomputedModules },
+      { id: userPayload.id, email: userPayload.email, role: userPayload.role, companyId: userPayload.companyId, variant: validVariant, enabledModules: recomputedModules, serviceCrmEnabled: userPayload.serviceCrmEnabled ?? false },
       true
     );
 
@@ -655,6 +669,14 @@ export async function updateCompanyModulesAction(moduleKeys: string[]) {
       return { success: false, message: "No company associated" };
     }
 
+    const companyRecord = await prisma.company.findUnique({
+      where: { id: userPayload.companyId },
+      select: { planLocked: true },
+    });
+    if (companyRecord?.planLocked) {
+      return { success: false, message: "Your plan is managed by Suki Software. Contact us to upgrade." };
+    }
+
     const enabledModules = JSON.stringify(moduleKeys);
 
     await prisma.company.update({
@@ -664,7 +686,7 @@ export async function updateCompanyModulesAction(moduleKeys: string[]) {
 
     // Re-issue JWT cookie with updated modules
     await issueAuthCookie(
-      { id: userPayload.id, email: userPayload.email, role: userPayload.role, companyId: userPayload.companyId, variant: userPayload.variant ?? 1, enabledModules },
+      { id: userPayload.id, email: userPayload.email, role: userPayload.role, companyId: userPayload.companyId, variant: userPayload.variant ?? 1, enabledModules, serviceCrmEnabled: userPayload.serviceCrmEnabled ?? false },
       true
     );
 

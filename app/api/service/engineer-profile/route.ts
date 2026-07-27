@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
 
 export async function GET() {
   try {
     const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const engineer = await prisma.serviceEngineer.findFirst({

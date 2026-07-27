@@ -859,7 +859,7 @@ export default function QuotationDetailPageV2() {
       )}
 
       <ConfirmModal
-        isOpen={q.confirmState.isOpen}
+        isOpen={q.confirmState.isOpen && !q.confirmState.input}
         title={q.confirmState.title}
         message={q.confirmState.message}
         onConfirm={q.confirmState.action}

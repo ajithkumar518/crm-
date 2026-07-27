@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
 
 export async function PATCH(request: Request, { params }: { params: any }) {
   try {
     const { id } = await params;
     const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { outcome, outcomeNotes, sparePartsUsed, structuredPartsUsed, returnedParts, reasonNextSteps, followUpVisitNeeded, followUpDate, signatureUrl, photoUrls } = body;
+    const { outcome, outcomeNotes, sparePartsUsed, structuredPartsUsed, returnedParts, reasonNextSteps, followUpVisitNeeded, followUpDate, signatureUrl, photoUrls, actualSerialNumber, warrantyMonths } = body;
 
     // 1. Fetch visit
     const visit = await prisma.serviceVisit.findUnique({
@@ -264,9 +267,21 @@ export async function PATCH(request: Request, { params }: { params: any }) {
         }
         // Activate Asset if installation is resolved
         if (outcome === "Resolved" && updatedVisit.customerAssetId) {
+          const wMonths = parseInt(warrantyMonths) || 12;
+          const warrantyExpiryDate = new Date(checkOutTime);
+          warrantyExpiryDate.setMonth(warrantyExpiryDate.getMonth() + wMonths);
+
+          const assetUpdateData: any = {
+            status: "Active",
+            warrantyExpiryDate,
+          };
+          if (actualSerialNumber && typeof actualSerialNumber === "string" && actualSerialNumber.trim() !== "") {
+            assetUpdateData.serialNumber = actualSerialNumber.trim();
+          }
+
           await tx.customerAsset.update({
             where: { id: updatedVisit.customerAssetId },
-            data: { status: "Active" }
+            data: assetUpdateData,
           });
         }
       }

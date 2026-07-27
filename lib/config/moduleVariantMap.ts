@@ -65,3 +65,22 @@ export function getModulesForVariant(variant: number): ModuleKey[] {
   }
   return modules;
 }
+
+import { CANONICAL_NAV_MAP } from "../canonical-navigation-config";
+
+// Returns the minimum variant (1-4) required to access a given module.
+// Consults CANONICAL_NAV_MAP first as the single consolidated source of truth.
+export function getMinimumVariantForModule(moduleKey?: ModuleKey | string): number {
+  if (!moduleKey) return 1;
+  const allItems = CANONICAL_NAV_MAP[4] || [];
+  const found = allItems.find(item => item.key === moduleKey || (item.type === 'submodule' && item.parentKey === moduleKey));
+  if (found && found.variantMin) {
+    return found.variantMin;
+  }
+  for (let v = 1; v <= 4; v++) {
+    if ((VARIANT_ADDITIONS[v] as string[])?.includes(moduleKey)) {
+      return v;
+    }
+  }
+  return 1;
+}

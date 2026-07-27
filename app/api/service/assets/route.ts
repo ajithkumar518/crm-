@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(request: NextRequest) {
   const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
@@ -48,4 +52,56 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({ success: true, data: assets });
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
+    if (!user || !["Admin", "SuperAdmin", "ServiceManager"].includes(user.role)) {
+      return NextResponse.json({ success: false, message: "Forbidden: Insufficient privileges to manually onboard customer assets." }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { customerId, productName, serialNumber, purchaseDate, warrantyExpiryDate, amcExpiryDate, status, productId, dealId, projectId } = body;
+
+    if (!customerId || !productName || !serialNumber) {
+      return NextResponse.json({ success: false, message: "customerId, productName, and serialNumber are required fields." }, { status: 400 });
+    }
+
+    const existing = await prisma.customerAsset.findUnique({ where: { serialNumber: serialNumber.trim() } });
+    if (existing) {
+      return NextResponse.json({ success: false, message: `An asset with serial number '${serialNumber.trim()}' already exists.` }, { status: 400 });
+    }
+
+    const newAsset = await prisma.customerAsset.create({
+      data: {
+        customerId,
+        productName: productName.trim(),
+        serialNumber: serialNumber.trim(),
+        status: status || "Active",
+        purchaseDate: purchaseDate ? new Date(purchaseDate) : new Date(),
+        warrantyExpiryDate: warrantyExpiryDate ? new Date(warrantyExpiryDate) : null,
+        amcExpiryDate: amcExpiryDate ? new Date(amcExpiryDate) : null,
+        productId: productId || null,
+        dealId: dealId || null,
+        projectId: projectId || null,
+      },
+      include: {
+        customer: { select: { id: true, name: true, customerCode: true } },
+        purchaseOrder: { select: { id: true, poCode: true, poNumber: true } },
+        product: { select: { id: true, name: true, productCode: true } },
+        deal: { select: { id: true, dealName: true, opportunityCode: true } },
+        project: { select: { id: true, projectCode: true, name: true } },
+      },
+    });
+
+    await logAudit(user.id, "CustomerAsset", "Create", `Manually onboarded customer asset ${newAsset.serialNumber} (${newAsset.productName}) for customer ${customerId}`);
+
+    return NextResponse.json({ success: true, data: newAsset }, { status: 201 });
+  } catch (error: any) {
+    console.error("Error creating asset:", error);
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
 }

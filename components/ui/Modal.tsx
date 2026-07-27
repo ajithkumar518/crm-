@@ -30,7 +30,7 @@ export function Modal({
   children,
   footer,
   size = "md",
-  headerColor = "from-orange-50 to-white",
+  headerColor = "from-orange-50 to-white dark:from-[var(--surface-2)] dark:to-[var(--surface)]",
   className,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);

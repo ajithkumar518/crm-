@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/ToastProvider";
@@ -18,6 +19,7 @@ import { Plus, Pencil, Trash2, Search, ExternalLink, Swords, Trophy, AlertTriang
 import { validateUrl } from "@/lib/formValidation";
 
 export default function CompetitorsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const toast = useToast();
   const [competitors, setCompetitors] = useState<any[]>([]);
@@ -209,7 +211,7 @@ export default function CompetitorsPage() {
           {view === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {competitors.map((c) => (
-                <Link key={c.id} href={`/competitors/${c.id}`} className="competitor-card block">
+                <div key={c.id} className="competitor-card block cursor-pointer" onClick={() => router.push(`/competitors/${c.id}`)}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div
@@ -251,7 +253,7 @@ export default function CompetitorsPage() {
                       </span>
                     )}
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           ) : (
