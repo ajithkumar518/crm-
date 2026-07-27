@@ -2,25 +2,39 @@
 
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
-import { dispatchNotification, dispatchNotificationsToMany } from "@/lib/notifications";
+import {
+  dispatchNotification,
+  dispatchNotificationsToMany,
+} from "@/lib/notifications";
 import { logAudit } from "@/lib/audit";
+import * as crypto from "crypto";
 
 export async function getVisitorsAction() {
   try {
     const userPayload = await verifyAuth();
-    if (!userPayload || !["Admin", "SalesManager", "SalesExecutive"].includes(userPayload.role)) {
+    if (
+      !userPayload ||
+      !["Admin", "SalesManager", "SalesExecutive"].includes(userPayload.role)
+    ) {
       return { success: false, message: "Unauthorized" };
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const whereClause: any = {
       host: {
-        companyId: userPayload.companyId
-      }
+        companyId: userPayload.companyId,
+      },
     };
 
     if (userPayload.role === "SalesExecutive") {
@@ -37,16 +51,16 @@ export async function getVisitorsAction() {
 
     const normalized = visitors.map((v) => ({
       ...v,
-      name:         v.visitorName,
-      email:        v.visitorEmail,
-      phone:        v.visitorPhone,
-      hostName:     v.host?.name ?? null,
-      checkInTime:  v.inTime.toISOString(),
+      name: v.visitorName,
+      email: v.visitorEmail,
+      phone: v.visitorPhone,
+      hostName: v.host?.name ?? null,
+      checkInTime: v.inTime.toISOString(),
       checkOutTime: v.outTime?.toISOString() ?? null,
-      inTime:       v.inTime.toISOString(),
-      outTime:      v.outTime?.toISOString() ?? null,
-      createdAt:    v.createdAt.toISOString(),
-      updatedAt:    v.updatedAt.toISOString(),
+      inTime: v.inTime.toISOString(),
+      outTime: v.outTime?.toISOString() ?? null,
+      createdAt: v.createdAt.toISOString(),
+      updatedAt: v.updatedAt.toISOString(),
     }));
 
     return { success: true, data: normalized };
@@ -59,30 +73,43 @@ export async function getVisitorsAction() {
 export async function createVisitorAction(data: any) {
   try {
     const userPayload = await verifyAuth();
-    if (!userPayload || !["Admin", "SalesManager", "SalesExecutive"].includes(userPayload.role)) {
+    if (
+      !userPayload ||
+      !["Admin", "SalesManager", "SalesExecutive"].includes(userPayload.role)
+    ) {
       return { success: false, message: "Unauthorized" };
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const { name, email, phone, company, purpose } = data;
 
     if (!name || !phone || !purpose) {
-      return { success: false, message: "Name, Phone, and Purpose are required" };
+      return {
+        success: false,
+        message: "Name, Phone, and Purpose are required",
+      };
     }
 
     const visitor = await prisma.visitor.create({
       data: {
-        visitorName:  name,
+        visitorName: name,
         visitorEmail: email || null,
         visitorPhone: phone,
-        company:      company || "",
+        company: company || "",
         purpose,
-        hostUserId:   userPayload.id,
-        inTime:       new Date(),
+        hostUserId: userPayload.id,
+        inTime: new Date(),
       },
       include: {
         host: { select: { id: true, name: true, email: true } },
@@ -93,21 +120,25 @@ export async function createVisitorAction(data: any) {
       userPayload.id,
       "visitor",
       "create",
-      `Walk-in registered: ${name} visited ${visitor.host?.name ?? "office"}`
+      `Walk-in registered: ${name} visited ${visitor.host?.name ?? "office"}`,
     );
 
     // Notify Admin and Leads about the walk-in (scoped to tenant)
     const adminsAndLeads = await prisma.user.findMany({
-      where: { isActive: true, role: { in: ["Admin", "SalesManager"] }, companyId: userPayload.companyId }
+      where: {
+        isActive: true,
+        role: { in: ["Admin", "SalesManager"] },
+        companyId: userPayload.companyId,
+      },
     });
-    
+
     if (adminsAndLeads.length > 0) {
       await dispatchNotificationsToMany({
-        userIds: adminsAndLeads.map(u => u.id),
+        userIds: adminsAndLeads.map((u) => u.id),
         title: "New Visitor Walk-in",
         message: `${name} from ${company || "unknown"} checked in to meet ${visitor.host?.name ?? "someone"}`,
         type: "visit",
-        link: "/visitor-management"
+        link: "/visitor-management",
       });
     }
 
@@ -116,13 +147,13 @@ export async function createVisitorAction(data: any) {
       message: "Visitor registered successfully",
       data: {
         ...visitor,
-        name:         visitor.visitorName,
-        email:        visitor.visitorEmail,
-        phone:        visitor.visitorPhone,
-        hostName:     visitor.host?.name ?? null,
-        checkInTime:  visitor.inTime.toISOString(),
+        name: visitor.visitorName,
+        email: visitor.visitorEmail,
+        phone: visitor.visitorPhone,
+        hostName: visitor.host?.name ?? null,
+        checkInTime: visitor.inTime.toISOString(),
         checkOutTime: null,
-      }
+      },
     };
   } catch (error) {
     console.error("POST Visitor Error:", error);
@@ -133,13 +164,23 @@ export async function createVisitorAction(data: any) {
 export async function checkoutVisitorAction(data: any) {
   try {
     const userPayload = await verifyAuth();
-    if (!userPayload || !["Admin", "SalesManager", "SalesExecutive"].includes(userPayload.role)) {
+    if (
+      !userPayload ||
+      !["Admin", "SalesManager", "SalesExecutive"].includes(userPayload.role)
+    ) {
       return { success: false, message: "Unauthorized" };
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const { id } = data;
@@ -147,26 +188,40 @@ export async function checkoutVisitorAction(data: any) {
 
     const existing = await prisma.visitor.findUnique({
       where: { id },
-      include: { host: true }
+      include: { host: true },
     });
     if (!existing || existing.host.companyId !== userPayload.companyId) {
-      return { success: false, message: "Visitor record not found or access denied." };
+      return {
+        success: false,
+        message: "Visitor record not found or access denied.",
+      };
     }
-    if (userPayload.role === "SalesExecutive" && existing.hostUserId !== userPayload.id) {
+    if (
+      userPayload.role === "SalesExecutive" &&
+      existing.hostUserId !== userPayload.id
+    ) {
       return { success: false, message: "Unauthorized: Access denied." };
     }
 
     const visitor = await prisma.visitor.update({
       where: { id },
-      data:  { outTime: new Date() },
+      data: { outTime: new Date() },
     });
 
-    await logAudit(userPayload.id, "visitor", "checkout", `Visitor ${visitor.visitorName} checked out`);
+    await logAudit(
+      userPayload.id,
+      "visitor",
+      "checkout",
+      `Visitor ${visitor.visitorName} checked out`,
+    );
 
     return {
       success: true,
       message: "Visitor checked out",
-      data: { ...visitor, checkOutTime: visitor.outTime?.toISOString() ?? null }
+      data: {
+        ...visitor,
+        checkOutTime: visitor.outTime?.toISOString() ?? null,
+      },
     };
   } catch (error) {
     console.error("Checkout Visitor Error:", error);
@@ -178,19 +233,29 @@ export async function deleteVisitorAction(id: string) {
   try {
     const userPayload = await verifyAuth();
     if (!userPayload || !["Admin", "SuperAdmin"].includes(userPayload.role)) {
-      return { success: false, message: "Unauthorized: Only Admins can delete visitors" };
+      return {
+        success: false,
+        message: "Unauthorized: Only Admins can delete visitors",
+      };
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     if (!id) return { success: false, message: "Visitor ID is required" };
 
     const visitor = await prisma.visitor.findUnique({
       where: { id },
-      include: { host: true }
+      include: { host: true },
     });
     if (!visitor || visitor.host.companyId !== userPayload.companyId) {
       return { success: false, message: "Visitor not found or access denied." };
@@ -202,7 +267,7 @@ export async function deleteVisitorAction(id: string) {
       userPayload.id,
       "visitor",
       "delete",
-      `Visitor record deleted: ${visitor.visitorName}`
+      `Visitor record deleted: ${visitor.visitorName}`,
     );
 
     return { success: true, message: "Visitor deleted successfully" };
@@ -215,13 +280,23 @@ export async function deleteVisitorAction(id: string) {
 export async function getUnifiedOfficeVisitsAction() {
   try {
     const userPayload = await verifyAuth();
-    if (!userPayload || !["Admin", "SalesManager", "SalesExecutive"].includes(userPayload.role)) {
+    if (
+      !userPayload ||
+      !["Admin", "SalesManager", "SalesExecutive"].includes(userPayload.role)
+    ) {
       return { success: false, message: "Unauthorized" };
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const userId = userPayload.id;
@@ -231,7 +306,7 @@ export async function getUnifiedOfficeVisitsAction() {
     const guests = await prisma.visitor.findMany({
       where: {
         host: { companyId: userPayload.companyId },
-        ...(isExecutive ? { hostUserId: userId } : {})
+        ...(isExecutive ? { hostUserId: userId } : {}),
       },
       include: {
         host: { select: { id: true, name: true, email: true } },
@@ -243,10 +318,12 @@ export async function getUnifiedOfficeVisitsAction() {
     const customerVisits = await prisma.customerVisit.findMany({
       where: {
         companyId: userPayload.companyId,
-        ...(isExecutive ? { hostedBy: userId } : {})
+        ...(isExecutive ? { hostedBy: userId } : {}),
       },
       include: {
-        customer: { select: { id: true, name: true, customerCode: true, phone: true } },
+        customer: {
+          select: { id: true, name: true, customerCode: true, phone: true },
+        },
         host: { select: { id: true, name: true } },
       },
       orderBy: { checkInTime: "desc" },
@@ -256,11 +333,11 @@ export async function getUnifiedOfficeVisitsAction() {
     const followUps = await prisma.followUp.findMany({
       where: {
         companyId: userPayload.companyId,
-        visitId: { in: customerVisits.map(cv => cv.id) },
-        visitType: "INBOUND"
-      }
+        visitId: { in: customerVisits.map((cv) => cv.id) },
+        visitType: "INBOUND",
+      },
     });
-    const followUpMap = new Map(followUps.map(f => [f.visitId, f.status]));
+    const followUpMap = new Map(followUps.map((f) => [f.visitId, f.status]));
 
     // 3. Normalize guests
     const normalizedGuests = guests.map((g) => ({
@@ -305,7 +382,9 @@ export async function getUnifiedOfficeVisitsAction() {
 
     // 5. Combine and sort
     const combined = [...normalizedGuests, ...normalizedCustomers].sort(
-      (a, b) => new Date(b.checkInTime || 0).getTime() - new Date(a.checkInTime || 0).getTime()
+      (a, b) =>
+        new Date(b.checkInTime || 0).getTime() -
+        new Date(a.checkInTime || 0).getTime(),
     );
 
     return { success: true, data: combined };
@@ -319,17 +398,27 @@ export async function promoteVisitorToCustomerAction(id: string) {
   try {
     const userPayload = await verifyAuth();
     if (!userPayload || !["Admin", "SalesManager"].includes(userPayload.role)) {
-      return { success: false, message: "Unauthorized: Only Admin and Leads can promote walk-ins" };
+      return {
+        success: false,
+        message: "Unauthorized: Only Admin and Leads can promote walk-ins",
+      };
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const visitor = await prisma.visitor.findUnique({
       where: { id },
-      include: { host: { select: { name: true, companyId: true } } }
+      include: { host: { select: { name: true, companyId: true } } },
     });
     if (!visitor || visitor.host.companyId !== userPayload.companyId) {
       return { success: false, message: "Visitor not found or access denied." };
@@ -338,29 +427,48 @@ export async function promoteVisitorToCustomerAction(id: string) {
     // Verify email/phone unique constraint within the company
     if (visitor.visitorEmail) {
       const existing = await prisma.customer.findFirst({
-        where: { email: visitor.visitorEmail, companyId: userPayload.companyId }
+        where: {
+          email: visitor.visitorEmail,
+          companyId: userPayload.companyId,
+        },
       });
-      if (existing) return { success: false, message: "A customer with this email already exists" };
+      if (existing)
+        return {
+          success: false,
+          message: "A customer with this email already exists",
+        };
     }
     if (visitor.visitorPhone) {
       const existing = await prisma.customer.findFirst({
-        where: { phone: visitor.visitorPhone, companyId: userPayload.companyId }
+        where: {
+          phone: visitor.visitorPhone,
+          companyId: userPayload.companyId,
+        },
       });
-      if (existing) return { success: false, message: "A customer with this phone number already exists" };
+      if (existing)
+        return {
+          success: false,
+          message: "A customer with this phone number already exists",
+        };
     }
 
     // Fetch system configurations from database
     const configs = await prisma.systemConfig.findMany();
     const configMap = new Map(configs.map((c) => [c.key, c.value]));
 
-    const assignmentMode = configMap.get("leads_assignment_mode") || "ROUND_ROBIN";
+    const assignmentMode =
+      configMap.get("leads_assignment_mode") || "ROUND_ROBIN";
     const defaultAssigneeId = configMap.get("leads_default_assignee_id") || "";
 
     let assignedUser = null;
 
     if (assignmentMode === "DEFAULT_POOL" && defaultAssigneeId) {
       assignedUser = await prisma.user.findFirst({
-        where: { id: defaultAssigneeId, isActive: true, companyId: userPayload.companyId },
+        where: {
+          id: defaultAssigneeId,
+          isActive: true,
+          companyId: userPayload.companyId,
+        },
         select: { id: true, name: true },
       });
     }
@@ -368,21 +476,43 @@ export async function promoteVisitorToCustomerAction(id: string) {
     if (!assignedUser) {
       // Fetch active executives scoped to tenant
       let executives = await prisma.user.findMany({
-        where: { role: "SalesExecutive", isActive: true, companyId: userPayload.companyId },
-        select: { id: true, name: true, _count: { select: { assignedCustomers: true } } }
+        where: {
+          role: "SalesExecutive",
+          isActive: true,
+          companyId: userPayload.companyId,
+        },
+        select: {
+          id: true,
+          name: true,
+          _count: { select: { assignedCustomers: true } },
+        },
       });
       if (executives.length === 0) {
         executives = await prisma.user.findMany({
-          where: { role: "SalesManager", isActive: true, companyId: userPayload.companyId },
-          select: { id: true, name: true, _count: { select: { assignedCustomers: true } } }
+          where: {
+            role: "SalesManager",
+            isActive: true,
+            companyId: userPayload.companyId,
+          },
+          select: {
+            id: true,
+            name: true,
+            _count: { select: { assignedCustomers: true } },
+          },
         });
       }
       if (executives.length > 0) {
-        executives.sort((a, b) => a._count.assignedCustomers - b._count.assignedCustomers);
+        executives.sort(
+          (a, b) => a._count.assignedCustomers - b._count.assignedCustomers,
+        );
         assignedUser = executives[0];
       } else {
         assignedUser = await prisma.user.findFirst({
-          where: { role: "Admin", isActive: true, companyId: userPayload.companyId }
+          where: {
+            role: "Admin",
+            isActive: true,
+            companyId: userPayload.companyId,
+          },
         });
       }
     }
@@ -391,9 +521,9 @@ export async function promoteVisitorToCustomerAction(id: string) {
     let customerCode = "";
     let isUnique = false;
     while (!isUnique) {
-      customerCode = `CUST-W${Math.floor(10000 + Math.random() * 90000)}`;
+      customerCode = `CUST-W${crypto.randomUUID().split("-")[0].toUpperCase()}`;
       const existing = await prisma.customer.findFirst({
-        where: { customerCode, companyId: userPayload.companyId }
+        where: { customerCode, companyId: userPayload.companyId },
       });
       if (!existing) isUnique = true;
     }
@@ -409,14 +539,14 @@ export async function promoteVisitorToCustomerAction(id: string) {
         assignedUserId: assignedUser?.id || null,
         leadSource: "WalkIn",
         companyId: userPayload.companyId,
-      }
+      },
     });
 
     await logAudit(
       userPayload.id,
       "customer",
       "create",
-      `Customer record created from promoted visitor: ${customer.name} (${customer.customerCode})`
+      `Customer record created from promoted visitor: ${customer.name} (${customer.customerCode})`,
     );
 
     // Create CustomerVisit
@@ -432,14 +562,14 @@ export async function promoteVisitorToCustomerAction(id: string) {
         customerDecision: "APPROVED",
         status: visitor.outTime ? "CHECKED_OUT" : "CHECKED_IN",
         companyId: userPayload.companyId,
-      }
+      },
     });
 
     await logAudit(
       userPayload.id,
       "customer_visit",
       "create",
-      `Customer visit recorded from promoted visitor: ${customer.customerCode}`
+      `Customer visit recorded from promoted visitor: ${customer.customerCode}`,
     );
 
     // Create automatic next-day follow-up task
@@ -447,7 +577,7 @@ export async function promoteVisitorToCustomerAction(id: string) {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       tomorrow.setHours(9, 0, 0, 0); // 9:00 AM tomorrow
-      
+
       await prisma.followUp.create({
         data: {
           customerId: customer.id,
@@ -467,7 +597,7 @@ export async function promoteVisitorToCustomerAction(id: string) {
         userPayload.id,
         "follow_up",
         "create",
-        `Auto-generated follow-up task created for promoted visitor: ${customer.customerCode}`
+        `Auto-generated follow-up task created for promoted visitor: ${customer.customerCode}`,
       );
     }
 
@@ -486,7 +616,7 @@ export async function promoteVisitorToCustomerAction(id: string) {
         userPayload.id,
         "call_log",
         "create",
-        `Initial call log created for promoted visitor: ${customer.customerCode}`
+        `Initial call log created for promoted visitor: ${customer.customerCode}`,
       );
     }
 
@@ -497,10 +627,15 @@ export async function promoteVisitorToCustomerAction(id: string) {
       userPayload.id,
       "visitor",
       "delete",
-      `Deleted guest visitor log during promotion: ${visitor.visitorName}`
+      `Deleted guest visitor log during promotion: ${visitor.visitorName}`,
     );
 
-    await logAudit(userPayload.id, "visitor", "promote", `Walk-in Guest promoted to Customer: ${visitor.visitorName}`);
+    await logAudit(
+      userPayload.id,
+      "visitor",
+      "promote",
+      `Walk-in Guest promoted to Customer: ${visitor.visitorName}`,
+    );
 
     // Dispatch SSE notifications
     // Notify the assigned executive
@@ -535,9 +670,15 @@ export async function promoteVisitorToCustomerAction(id: string) {
       }).catch((e) => console.error("Notification failed", e));
     }
 
-    return { success: true, message: "Visitor promoted to Customer successfully" };
+    return {
+      success: true,
+      message: "Visitor promoted to Customer successfully",
+    };
   } catch (error: any) {
     console.error("Promote visitor error:", error);
-    return { success: false, message: "Failed to promote visitor: " + error.message };
+    return {
+      success: false,
+      message: "Failed to promote visitor: " + error.message,
+    };
   }
 }

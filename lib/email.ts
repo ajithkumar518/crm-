@@ -24,8 +24,16 @@ interface SendEmailOptions {
 }
 
 export async function sendEmail(opts: SendEmailOptions): Promise<void>;
-export async function sendEmail(to: string, subject: string, html: string): Promise<void>;
-export async function sendEmail(toOrOpts: string | SendEmailOptions, subject?: string, html?: string): Promise<void> {
+export async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+): Promise<void>;
+export async function sendEmail(
+  toOrOpts: string | SendEmailOptions,
+  subject?: string,
+  html?: string,
+): Promise<void> {
   let to: string;
   let subjectText: string;
   let htmlText: string;
@@ -48,16 +56,14 @@ export async function sendEmail(toOrOpts: string | SendEmailOptions, subject?: s
       console.log("=========================================");
       console.log(`[DEVELOPMENT] Mock Email to: ${to}`);
       console.log(`Subject: ${subjectText}`);
-      const otpMatch = htmlText!.match(/\b\d{6}\b/);
-      if (otpMatch) console.log(`=> Extracted OTP: ${otpMatch[0]}`);
-      const linkMatch = htmlText!.match(/href="([^"]+)"/g);
-      if (linkMatch) console.log(`=> Links: ${linkMatch.join(" | ")}`);
-      if (attachments && attachments.length > 0) console.log(`=> Attachments: ${attachments.map(a => a.filename).join(", ")}`);
       console.log("=========================================");
       return;
     }
     await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.EMAIL_FROM || '"SUKI CRM" <noreply@sukisoftware.com>',
+      from:
+        process.env.SMTP_FROM ||
+        process.env.EMAIL_FROM ||
+        '"SUKI CRM" <noreply@sukisoftware.com>',
       to,
       subject: subjectText,
       html: htmlText,
@@ -109,7 +115,8 @@ function linkButton(href: string, label: string) {
 
 // ── OTP Email (first-login via login page) ────────────────────────────────────
 export function buildOtpEmail(name: string, otp: string): string {
-  return emailHeader("Secure Account Activation") +
+  return (
+    emailHeader("Secure Account Activation") +
     `<p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#191c1e;">Hi ${name},</p>
      <p style="margin:0 0 28px;font-size:14px;color:#44474d;line-height:22px;">
        Welcome to <strong> SUKI  CRM</strong>! Use the code below to activate your account:
@@ -118,12 +125,19 @@ export function buildOtpEmail(name: string, otp: string): string {
     `<p style="margin:20px 0 0;font-size:13px;color:#75777e;text-align:center;">
        Expires in <strong>10 minutes</strong>. Do not share this code with anyone.
      </p>` +
-    emailFooter("If you did not expect this, contact IT Support immediately.");
+    emailFooter("If you did not expect this, contact IT Support immediately.")
+  );
 }
 
 // ── Invitation Email (admin creates user) ─────────────────────────────────────
-export function buildInvitationEmail(name: string, email: string, otp: string, inviterName: string): string {
-  return emailHeader("You've Been Invited") +
+export function buildInvitationEmail(
+  name: string,
+  email: string,
+  otp: string,
+  inviterName: string,
+): string {
+  return (
+    emailHeader("You've Been Invited") +
     `<p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#191c1e;">Hi ${name},</p>
      <p style="margin:0 0 24px;font-size:14px;color:#44474d;line-height:22px;">
        <strong>${inviterName}</strong> has created a  SUKI  CRM account for you.
@@ -143,12 +157,18 @@ export function buildInvitationEmail(name: string, email: string, otp: string, i
      <p style="margin:20px 0 0;font-size:13px;color:#75777e;text-align:center;">
        Expires in <strong>10 minutes</strong>. Do not share it with anyone.
      </p>` +
-    emailFooter("Need help? Contact your system administrator.");
+    emailFooter("Need help? Contact your system administrator.")
+  );
 }
 
 // ── Internal Employee Activation Email (admin creates internal user) ───────────
-export function buildInternalActivationEmail(name: string, activationUrl: string, inviterName: string): string {
-  return emailHeader("Welcome to  SUKI  CRM") +
+export function buildInternalActivationEmail(
+  name: string,
+  activationUrl: string,
+  inviterName: string,
+): string {
+  return (
+    emailHeader("Welcome to  SUKI  CRM") +
     `<p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#191c1e;">Hi ${name},</p>
      <p style="margin:0 0 24px;font-size:14px;color:#44474d;line-height:22px;">
        <strong>${inviterName}</strong> has added you to <strong> SUKI  CRM</strong> as a team member.
@@ -168,12 +188,14 @@ export function buildInternalActivationEmail(name: string, activationUrl: string
      <p style="margin:20px 0 0;font-size:13px;color:#75777e;text-align:center;">
        This link expires in <strong>24 hours</strong>. If you did not expect this, please ignore this email.
      </p>` +
-    emailFooter("Need help? Contact your system administrator.");
+    emailFooter("Need help? Contact your system administrator.")
+  );
 }
 
 // ── Password Reset Email (Internal Users) ─────────────────────────────────────
 export function buildResetEmail(name: string, resetUrl: string): string {
-  return emailHeader("Password Reset Request") +
+  return (
+    emailHeader("Password Reset Request") +
     `<p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#191c1e;">Hi ${name},</p>
      <p style="margin:0 0 28px;font-size:14px;color:#44474d;line-height:22px;">
        We received a request to reset your  SUKI  CRM password. Click below to set a new password:
@@ -184,12 +206,17 @@ export function buildResetEmail(name: string, resetUrl: string): string {
      <p style="margin:20px 0 0;font-size:13px;color:#75777e;">
        Expires in <strong>15 minutes</strong>. If you did not request this, ignore this email.
      </p>` +
-    emailFooter("For security, never share this link with anyone.");
+    emailFooter("For security, never share this link with anyone.")
+  );
 }
 
 // ── Customer Portal Activation Email ──────────────────────────────────────────
-export function buildCustomerActivationEmail(name: string, activationUrl: string): string {
-  return emailHeader("Welcome to  SUKI  Software Customer Portal") +
+export function buildCustomerActivationEmail(
+  name: string,
+  activationUrl: string,
+): string {
+  return (
+    emailHeader("Welcome to  SUKI  Software Customer Portal") +
     `<p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#191c1e;">Hi ${name},</p>
      <p style="margin:0 0 28px;font-size:14px;color:#44474d;line-height:22px;">
        Your customer portal account has been activated. Click the button below to set your password and access your subscription details.
@@ -200,12 +227,17 @@ export function buildCustomerActivationEmail(name: string, activationUrl: string
      <p style="margin:20px 0 0;font-size:13px;color:#75777e;">
        This link expires in <strong>24 hours</strong>. If you did not expect this, contact your sales representative.
      </p>` +
-    emailFooter(" SUKI  Software Customer Support — support@sukisoftware.com");
+    emailFooter(" SUKI  Software Customer Support — support@sukisoftware.com")
+  );
 }
 
 // ── Customer Portal Password Reset Email ──────────────────────────────────────
-export function buildCustomerResetEmail(name: string, resetUrl: string): string {
-  return emailHeader("Reset Your Portal Password") +
+export function buildCustomerResetEmail(
+  name: string,
+  resetUrl: string,
+): string {
+  return (
+    emailHeader("Reset Your Portal Password") +
     `<p style="margin:0 0 8px;font-size:15px;font-weight:600;color:#191c1e;">Hi ${name},</p>
      <p style="margin:0 0 28px;font-size:14px;color:#44474d;line-height:22px;">
        We received a request to reset your  SUKI  Software Customer Portal password.
@@ -216,5 +248,6 @@ export function buildCustomerResetEmail(name: string, resetUrl: string): string 
      <p style="margin:20px 0 0;font-size:13px;color:#75777e;">
        Expires in <strong>15 minutes</strong>. If you did not request this, ignore this email.
      </p>` +
-    emailFooter("For security, never share this link with anyone.");
+    emailFooter("For security, never share this link with anyone.")
+  );
 }

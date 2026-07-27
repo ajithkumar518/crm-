@@ -16,21 +16,77 @@ import { getNavItems } from "@/lib/canonical-navigation-config";
 import { hasModule, ModuleCheckSubject } from "@/lib/modules";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import {
-  LayoutDashboard, Users, CalendarClock, Briefcase, BookUser,
-  CheckSquare, Settings, LogOut, Menu, X, TrendingUp, Building,
-  ChevronDown, ChevronUp, Building2, ShieldCheck, PieChart, Activity, ContactRound, ListTodo,
-  Package, FileText, IndianRupee, MessageSquare, Clock, Target, Layers, MapPin, Search,
-  Swords, Crown, Globe, Trophy, Wrench, ShieldAlert, Hammer, LifeBuoy, AlertTriangle, HelpCircle, Calendar,
-  HardDrive, Award, ChartBar, Star, FolderKanban, Boxes, Lock
+  LayoutDashboard,
+  Users,
+  CalendarClock,
+  Briefcase,
+  BookUser,
+  CheckSquare,
+  Settings,
+  LogOut,
+  Menu,
+  X,
+  TrendingUp,
+  Building,
+  ChevronDown,
+  ChevronUp,
+  Building2,
+  ShieldCheck,
+  PieChart,
+  Activity,
+  ContactRound,
+  ListTodo,
+  Package,
+  FileText,
+  IndianRupee,
+  MessageSquare,
+  Clock,
+  Target,
+  Layers,
+  MapPin,
+  Search,
+  Swords,
+  Crown,
+  Globe,
+  Trophy,
+  Wrench,
+  ShieldAlert,
+  Hammer,
+  LifeBuoy,
+  AlertTriangle,
+  HelpCircle,
+  Calendar,
+  HardDrive,
+  Award,
+  ChartBar,
+  Star,
+  FolderKanban,
+  Boxes,
+  Lock,
 } from "lucide-react";
 
 // ─── Nav definitions ─────────────────────────────────────────────────────────
 
-type NavItem = { href: string; label: string; icon: React.ReactNode; end?: boolean };
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  end?: boolean;
+};
 
 // ─── NavLink ──────────────────────────────────────────────────────────────────
 
-function NavLink({ item, active, onClick, collapsed }: { item: NavItem; active: boolean; onClick?: () => void; collapsed?: boolean }) {
+function NavLink({
+  item,
+  active,
+  onClick,
+  collapsed,
+}: {
+  item: NavItem;
+  active: boolean;
+  onClick?: () => void;
+  collapsed?: boolean;
+}) {
   return (
     <Link
       href={item.href}
@@ -39,20 +95,45 @@ function NavLink({ item, active, onClick, collapsed }: { item: NavItem; active: 
       className={cn(
         "relative rounded-lg font-medium transition-colors group",
         active && "font-semibold",
-        collapsed ? "flex items-center justify-center px-2 py-2" : "flex items-center gap-3 px-3 py-2",
+        collapsed
+          ? "flex items-center justify-center px-2 py-2"
+          : "flex items-center gap-3 px-3 py-2",
       )}
       style={{
         fontSize: collapsed ? undefined : "13.5px",
         color: active ? "var(--sidebar-text-act)" : "var(--sidebar-text)",
-        background: active ? "var(--sidebar-active-bg)" : "transparent"
+        background: active ? "var(--sidebar-active-bg)" : "transparent",
       }}
-      onMouseEnter={e => { if (!active) { e.currentTarget.style.color = "var(--sidebar-text-act)"; e.currentTarget.style.background = "var(--sidebar-hover)"; e.currentTarget.style.borderLeft = "3px solid var(--brand-primary)"; e.currentTarget.style.paddingLeft = "10px"; } }}
-      onMouseLeave={e => { if (!active) { e.currentTarget.style.color = "var(--sidebar-text)"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeft = ""; e.currentTarget.style.paddingLeft = ""; } }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.color = "var(--sidebar-text-act)";
+          e.currentTarget.style.background = "var(--sidebar-hover)";
+          e.currentTarget.style.borderLeft = "3px solid var(--brand-primary)";
+          e.currentTarget.style.paddingLeft = "10px";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.color = "var(--sidebar-text)";
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.borderLeft = "";
+          e.currentTarget.style.paddingLeft = "";
+        }
+      }}
     >
-      <span className={cn("transition-colors shrink-0")} style={{ color: active ? "var(--sidebar-text-act)" : "var(--sidebar-heading)" }}>
+      <span
+        className={cn("transition-colors shrink-0")}
+        style={{
+          color: active ? "var(--sidebar-text-act)" : "var(--sidebar-heading)",
+        }}
+      >
         {item.icon}
       </span>
-      {!collapsed && <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.label}</span>}
+      {!collapsed && (
+        <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+          {item.label}
+        </span>
+      )}
     </Link>
   );
 }
@@ -69,7 +150,10 @@ function parseQuery(str?: string): Record<string, string> {
   return obj;
 }
 
-export function isBasePathActive(currentPath: string, targetHref: string): boolean {
+export function isBasePathActive(
+  currentPath: string,
+  targetHref: string,
+): boolean {
   const targetPath = targetHref.split("?")[0].split("#")[0];
   const currentCleanPath = currentPath.split("?")[0].split("#")[0];
 
@@ -81,7 +165,15 @@ export function isBasePathActive(currentPath: string, targetHref: string): boole
     return false;
   }
 
-  const parentSegmentsCount = ["admin", "settings", "customer", "reports", "service"].includes(targetSegments[0]) ? 2 : 1;
+  const parentSegmentsCount = [
+    "admin",
+    "settings",
+    "customer",
+    "reports",
+    "service",
+  ].includes(targetSegments[0])
+    ? 2
+    : 1;
 
   for (let i = 0; i < parentSegmentsCount; i++) {
     if (targetSegments[i] !== currentSegments[i]) {
@@ -96,7 +188,7 @@ export function isRouteActive(
   currentPath: string,
   currentQueryString: string,
   targetHref: string,
-  allSectionHrefs: string[]
+  allSectionHrefs: string[],
 ): boolean {
   const currentCleanPath = currentPath.split("?")[0].split("#")[0];
   const currentQuery = parseQuery(currentQueryString);
@@ -196,7 +288,9 @@ function ExpandableNavSection({
   const searchParams = useSearchParams();
   const searchString = searchParams ? searchParams.toString() : "";
 
-  const allHrefs = subItems.map(item => item.href).filter((href): href is string => !!href);
+  const allHrefs = subItems
+    .map((item) => item.href)
+    .filter((href): href is string => !!href);
 
   const isSubActive = (href: string): boolean => {
     return isRouteActive(pathname, searchString, href, allHrefs);
@@ -219,37 +313,100 @@ function ExpandableNavSection({
           title={label}
           className="w-full flex items-center justify-center px-2 py-2.5 rounded-lg text-sm font-medium transition-colors"
           style={{
-            color: isSectionActive ? "var(--sidebar-text-act)" : "var(--sidebar-text)",
-            background: isSectionActive ? "color-mix(in srgb, var(--brand-primary) 20%, transparent)" : "transparent"
+            color: isSectionActive
+              ? "var(--sidebar-text-act)"
+              : "var(--sidebar-text)",
+            background: isSectionActive
+              ? "color-mix(in srgb, var(--brand-primary) 20%, transparent)"
+              : "transparent",
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = isSectionActive ? "color-mix(in srgb, var(--brand-primary) 35%, transparent)" : "var(--sidebar-hover)"; if (!isSectionActive) { e.currentTarget.style.borderLeft = "3px solid var(--brand-primary)"; e.currentTarget.style.paddingLeft = "11px"; } }}
-          onMouseLeave={e => { e.currentTarget.style.background = isSectionActive ? "color-mix(in srgb, var(--brand-primary) 20%, transparent)" : "transparent"; if (!isSectionActive) { e.currentTarget.style.borderLeft = ""; e.currentTarget.style.paddingLeft = ""; } }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = isSectionActive
+              ? "color-mix(in srgb, var(--brand-primary) 35%, transparent)"
+              : "var(--sidebar-hover)";
+            if (!isSectionActive) {
+              e.currentTarget.style.borderLeft =
+                "3px solid var(--brand-primary)";
+              e.currentTarget.style.paddingLeft = "11px";
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = isSectionActive
+              ? "color-mix(in srgb, var(--brand-primary) 20%, transparent)"
+              : "transparent";
+            if (!isSectionActive) {
+              e.currentTarget.style.borderLeft = "";
+              e.currentTarget.style.paddingLeft = "";
+            }
+          }}
         >
-          <span style={{ color: isSectionActive ? "var(--sidebar-active)" : "var(--sidebar-heading)" }}>{icon}</span>
+          <span
+            style={{
+              color: isSectionActive
+                ? "var(--sidebar-active)"
+                : "var(--sidebar-heading)",
+            }}
+          >
+            {icon}
+          </span>
         </button>
-        <div className="absolute left-full top-0 ml-2 w-48 py-1.5 rounded-xl shadow-2xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50"
-             style={{ background: "var(--sidebar-bg)" }}>
-          <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--sidebar-heading)" }}>{label}</p>
+        <div
+          className="absolute left-full top-0 ml-2 w-48 py-1.5 rounded-xl shadow-2xl border border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50"
+          style={{ background: "var(--sidebar-bg)" }}
+        >
+          <p
+            className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider"
+            style={{ color: "var(--sidebar-heading)" }}
+          >
+            {label}
+          </p>
           {subItems.map((sub, idx) => {
             if (sub.divider || !sub.href) {
               return (
-                <div key={`divider-${idx}`} className="my-2 border-t border-white/10 mx-3" />
+                <div
+                  key={`divider-${idx}`}
+                  className="my-2 border-t border-white/10 mx-3"
+                />
               );
             }
             const href = sub.href;
             const isActive = isSubActive(href);
             return (
-              <Link key={href} href={href} onClick={onNavClick}
+              <Link
+                key={href}
+                href={href}
+                onClick={onNavClick}
                 className="block px-3 py-1.5 text-[12px] rounded-md mx-1 transition-colors"
                 style={{
-                  color: isActive ? "var(--sidebar-text-act)" : "var(--sidebar-text)",
+                  color: isActive
+                    ? "var(--sidebar-text-act)"
+                    : "var(--sidebar-text)",
                   fontWeight: isActive ? 600 : 500,
-                  background: isActive ? "var(--sidebar-active-bg)" : "transparent"
+                  background: isActive
+                    ? "var(--sidebar-active-bg)"
+                    : "transparent",
                 }}
-                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = "var(--sidebar-text-act)"; e.currentTarget.style.background = "var(--sidebar-hover)"; e.currentTarget.style.borderLeft = "2px solid var(--brand-primary)"; e.currentTarget.style.paddingLeft = "11px"; } }}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color = "var(--sidebar-text)"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeft = ""; e.currentTarget.style.paddingLeft = ""; } }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = "var(--sidebar-text-act)";
+                    e.currentTarget.style.background = "var(--sidebar-hover)";
+                    e.currentTarget.style.borderLeft =
+                      "2px solid var(--brand-primary)";
+                    e.currentTarget.style.paddingLeft = "11px";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = "var(--sidebar-text)";
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.borderLeft = "";
+                    e.currentTarget.style.paddingLeft = "";
+                  }
+                }}
               >
-                <span className="whitespace-nowrap overflow-hidden text-ellipsis">{sub.label}</span>
+                <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                  {sub.label}
+                </span>
               </Link>
             );
           })}
@@ -267,19 +424,41 @@ function ExpandableNavSection({
         )}
         style={{
           fontSize: collapsed ? undefined : "13.5px",
-          color: isSectionActive ? "var(--sidebar-text-act)" : "var(--sidebar-text)",
-          background: "transparent"
+          color: isSectionActive
+            ? "var(--sidebar-text-act)"
+            : "var(--sidebar-text)",
+          background: "transparent",
         }}
-        onMouseEnter={e => { e.currentTarget.style.background = "var(--sidebar-hover)"; e.currentTarget.style.borderLeft = "3px solid var(--brand-primary)"; e.currentTarget.style.paddingLeft = "11px"; }}
-        onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeft = ""; e.currentTarget.style.paddingLeft = ""; }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "var(--sidebar-hover)";
+          e.currentTarget.style.borderLeft = "3px solid var(--brand-primary)";
+          e.currentTarget.style.paddingLeft = "11px";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+          e.currentTarget.style.borderLeft = "";
+          e.currentTarget.style.paddingLeft = "";
+        }}
       >
         <div className="flex items-center gap-3">
-          <span className={cn("transition-colors shrink-0")} style={{ color: isSectionActive ? "var(--sidebar-text-act)" : "var(--sidebar-heading)" }}>
+          <span
+            className={cn("transition-colors shrink-0")}
+            style={{
+              color: isSectionActive
+                ? "var(--sidebar-text-act)"
+                : "var(--sidebar-heading)",
+            }}
+          >
             {icon}
           </span>
-          <span className="whitespace-nowrap overflow-hidden text-ellipsis">{label}</span>
+          <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+            {label}
+          </span>
         </div>
-        <span className="transition-colors overflow-hidden shrink-0 min-w-[14px]" style={{ color: "var(--sidebar-heading)" }}>
+        <span
+          className="transition-colors overflow-hidden shrink-0 min-w-[14px]"
+          style={{ color: "var(--sidebar-heading)" }}
+        >
           {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
         </span>
       </button>
@@ -289,7 +468,10 @@ function ExpandableNavSection({
           {subItems.map((sub, idx) => {
             if (sub.divider || !sub.href) {
               return (
-                <div key={`divider-${idx}`} className="my-2 border-t border-white/10" />
+                <div
+                  key={`divider-${idx}`}
+                  className="my-2 border-t border-white/10"
+                />
               );
             }
             const href = sub.href;
@@ -304,14 +486,35 @@ function ExpandableNavSection({
                 )}
                 style={{
                   fontSize: "12.5px",
-                  color: isActive ? "var(--sidebar-text-act)" : "var(--sidebar-text)",
+                  color: isActive
+                    ? "var(--sidebar-text-act)"
+                    : "var(--sidebar-text)",
                   fontWeight: isActive ? 600 : 500,
-                  background: isActive ? "var(--sidebar-active-bg)" : "transparent"
+                  background: isActive
+                    ? "var(--sidebar-active-bg)"
+                    : "transparent",
                 }}
-                onMouseEnter={e => { if (!isActive) { e.currentTarget.style.color = "var(--sidebar-text-act)"; e.currentTarget.style.background = "var(--sidebar-hover)"; e.currentTarget.style.borderLeft = "2px solid var(--brand-primary)"; e.currentTarget.style.paddingLeft = "11px"; } }}
-                onMouseLeave={e => { if (!isActive) { e.currentTarget.style.color = "var(--sidebar-text)"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderLeft = ""; e.currentTarget.style.paddingLeft = ""; } }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = "var(--sidebar-text-act)";
+                    e.currentTarget.style.background = "var(--sidebar-hover)";
+                    e.currentTarget.style.borderLeft =
+                      "2px solid var(--brand-primary)";
+                    e.currentTarget.style.paddingLeft = "11px";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = "var(--sidebar-text)";
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.borderLeft = "";
+                    e.currentTarget.style.paddingLeft = "";
+                  }
+                }}
               >
-                <span className="whitespace-nowrap overflow-hidden text-ellipsis">{sub.label}</span>
+                <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                  {sub.label}
+                </span>
               </Link>
             );
           })}
@@ -345,13 +548,17 @@ function SidebarModuleSearch({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
-  
+
   // Recent pages (empty query state)
   const [recentPages, setRecentPages] = useState<any[]>([]);
-  
+
   const localStorageKey = useMemo(() => {
     if (!user) return null;
-    return user.id ? `recentPages_${user.id}` : (user.email ? `recentPages_${user.email}` : null);
+    return user.id
+      ? `recentPages_${user.id}`
+      : user.email
+        ? `recentPages_${user.email}`
+        : null;
   }, [user]);
 
   // Load recent pages from localStorage
@@ -368,7 +575,7 @@ function SidebarModuleSearch({
         setRecentPages([]);
       }
     } catch (err) {
-      console.error('Failed to load recent pages:', err);
+      console.error("Failed to load recent pages:", err);
     }
   }, [localStorageKey]);
 
@@ -376,20 +583,20 @@ function SidebarModuleSearch({
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
-  
+
   // Save recent pages to localStorage
   const addToRecentPages = (item: any) => {
     if (!localStorageKey) return;
-    setRecentPages(prev => {
-      const filtered = prev.filter(p => p.key !== item.key);
+    setRecentPages((prev) => {
+      const filtered = prev.filter((p) => p.key !== item.key);
       const updated = [item, ...filtered].slice(0, 5);
       try {
         localStorage.setItem(localStorageKey, JSON.stringify(updated));
       } catch (err) {
-        console.error('Failed to save recent pages:', err);
+        console.error("Failed to save recent pages:", err);
       }
       return updated;
     });
@@ -398,18 +605,18 @@ function SidebarModuleSearch({
   // Keyboard shortcut (Cmd/Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
         inputRef.current?.focus();
         setOpen(true);
       }
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         setOpen(false);
         setSelectedIndex(0);
       }
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   // Fetch search results from server
@@ -425,9 +632,11 @@ function SidebarModuleSearch({
       setError(false);
 
       try {
-        const response = await fetch(`/api/navigation-search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(
+          `/api/navigation-search?q=${encodeURIComponent(query)}`,
+        );
         const data = await response.json();
-        
+
         if (data.success) {
           setResults(data.data.items || []);
           setSelectedIndex(0);
@@ -435,7 +644,7 @@ function SidebarModuleSearch({
           setError(true);
         }
       } catch (err) {
-        console.error('Search error:', err);
+        console.error("Search error:", err);
         setError(true);
       } finally {
         setLoading(false);
@@ -449,7 +658,10 @@ function SidebarModuleSearch({
   // Handle click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
         setSelectedIndex(0);
       }
@@ -458,14 +670,14 @@ function SidebarModuleSearch({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-
-
   // Scroll selected item into view
   useEffect(() => {
     if (!open || !resultsRef.current) return;
-    const selected = resultsRef.current.querySelector('[aria-selected="true"]') as HTMLElement;
+    const selected = resultsRef.current.querySelector(
+      '[aria-selected="true"]',
+    ) as HTMLElement;
     if (selected) {
-      selected.scrollIntoView({ block: 'nearest' });
+      selected.scrollIntoView({ block: "nearest" });
     }
   }, [selectedIndex, open]);
 
@@ -474,15 +686,17 @@ function SidebarModuleSearch({
     if (!open || results.length === 0) return;
 
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
         setSelectedIndex((prev) => (prev + 1) % results.length);
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + results.length) % results.length);
+        setSelectedIndex(
+          (prev) => (prev - 1 + results.length) % results.length,
+        );
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         const selected = results[selectedIndex];
         if (selected) {
@@ -500,9 +714,10 @@ function SidebarModuleSearch({
   const groupedResults = useMemo(() => {
     const groups: Record<string, { items: any[]; startIndex: number }> = {};
     let flatIndex = 0;
-    
-    results.forEach(item => {
-      const parent = item.parentLabel || (item.type === 'setting' ? 'Settings' : 'Modules');
+
+    results.forEach((item) => {
+      const parent =
+        item.parentLabel || (item.type === "setting" ? "Settings" : "Modules");
       if (!groups[parent]) {
         groups[parent] = { items: [], startIndex: flatIndex };
       }
@@ -513,12 +728,29 @@ function SidebarModuleSearch({
     return groups;
   }, [results]);
 
-  // Highlight matched substring (with regex escaping for safety)
+  // Highlight matched substring (returns escaped React nodes)
   const highlightMatch = (text: string, query: string) => {
     if (!query) return text;
-    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escaped})`, 'gi');
-    return text.replace(regex, '<mark style="background: rgba(255,255,255,0.2); color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>');
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escaped})`, "gi");
+    const queryLower = query.toLowerCase();
+    return text.split(regex).map((part, i) =>
+      part.toLowerCase() === queryLower ? (
+        <mark
+          key={i}
+          style={{
+            background: "rgba(255,255,255,0.2)",
+            color: "inherit",
+            padding: "0 2px",
+            borderRadius: "2px",
+          }}
+        >
+          {part}
+        </mark>
+      ) : (
+        part
+      ),
+    );
   };
 
   if (collapsed) return null;
@@ -526,8 +758,14 @@ function SidebarModuleSearch({
   // Responsive: Full-screen search on mobile
   if (isMobile && open) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: "var(--sidebar-bg)" }}>
-        <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "rgba(255,255,255,0.10)" }}>
+      <div
+        className="fixed inset-0 z-[100] flex flex-col"
+        style={{ background: "var(--sidebar-bg)" }}
+      >
+        <div
+          className="flex items-center gap-3 px-4 py-3 border-b"
+          style={{ borderColor: "rgba(255,255,255,0.10)" }}
+        >
           <Search size={20} style={{ color: "var(--sidebar-heading)" }} />
           <input
             ref={inputRef}
@@ -563,22 +801,34 @@ function SidebarModuleSearch({
           className="flex-1 overflow-y-auto px-4 py-2"
         >
           {error ? (
-            <div className="px-3 py-2 text-sm" style={{ color: "var(--sidebar-heading)" }}>
+            <div
+              className="px-3 py-2 text-sm"
+              style={{ color: "var(--sidebar-heading)" }}
+            >
               Search failed. Please try again.
             </div>
           ) : loading ? (
-            <div className="px-3 py-2 text-sm" style={{ color: "var(--sidebar-heading)" }}>
+            <div
+              className="px-3 py-2 text-sm"
+              style={{ color: "var(--sidebar-heading)" }}
+            >
               Searching...
             </div>
           ) : results.length === 0 ? (
-            <div className="px-3 py-2 text-sm" style={{ color: "var(--sidebar-heading)" }}>
+            <div
+              className="px-3 py-2 text-sm"
+              style={{ color: "var(--sidebar-heading)" }}
+            >
               No matching modules or pages found. Try a different keyword.
             </div>
           ) : (
             <>
               {Object.entries(groupedResults).map(([parent, group]) => (
                 <div key={parent} className="mb-4">
-                  <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--sidebar-heading)" }}>
+                  <div
+                    className="px-3 py-2 text-xs font-bold uppercase tracking-wider mb-2"
+                    style={{ color: "var(--sidebar-heading)" }}
+                  >
                     {parent}
                   </div>
                   {group.items.map((item) => (
@@ -594,19 +844,27 @@ function SidebarModuleSearch({
                       role="option"
                       aria-selected={item.flatIndex === selectedIndex}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                        item.flatIndex === selectedIndex ? 'bg-white/10' : 'hover:bg-white/5'
+                        item.flatIndex === selectedIndex
+                          ? "bg-white/10"
+                          : "hover:bg-white/5"
                       }`}
                       onMouseEnter={() => setSelectedIndex(item.flatIndex)}
                     >
                       <span className="text-xl shrink-0">{item.iconEmoji}</span>
                       <div className="flex-1 min-w-0">
-                        <div 
-                          className="text-base truncate font-medium" 
+                        <div
+                          className="text-base truncate font-medium"
                           style={{ color: "var(--sidebar-text-act)" }}
-                          dangerouslySetInnerHTML={{ __html: highlightMatch(item.label, query) }}
-                        />
+                        >
+                          {highlightMatch(item.label, query)}
+                        </div>
                         {item.parentLabel && item.parentLabel !== parent && (
-                          <div className="text-sm truncate" style={{ color: "var(--sidebar-heading)" }}>{item.parentLabel}</div>
+                          <div
+                            className="text-sm truncate"
+                            style={{ color: "var(--sidebar-heading)" }}
+                          >
+                            {item.parentLabel}
+                          </div>
                         )}
                       </div>
                     </Link>
@@ -614,7 +872,10 @@ function SidebarModuleSearch({
                 </div>
               ))}
               {results.length >= 20 && (
-                <div className="px-3 py-2 text-xs text-center" style={{ color: "var(--sidebar-heading)" }}>
+                <div
+                  className="px-3 py-2 text-xs text-center"
+                  style={{ color: "var(--sidebar-heading)" }}
+                >
                   Showing 20 of {results.length} results
                 </div>
               )}
@@ -628,7 +889,11 @@ function SidebarModuleSearch({
   return (
     <div ref={containerRef} className="relative px-2.5 pt-2 pb-1">
       <div className="relative">
-        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--sidebar-heading)" }} />
+        <Search
+          size={13}
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ color: "var(--sidebar-heading)" }}
+        />
         <input
           ref={inputRef}
           type="text"
@@ -657,24 +922,39 @@ function SidebarModuleSearch({
           role="listbox"
           aria-label="Search results"
           className="absolute left-2.5 right-2.5 top-full mt-0.5 rounded-lg border shadow-2xl z-50 max-h-80 overflow-y-auto"
-          style={{ background: "var(--sidebar-bg)", borderColor: "rgba(255,255,255,0.10)" }}
+          style={{
+            background: "var(--sidebar-bg)",
+            borderColor: "rgba(255,255,255,0.10)",
+          }}
         >
           {error ? (
-            <div className="px-3 py-2 text-[11px]" style={{ color: "var(--sidebar-heading)" }}>
+            <div
+              className="px-3 py-2 text-[11px]"
+              style={{ color: "var(--sidebar-heading)" }}
+            >
               Search failed. Please try again.
             </div>
           ) : loading ? (
-            <div className="px-3 py-2 text-[11px]" style={{ color: "var(--sidebar-heading)" }}>
+            <div
+              className="px-3 py-2 text-[11px]"
+              style={{ color: "var(--sidebar-heading)" }}
+            >
               Searching...
             </div>
           ) : results.length === 0 ? (
             query.trim().length >= 2 ? (
-              <div className="px-3 py-2 text-[11px]" style={{ color: "var(--sidebar-heading)" }}>
+              <div
+                className="px-3 py-2 text-[11px]"
+                style={{ color: "var(--sidebar-heading)" }}
+              >
                 No matching modules or pages found. Try a different keyword.
               </div>
             ) : recentPages.length > 0 ? (
               <>
-                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--sidebar-heading)" }}>
+                <div
+                  className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider"
+                  style={{ color: "var(--sidebar-heading)" }}
+                >
                   Recent
                 </div>
                 {recentPages.map((item, idx) => (
@@ -688,21 +968,38 @@ function SidebarModuleSearch({
                       onNavigate?.();
                     }}
                     className="flex items-center gap-2 px-2.5 py-1.5 transition-colors"
-                    onMouseEnter={e => { e.currentTarget.style.background = "var(--sidebar-hover)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "var(--sidebar-hover)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "transparent";
+                    }}
                   >
                     <span className="text-sm shrink-0">{item.iconEmoji}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[12px] truncate font-medium" style={{ color: "var(--sidebar-text-act)" }}>{item.label}</div>
+                      <div
+                        className="text-[12px] truncate font-medium"
+                        style={{ color: "var(--sidebar-text-act)" }}
+                      >
+                        {item.label}
+                      </div>
                       {item.parentLabel ? (
-                        <div className="text-[10px] truncate" style={{ color: "var(--sidebar-heading)" }}>{item.parentLabel}</div>
+                        <div
+                          className="text-[10px] truncate"
+                          style={{ color: "var(--sidebar-heading)" }}
+                        >
+                          {item.parentLabel}
+                        </div>
                       ) : null}
                     </div>
                   </Link>
                 ))}
               </>
             ) : (
-              <div className="px-3 py-2 text-[11px]" style={{ color: "var(--sidebar-heading)" }}>
+              <div
+                className="px-3 py-2 text-[11px]"
+                style={{ color: "var(--sidebar-heading)" }}
+              >
                 Start typing to search modules...
               </div>
             )
@@ -710,40 +1007,55 @@ function SidebarModuleSearch({
             <>
               {Object.entries(groupedResults).map(([parent, group]) => (
                 <div key={parent} className="mb-2">
-                  <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--sidebar-heading)" }}>
+                  <div
+                    className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider"
+                    style={{ color: "var(--sidebar-heading)" }}
+                  >
                     {parent}
                   </div>
-                  {group.items.slice(0, showMore ? undefined : 5).map((item) => (
-                    <Link
-                      key={item.key}
-                      href={item.href}
-                      onClick={() => {
-                        setQuery("");
-                        setOpen(false);
-                        addToRecentPages(item);
-                        onNavigate?.();
-                      }}
-                      role="option"
-                      aria-selected={item.flatIndex === selectedIndex}
-                      className={`flex items-center gap-2 px-2.5 py-1.5 transition-colors ${
-                        item.flatIndex === selectedIndex ? 'bg-white/10' : ''
-                      }`}
-                      onMouseEnter={() => setSelectedIndex(item.flatIndex)}
-                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-                    >
-                      <span className="text-sm shrink-0">{item.iconEmoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <div 
-                          className="text-[12px] truncate font-medium" 
-                          style={{ color: "var(--sidebar-text-act)" }}
-                          dangerouslySetInnerHTML={{ __html: highlightMatch(item.label, query) }}
-                        />
-                        {item.parentLabel && item.parentLabel !== parent && (
-                          <div className="text-[10px] truncate" style={{ color: "var(--sidebar-heading)" }}>{item.parentLabel}</div>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
+                  {group.items
+                    .slice(0, showMore ? undefined : 5)
+                    .map((item) => (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        onClick={() => {
+                          setQuery("");
+                          setOpen(false);
+                          addToRecentPages(item);
+                          onNavigate?.();
+                        }}
+                        role="option"
+                        aria-selected={item.flatIndex === selectedIndex}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 transition-colors ${
+                          item.flatIndex === selectedIndex ? "bg-white/10" : ""
+                        }`}
+                        onMouseEnter={() => setSelectedIndex(item.flatIndex)}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        <span className="text-sm shrink-0">
+                          {item.iconEmoji}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className="text-[12px] truncate font-medium"
+                            style={{ color: "var(--sidebar-text-act)" }}
+                          >
+                            {highlightMatch(item.label, query)}
+                          </div>
+                          {item.parentLabel && item.parentLabel !== parent && (
+                            <div
+                              className="text-[10px] truncate"
+                              style={{ color: "var(--sidebar-heading)" }}
+                            >
+                              {item.parentLabel}
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
                   {group.items.length > 5 && !showMore && (
                     <button
                       onClick={() => setShowMore(true)}
@@ -756,7 +1068,10 @@ function SidebarModuleSearch({
                 </div>
               ))}
               {results.length >= 20 && (
-                <div className="px-3 py-1.5 text-[10px] text-center" style={{ color: "var(--sidebar-heading)" }}>
+                <div
+                  className="px-3 py-1.5 text-[10px] text-center"
+                  style={{ color: "var(--sidebar-heading)" }}
+                >
                   Showing 20 of {results.length} results
                 </div>
               )}
@@ -773,25 +1088,38 @@ export function CrmToggle({ className }: { className?: string }) {
   const pathname = usePathname();
   const isServiceWorkspace = pathname?.startsWith("/service");
   const { user } = useAuth();
-  const isServiceEntitled = !user || user.serviceCrmEnabled === true || user.company?.serviceCrmEnabled === true;
+  const isServiceEntitled =
+    !user ||
+    user.serviceCrmEnabled === true ||
+    user.company?.serviceCrmEnabled === true;
 
   return (
-    <div className={cn("relative flex items-center bg-black/40 dark:bg-white/5 border border-white/10 p-[3px] rounded-full select-none w-[220px]", className)}>
+    <div
+      className={cn(
+        "relative flex items-center bg-black/40 dark:bg-white/5 border border-white/10 p-[3px] rounded-full select-none w-[220px]",
+        className,
+      )}
+    >
       {/* Sliding background */}
       <div
         className={cn(
           "absolute top-[3px] bottom-[3px] w-[107px] rounded-full transition-all duration-300 ease-out shadow-sm",
-          isServiceWorkspace ? "left-[calc(50%+1px)]" : "left-[3px]"
+          isServiceWorkspace ? "left-[calc(50%+1px)]" : "left-[3px]",
         )}
-        style={{ backgroundColor: "var(--primary)", boxShadow: "0 0 8px var(--primary-ring)" }}
+        style={{
+          backgroundColor: "var(--primary)",
+          boxShadow: "0 0 8px var(--primary-ring)",
+        }}
       />
-      
+
       {/* Sales CRM Link */}
       <Link
         href="/dashboard"
         className={cn(
           "flex-1 flex items-center justify-center gap-2 py-1 text-[10px] font-bold z-10 transition-colors duration-200",
-          !isServiceWorkspace ? "text-white" : "text-white/40 hover:text-white/70"
+          !isServiceWorkspace
+            ? "text-white"
+            : "text-white/40 hover:text-white/70",
         )}
       >
         <TrendingUp size={14} className="shrink-0" />
@@ -803,7 +1131,9 @@ export function CrmToggle({ className }: { className?: string }) {
         href="/service/dashboard/my"
         className={cn(
           "flex-1 flex items-center justify-center gap-1.5 py-1 text-[10px] font-bold z-10 transition-colors duration-200",
-          isServiceWorkspace ? "text-white" : "text-white/40 hover:text-white/70"
+          isServiceWorkspace
+            ? "text-white"
+            : "text-white/40 hover:text-white/70",
         )}
       >
         <Wrench size={14} className="shrink-0" />
@@ -833,7 +1163,10 @@ function SidebarContent({
   onNavClick?: () => void;
   collapsed?: boolean;
 }) {
-  const logoTheme = useLogoTheme({ initialColor: user?.theme, initialIsDark: user?.themeMode === "dark" });
+  const logoTheme = useLogoTheme({
+    initialColor: user?.theme,
+    initialIsDark: user?.themeMode === "dark",
+  });
   const isVariant2 = (user?.variant || user?.company?.variant || 1) >= 2;
   const activeVariant: number = user?.variant || user?.company?.variant || 1;
   const isServiceWorkspace = pathname.startsWith("/service");
@@ -842,12 +1175,13 @@ function SidebarContent({
   const moduleSubject: ModuleCheckSubject = {
     companyId: user?.companyId ?? user?.company?.id ?? null,
     variant: activeVariant,
-    enabledModules: user?.enabledModules ?? user?.company?.enabledModules ?? null,
+    enabledModules:
+      user?.enabledModules ?? user?.company?.enabledModules ?? null,
   };
   const hasMod = (key: string) => hasModule(moduleSubject, key as any);
 
   const hasPerm = (moduleName: string) => {
-    if (user?.permissions === 'ALL') return true;
+    if (user?.permissions === "ALL") return true;
     if (!user?.permissions) return true;
     const p = user?.permissions?.find((x: any) => x.module === moduleName);
     return p ? p.visible : true;
@@ -858,35 +1192,59 @@ function SidebarContent({
     { href: "/service/requests?status=New", label: "New Requests" },
     { href: "/service/requests?status=Assigned", label: "Assigned Requests" },
     { href: "/service/requests?status=In Progress", label: "In Progress" },
-    { href: "/service/requests?status=Pending Customer", label: "Pending Requests" },
+    {
+      href: "/service/requests?status=Pending Customer",
+      label: "Pending Requests",
+    },
     { href: "/service/requests?status=Closed", label: "Closed Requests" },
   ];
 
   const serviceComplaintSubItems = [
     { href: "/service/complaints", label: "All Complaints" },
     { href: "/service/complaints?status=New", label: "Open Complaints" },
-    { href: "/service/complaints?status=Investigating", label: "Under Investigation" },
-    { href: "/service/complaints?status=Resolved", label: "Resolved Complaints" },
+    {
+      href: "/service/complaints?status=Investigating",
+      label: "Under Investigation",
+    },
+    {
+      href: "/service/complaints?status=Resolved",
+      label: "Resolved Complaints",
+    },
     { href: "/service/complaints?status=Closed", label: "Closed Complaints" },
   ];
 
   const serviceDefectSubItems = [
     { href: "/service/defects", label: "All Defects" },
     { href: "/service/defects?status=New", label: "New Defects" },
-    { href: "/service/defects?status=Under Investigation", label: "Under Investigation" },
-    { href: "/service/defects?status=Corrective Action", label: "Corrective Action" },
+    {
+      href: "/service/defects?status=Under Investigation",
+      label: "Under Investigation",
+    },
+    {
+      href: "/service/defects?status=Corrective Action",
+      label: "Corrective Action",
+    },
     { href: "/service/defects?status=Closed", label: "Closed Defects" },
   ];
 
   const serviceInstallationSubItems = [
     { href: "/service/installations", label: "All Installations" },
-    { href: "/service/installations?status=Scheduled", label: "Scheduled Installations" },
+    {
+      href: "/service/installations?status=Scheduled",
+      label: "Scheduled Installations",
+    },
     { href: "/service/installations?status=In Progress", label: "In Progress" },
-    { href: "/service/installations?status=Completed", label: "Completed Installations" },
+    {
+      href: "/service/installations?status=Completed",
+      label: "Completed Installations",
+    },
   ];
 
   const serviceWarrantyAMCSubItems = [
-    { href: "/service/warranty-amc?status=WarrantyActive", label: "Active Warranty" },
+    {
+      href: "/service/warranty-amc?status=WarrantyActive",
+      label: "Active Warranty",
+    },
     { href: "/service/warranty-amc?status=Claim", label: "Warranty Claims" },
     { href: "/service/warranty-amc?status=AMCActive", label: "Active AMC" },
     { href: "/service/warranty-amc?status=Renewals", label: "AMC Renewals" },
@@ -907,12 +1265,24 @@ function SidebarContent({
   ];
 
   const serviceReportSubItems = [
-    { href: "/service/reports?report=requests", label: "Service Request Report" },
+    {
+      href: "/service/reports?report=requests",
+      label: "Service Request Report",
+    },
     { href: "/service/reports?report=complaints", label: "Complaint Report" },
     { href: "/service/reports?report=defects", label: "Defect Report" },
-    { href: "/service/reports?report=installations", label: "Installation Report" },
-    { href: "/service/reports?report=warranty", label: "Warranty & AMC Report" },
-    { href: "/service/reports?report=engineer", label: "Engineer Performance Report" },
+    {
+      href: "/service/reports?report=installations",
+      label: "Installation Report",
+    },
+    {
+      href: "/service/reports?report=warranty",
+      label: "Warranty & AMC Report",
+    },
+    {
+      href: "/service/reports?report=engineer",
+      label: "Engineer Performance Report",
+    },
   ];
 
   const serviceSettingsSubItems = [
@@ -923,18 +1293,24 @@ function SidebarContent({
     { href: "/service/settings?tab=engineers", label: "Service Engineers" },
     { href: "/service/settings?tab=priorities", label: "Priority Levels" },
     { href: "/service/settings?tab=statuses", label: "Service Status" },
-    { href: "/service/settings?tab=escalation-rules", label: "Escalation Rules" },
+    {
+      href: "/service/settings?tab=escalation-rules",
+      label: "Escalation Rules",
+    },
   ];
 
   // Accordion: only one section open at a time
   const [openSection, setOpenSection] = useState<string | null>(null);
-  const makeToggle = (label: string) => () => setOpenSection(prev => prev === label ? null : label);
+  const makeToggle = (label: string) => () =>
+    setOpenSection((prev) => (prev === label ? null : label));
   const openSectionLabel = (label: string) => () => setOpenSection(label);
 
   const getSub = (parentKey: string) => {
     return getNavItems(activeVariant, user?.role)
-      .filter(item => item.type === "submodule" && item.parentKey === parentKey)
-      .map(item => ({ href: item.href, label: item.label }));
+      .filter(
+        (item) => item.type === "submodule" && item.parentKey === parentKey,
+      )
+      .map((item) => ({ href: item.href, label: item.label }));
   };
 
   const leadSubItems = getSub("leads");
@@ -946,7 +1322,9 @@ function SidebarContent({
   const salesPipelineSubItems = getSub("pipeline");
   const quotationSubItems = getSub("quotations");
   const dealSubItems = getSub("deals");
-  const customerAssetSubItems = [{ href: "/customer-assets", label: "Overview" }];
+  const customerAssetSubItems = [
+    { href: "/customer-assets", label: "Overview" },
+  ];
   const reportsSubItems = getSub("reports");
   const userManagementSubItems = [
     { href: "/user-master", label: "Users" },
@@ -975,7 +1353,7 @@ function SidebarContent({
       <div
         className={cn(
           "shrink-0 flex flex-col gap-2 border-b border-white/[0.07]",
-          collapsed ? "px-0 py-4 items-center justify-center" : "px-4 py-4"
+          collapsed ? "px-0 py-4 items-center justify-center" : "px-4 py-4",
         )}
       >
         <div className="flex items-center justify-center">
@@ -995,8 +1373,6 @@ function SidebarContent({
             />
           )}
         </div>
-
-
       </div>
 
       {/* ── Module Search ── */}
@@ -1010,7 +1386,12 @@ function SidebarContent({
       )}
 
       {/* ── Navigation ── */}
-      <nav className={cn("flex-1 overflow-y-auto py-4 space-y-1", collapsed ? "px-1.5" : "px-3")}>
+      <nav
+        className={cn(
+          "flex-1 overflow-y-auto py-4 space-y-1",
+          collapsed ? "px-1.5" : "px-3",
+        )}
+      >
         {!collapsed && process.env.NODE_ENV === "development" && (
           <div className="px-3.5 pb-2 text-[10px] text-gray-500">
             Variant: {user?.variant || user?.company?.variant || 1}
@@ -1019,65 +1400,187 @@ function SidebarContent({
 
         {isServiceWorkspace ? (
           <>
-            {(!user || (user.serviceCrmEnabled !== true && user.company?.serviceCrmEnabled !== true)) && !collapsed && (
-              <div className="mx-3 my-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-medium flex items-center gap-2 shadow-sm">
-                <Lock size={14} className="shrink-0 text-amber-500" />
-                <span>Service Add-on Required</span>
-              </div>
-            )}
-            {user?.role === "ServiceEngineer" ? (
-            <>
-              <ExpandableNavSection
-                label="Engineer Portal"
-                icon={<Wrench size={17} />}
-                subItems={[
-                  { href: "/service/my-visits", label: "My Visits" },
-                  { href: "/service/my-visits/feedback", label: "My Ratings & Feedback" },
-                ]}
-                pathname={pathname}
-                onNavClick={onNavClick}
-                collapsed={collapsed}
-                isOpen={openSection === "Engineer Portal"}
-                onToggle={makeToggle("Engineer Portal")}
-                onOpen={openSectionLabel("Engineer Portal")}
-              />
-            </>
-          ) : (
-            <>
-              <ExpandableNavSection
-                label="Dashboard"
-                icon={<LayoutDashboard size={17} />}
-                subItems={[
-                  { href: "/service/dashboard/my", label: "My Dashboard" },
-                  { href: "/service/dashboard/manager", label: "Service Manager Dashboard" },
-                ]}
-                pathname={pathname}
-                onNavClick={onNavClick}
-                collapsed={collapsed}
-                isOpen={openSection === "Dashboard"}
-                onToggle={makeToggle("Dashboard")}
-                onOpen={openSectionLabel("Dashboard")}
-              />
-              {!collapsed && (
-                <div className="pt-4 pb-1.5">
-                  <p className="px-3.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-heading)" }}>SERVICE</p>
+            {(!user ||
+              (user.serviceCrmEnabled !== true &&
+                user.company?.serviceCrmEnabled !== true)) &&
+              !collapsed && (
+                <div className="mx-3 my-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-[11px] font-medium flex items-center gap-2 shadow-sm">
+                  <Lock size={14} className="shrink-0 text-amber-500" />
+                  <span>Service Add-on Required</span>
                 </div>
               )}
-              <NavLink item={{ href: "/service/requests", label: "Requests", icon: <Wrench size={17} /> }} active={pathname.startsWith("/service/requests")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/complaints", label: "Complaints", icon: <AlertTriangle size={17} /> }} active={pathname.startsWith("/service/complaints")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/defects", label: "Defects", icon: <HelpCircle size={17} /> }} active={pathname.startsWith("/service/defects")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/installations", label: "Installations", icon: <Hammer size={17} /> }} active={pathname.startsWith("/service/installations")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/warranty-amc", label: "Warranty & AMC", icon: <Award size={17} /> }} active={pathname.startsWith("/service/warranty-amc")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/visits", label: "Visits", icon: <Calendar size={17} /> }} active={pathname.startsWith("/service/visits")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/reviews", label: "Reviews & Feedback", icon: <Star size={17} /> }} active={pathname.startsWith("/service/reviews")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/assets", label: "Assets", icon: <Package size={17} /> }} active={pathname.startsWith("/service/assets")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/projects", label: "Projects", icon: <FolderKanban size={17} /> }} active={pathname.startsWith("/service/projects")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/inventory", label: "Inventory", icon: <Boxes size={17} /> }} active={pathname.startsWith("/service/inventory")} onClick={onNavClick} collapsed={collapsed} />
-              <NavLink item={{ href: "/service/reports", label: "Reports", icon: <ChartBar size={17} /> }} active={pathname.startsWith("/service/reports")} onClick={onNavClick} collapsed={collapsed} />
-              <div className="border-t border-white/[0.06] my-2 pt-1" />
-              <NavLink item={{ href: "/service/settings", label: "Settings", icon: <Settings size={17} /> }} active={pathname.startsWith("/service/settings")} onClick={onNavClick} collapsed={collapsed} />
-            </>
-          )}
+            {user?.role === "ServiceEngineer" ? (
+              <>
+                <ExpandableNavSection
+                  label="Engineer Portal"
+                  icon={<Wrench size={17} />}
+                  subItems={[
+                    { href: "/service/my-visits", label: "My Visits" },
+                    {
+                      href: "/service/my-visits/feedback",
+                      label: "My Ratings & Feedback",
+                    },
+                  ]}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
+                  collapsed={collapsed}
+                  isOpen={openSection === "Engineer Portal"}
+                  onToggle={makeToggle("Engineer Portal")}
+                  onOpen={openSectionLabel("Engineer Portal")}
+                />
+              </>
+            ) : (
+              <>
+                <ExpandableNavSection
+                  label="Dashboard"
+                  icon={<LayoutDashboard size={17} />}
+                  subItems={[
+                    { href: "/service/dashboard/my", label: "My Dashboard" },
+                    {
+                      href: "/service/dashboard/manager",
+                      label: "Service Manager Dashboard",
+                    },
+                  ]}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
+                  collapsed={collapsed}
+                  isOpen={openSection === "Dashboard"}
+                  onToggle={makeToggle("Dashboard")}
+                  onOpen={openSectionLabel("Dashboard")}
+                />
+                {!collapsed && (
+                  <div className="pt-4 pb-1.5">
+                    <p
+                      className="px-3.5 text-[10px] font-semibold uppercase tracking-widest"
+                      style={{ color: "var(--sidebar-heading)" }}
+                    >
+                      SERVICE
+                    </p>
+                  </div>
+                )}
+                <NavLink
+                  item={{
+                    href: "/service/requests",
+                    label: "Requests",
+                    icon: <Wrench size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/requests")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/complaints",
+                    label: "Complaints",
+                    icon: <AlertTriangle size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/complaints")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/defects",
+                    label: "Defects",
+                    icon: <HelpCircle size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/defects")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/installations",
+                    label: "Installations",
+                    icon: <Hammer size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/installations")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/warranty-amc",
+                    label: "Warranty & AMC",
+                    icon: <Award size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/warranty-amc")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/visits",
+                    label: "Visits",
+                    icon: <Calendar size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/visits")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/reviews",
+                    label: "Reviews & Feedback",
+                    icon: <Star size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/reviews")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/assets",
+                    label: "Assets",
+                    icon: <Package size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/assets")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/projects",
+                    label: "Projects",
+                    icon: <FolderKanban size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/projects")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/inventory",
+                    label: "Inventory",
+                    icon: <Boxes size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/inventory")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/service/reports",
+                    label: "Reports",
+                    icon: <ChartBar size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/reports")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <div className="border-t border-white/[0.06] my-2 pt-1" />
+                <NavLink
+                  item={{
+                    href: "/service/settings",
+                    label: "Settings",
+                    icon: <Settings size={17} />,
+                  }}
+                  active={pathname.startsWith("/service/settings")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+              </>
+            )}
           </>
         ) : (
           <>
@@ -1087,7 +1590,16 @@ function SidebarContent({
               icon={<LayoutDashboard size={17} />}
               subItems={[
                 { href: "/dashboard", label: "My Dashboard" },
-                ...(hasMod(MODULE_KEYS.MANAGER_DASHBOARD) && !loading && (user?.role === "Admin" || user?.role === "SalesManager") ? [{ href: "/dashboard/manager", label: "Sales Manager Dashboard" }] : []),
+                ...(hasMod(MODULE_KEYS.MANAGER_DASHBOARD) &&
+                !loading &&
+                (user?.role === "Admin" || user?.role === "SalesManager")
+                  ? [
+                      {
+                        href: "/dashboard/manager",
+                        label: "Sales Manager Dashboard",
+                      },
+                    ]
+                  : []),
               ]}
               pathname={pathname}
               onNavClick={onNavClick}
@@ -1097,86 +1609,378 @@ function SidebarContent({
               onOpen={openSectionLabel("Dashboards")}
             />
 
-            {!loading && user?.role !== "Customer" && user?.role !== "SuperAdmin" && (
-              <>
-                {/* ── Lifecycle modules in sales-flow order ── */}
-                {hasPerm("Leads") && <ExpandableNavSection label="Leads" icon={<Users size={17} />} subItems={leadSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Leads"} onToggle={makeToggle("Leads")} onOpen={openSectionLabel("Leads")} />}
-                {hasPerm("Accounts") && <ExpandableNavSection label="Accounts" icon={<BookUser size={17} />} subItems={accountsSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Accounts"} onToggle={makeToggle("Accounts")} onOpen={openSectionLabel("Accounts")} />}
-                {hasPerm("Contacts") && <ExpandableNavSection label="Contacts" icon={<ContactRound size={17} />} subItems={contactsSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Contacts"} onToggle={makeToggle("Contacts")} onOpen={openSectionLabel("Contacts")} />}
-                {hasPerm("Activities") && <ExpandableNavSection label="Activities" icon={<Activity size={17} />} subItems={activitySubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Activities"} onToggle={makeToggle("Activities")} onOpen={openSectionLabel("Activities")} />}
+            {!loading &&
+              user?.role !== "Customer" &&
+              user?.role !== "SuperAdmin" && (
+                <>
+                  {/* ── Lifecycle modules in sales-flow order ── */}
+                  {hasPerm("Leads") && (
+                    <ExpandableNavSection
+                      label="Leads"
+                      icon={<Users size={17} />}
+                      subItems={leadSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Leads"}
+                      onToggle={makeToggle("Leads")}
+                      onOpen={openSectionLabel("Leads")}
+                    />
+                  )}
+                  {hasPerm("Accounts") && (
+                    <ExpandableNavSection
+                      label="Accounts"
+                      icon={<BookUser size={17} />}
+                      subItems={accountsSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Accounts"}
+                      onToggle={makeToggle("Accounts")}
+                      onOpen={openSectionLabel("Accounts")}
+                    />
+                  )}
+                  {hasPerm("Contacts") && (
+                    <ExpandableNavSection
+                      label="Contacts"
+                      icon={<ContactRound size={17} />}
+                      subItems={contactsSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Contacts"}
+                      onToggle={makeToggle("Contacts")}
+                      onOpen={openSectionLabel("Contacts")}
+                    />
+                  )}
+                  {hasPerm("Activities") && (
+                    <ExpandableNavSection
+                      label="Activities"
+                      icon={<Activity size={17} />}
+                      subItems={activitySubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Activities"}
+                      onToggle={makeToggle("Activities")}
+                      onOpen={openSectionLabel("Activities")}
+                    />
+                  )}
 
-                {hasMod(MODULE_KEYS.CUSTOMER_VISITS) && hasPerm("Customer Visits") && (
-                  <ExpandableNavSection label="Customer Visits" icon={<MapPin size={17} />} subItems={customerVisitsSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Customer Visits"} onToggle={makeToggle("Customer Visits")} onOpen={openSectionLabel("Customer Visits")} />
-                )}
+                  {hasMod(MODULE_KEYS.CUSTOMER_VISITS) &&
+                    hasPerm("Customer Visits") && (
+                      <ExpandableNavSection
+                        label="Customer Visits"
+                        icon={<MapPin size={17} />}
+                        subItems={customerVisitsSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Customer Visits"}
+                        onToggle={makeToggle("Customer Visits")}
+                        onOpen={openSectionLabel("Customer Visits")}
+                      />
+                    )}
 
-                {hasMod(MODULE_KEYS.PRODUCT_CATALOGUE) && hasPerm("Product Catalogue") && (
-                  <ExpandableNavSection label="Product Catalogue" icon={<Package size={17} />} subItems={productCatalogueSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Product Catalogue"} onToggle={makeToggle("Product Catalogue")} onOpen={openSectionLabel("Product Catalogue")} />
-                )}
+                  {hasMod(MODULE_KEYS.PRODUCT_CATALOGUE) &&
+                    hasPerm("Product Catalogue") && (
+                      <ExpandableNavSection
+                        label="Product Catalogue"
+                        icon={<Package size={17} />}
+                        subItems={productCatalogueSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Product Catalogue"}
+                        onToggle={makeToggle("Product Catalogue")}
+                        onOpen={openSectionLabel("Product Catalogue")}
+                      />
+                    )}
 
-                {hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT) && hasPerm("Samples") && (
-                  <ExpandableNavSection label="Samples" icon={<Package size={17} />} subItems={sampleMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Samples"} onToggle={makeToggle("Samples")} onOpen={openSectionLabel("Samples")} />
-                )}
+                  {hasMod(MODULE_KEYS.SAMPLE_MANAGEMENT) &&
+                    hasPerm("Samples") && (
+                      <ExpandableNavSection
+                        label="Samples"
+                        icon={<Package size={17} />}
+                        subItems={sampleMgmtSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Samples"}
+                        onToggle={makeToggle("Samples")}
+                        onOpen={openSectionLabel("Samples")}
+                      />
+                    )}
 
-                {hasPerm("Sales Pipeline") && <ExpandableNavSection label="Sales Pipeline" icon={<TrendingUp size={17} />} subItems={salesPipelineSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Sales Pipeline"} onToggle={makeToggle("Sales Pipeline")} onOpen={openSectionLabel("Sales Pipeline")} />}
+                  {hasPerm("Sales Pipeline") && (
+                    <ExpandableNavSection
+                      label="Sales Pipeline"
+                      icon={<TrendingUp size={17} />}
+                      subItems={salesPipelineSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Sales Pipeline"}
+                      onToggle={makeToggle("Sales Pipeline")}
+                      onOpen={openSectionLabel("Sales Pipeline")}
+                    />
+                  )}
 
-                {hasMod(MODULE_KEYS.RFQ) && hasPerm("RFQ") && (
-                  <ExpandableNavSection label="RFQ" icon={<FileText size={17} />} subItems={rfqSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "RFQ"} onToggle={makeToggle("RFQ")} onOpen={openSectionLabel("RFQ")} />
-                )}
+                  {hasMod(MODULE_KEYS.RFQ) && hasPerm("RFQ") && (
+                    <ExpandableNavSection
+                      label="RFQ"
+                      icon={<FileText size={17} />}
+                      subItems={rfqSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "RFQ"}
+                      onToggle={makeToggle("RFQ")}
+                      onOpen={openSectionLabel("RFQ")}
+                    />
+                  )}
 
-                {hasMod(MODULE_KEYS.COMPETITORS) && hasPerm("Competitors") && (
-                  <ExpandableNavSection label="Competitors" icon={<Swords size={17} />} subItems={competitorMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Competitors"} onToggle={makeToggle("Competitors")} onOpen={openSectionLabel("Competitors")} />
-                )}
-                {hasPerm("Quotations") && <ExpandableNavSection label="Quotations" icon={<IndianRupee size={17} />} subItems={quotationSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Quotations"} onToggle={makeToggle("Quotations")} onOpen={openSectionLabel("Quotations")} />}
-                {hasMod(MODULE_KEYS.NEGOTIATION) && hasPerm("Negotiations") && (
-                  <ExpandableNavSection label="Negotiations" icon={<MessageSquare size={17} />} subItems={negotiationMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Negotiations"} onToggle={makeToggle("Negotiations")} onOpen={openSectionLabel("Negotiations")} />
-                )}
-                {hasMod(MODULE_KEYS.PURCHASE_ORDERS) && hasPerm("Purchase Orders") && (
-                  <ExpandableNavSection label="Purchase Orders" icon={<FileText size={17} />} subItems={purchaseOrderMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Purchase Orders"} onToggle={makeToggle("Purchase Orders")} onOpen={openSectionLabel("Purchase Orders")} />
-                )}
+                  {hasMod(MODULE_KEYS.COMPETITORS) &&
+                    hasPerm("Competitors") && (
+                      <ExpandableNavSection
+                        label="Competitors"
+                        icon={<Swords size={17} />}
+                        subItems={competitorMgmtSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Competitors"}
+                        onToggle={makeToggle("Competitors")}
+                        onOpen={openSectionLabel("Competitors")}
+                      />
+                    )}
+                  {hasPerm("Quotations") && (
+                    <ExpandableNavSection
+                      label="Quotations"
+                      icon={<IndianRupee size={17} />}
+                      subItems={quotationSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Quotations"}
+                      onToggle={makeToggle("Quotations")}
+                      onOpen={openSectionLabel("Quotations")}
+                    />
+                  )}
+                  {hasMod(MODULE_KEYS.NEGOTIATION) &&
+                    hasPerm("Negotiations") && (
+                      <ExpandableNavSection
+                        label="Negotiations"
+                        icon={<MessageSquare size={17} />}
+                        subItems={negotiationMgmtSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Negotiations"}
+                        onToggle={makeToggle("Negotiations")}
+                        onOpen={openSectionLabel("Negotiations")}
+                      />
+                    )}
+                  {hasMod(MODULE_KEYS.PURCHASE_ORDERS) &&
+                    hasPerm("Purchase Orders") && (
+                      <ExpandableNavSection
+                        label="Purchase Orders"
+                        icon={<FileText size={17} />}
+                        subItems={purchaseOrderMgmtSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Purchase Orders"}
+                        onToggle={makeToggle("Purchase Orders")}
+                        onOpen={openSectionLabel("Purchase Orders")}
+                      />
+                    )}
 
-                {hasMod(MODULE_KEYS.DEALS) && hasPerm("Deals") && (
-                  <ExpandableNavSection label="Deals" icon={<Briefcase size={17} />} subItems={dealSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Deals"} onToggle={makeToggle("Deals")} onOpen={openSectionLabel("Deals")} />
-                )}
-                {hasMod(MODULE_KEYS.CUSTOMER_ASSETS) && (
-                  <ExpandableNavSection label="Customer Assets" icon={<HardDrive size={17} />} subItems={customerAssetSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Customer Assets"} onToggle={makeToggle("Customer Assets")} onOpen={openSectionLabel("Customer Assets")} />
-                )}
-                {hasPerm("Tasks") && <ExpandableNavSection label="Tasks" icon={<ListTodo size={17} />} subItems={taskSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Tasks"} onToggle={makeToggle("Tasks")} onOpen={openSectionLabel("Tasks")} />}
-                {hasPerm("Follow Ups") && <ExpandableNavSection label="Follow Ups" icon={<CalendarClock size={17} />} subItems={followUpSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Follow Ups"} onToggle={makeToggle("Follow Ups")} onOpen={openSectionLabel("Follow Ups")} />}
+                  {hasMod(MODULE_KEYS.DEALS) && hasPerm("Deals") && (
+                    <ExpandableNavSection
+                      label="Deals"
+                      icon={<Briefcase size={17} />}
+                      subItems={dealSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Deals"}
+                      onToggle={makeToggle("Deals")}
+                      onOpen={openSectionLabel("Deals")}
+                    />
+                  )}
+                  {hasMod(MODULE_KEYS.CUSTOMER_ASSETS) && (
+                    <ExpandableNavSection
+                      label="Customer Assets"
+                      icon={<HardDrive size={17} />}
+                      subItems={customerAssetSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Customer Assets"}
+                      onToggle={makeToggle("Customer Assets")}
+                      onOpen={openSectionLabel("Customer Assets")}
+                    />
+                  )}
+                  {hasPerm("Tasks") && (
+                    <ExpandableNavSection
+                      label="Tasks"
+                      icon={<ListTodo size={17} />}
+                      subItems={taskSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Tasks"}
+                      onToggle={makeToggle("Tasks")}
+                      onOpen={openSectionLabel("Tasks")}
+                    />
+                  )}
+                  {hasPerm("Follow Ups") && (
+                    <ExpandableNavSection
+                      label="Follow Ups"
+                      icon={<CalendarClock size={17} />}
+                      subItems={followUpSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Follow Ups"}
+                      onToggle={makeToggle("Follow Ups")}
+                      onOpen={openSectionLabel("Follow Ups")}
+                    />
+                  )}
 
-                {hasMod(MODULE_KEYS.DOCUMENTS) && hasPerm("Documents") && (
-                  <ExpandableNavSection label="Documents" icon={<FileText size={17} />} subItems={documentMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Documents"} onToggle={makeToggle("Documents")} onOpen={openSectionLabel("Documents")} />
-                )}
-                {hasMod(MODULE_KEYS.KEY_ACCOUNTS) && hasPerm("Key Accounts") && (
-                  <ExpandableNavSection label="Key Accounts" icon={<Crown size={17} />} subItems={keyAccountMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Key Accounts"} onToggle={makeToggle("Key Accounts")} onOpen={openSectionLabel("Key Accounts")} />
-                )}
-                {hasMod(MODULE_KEYS.TERRITORIES) && hasPerm("Territories") && (
-                  <ExpandableNavSection label="Territories" icon={<Globe size={17} />} subItems={territoryMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Territories"} onToggle={makeToggle("Territories")} onOpen={openSectionLabel("Territories")} />
-                )}
-                {hasMod(MODULE_KEYS.TARGETS) && hasPerm("Targets") && (
-                  <ExpandableNavSection label="Targets" icon={<Trophy size={17} />} subItems={targetMgmtSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Targets"} onToggle={makeToggle("Targets")} onOpen={openSectionLabel("Targets")} />
-                )}
+                  {hasMod(MODULE_KEYS.DOCUMENTS) && hasPerm("Documents") && (
+                    <ExpandableNavSection
+                      label="Documents"
+                      icon={<FileText size={17} />}
+                      subItems={documentMgmtSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Documents"}
+                      onToggle={makeToggle("Documents")}
+                      onOpen={openSectionLabel("Documents")}
+                    />
+                  )}
+                  {hasMod(MODULE_KEYS.KEY_ACCOUNTS) &&
+                    hasPerm("Key Accounts") && (
+                      <ExpandableNavSection
+                        label="Key Accounts"
+                        icon={<Crown size={17} />}
+                        subItems={keyAccountMgmtSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Key Accounts"}
+                        onToggle={makeToggle("Key Accounts")}
+                        onOpen={openSectionLabel("Key Accounts")}
+                      />
+                    )}
+                  {hasMod(MODULE_KEYS.TERRITORIES) &&
+                    hasPerm("Territories") && (
+                      <ExpandableNavSection
+                        label="Territories"
+                        icon={<Globe size={17} />}
+                        subItems={territoryMgmtSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Territories"}
+                        onToggle={makeToggle("Territories")}
+                        onOpen={openSectionLabel("Territories")}
+                      />
+                    )}
+                  {hasMod(MODULE_KEYS.TARGETS) && hasPerm("Targets") && (
+                    <ExpandableNavSection
+                      label="Targets"
+                      icon={<Trophy size={17} />}
+                      subItems={targetMgmtSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Targets"}
+                      onToggle={makeToggle("Targets")}
+                      onOpen={openSectionLabel("Targets")}
+                    />
+                  )}
 
-                {hasMod(MODULE_KEYS.FORECAST) && hasPerm("Forecast") && (
-                  <ExpandableNavSection label="Forecast" icon={<Target size={17} />} subItems={forecastSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Forecast"} onToggle={makeToggle("Forecast")} onOpen={openSectionLabel("Forecast")} />
-                )}
+                  {hasMod(MODULE_KEYS.FORECAST) && hasPerm("Forecast") && (
+                    <ExpandableNavSection
+                      label="Forecast"
+                      icon={<Target size={17} />}
+                      subItems={forecastSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Forecast"}
+                      onToggle={makeToggle("Forecast")}
+                      onOpen={openSectionLabel("Forecast")}
+                    />
+                  )}
 
-                {hasPerm("Reports") && <ExpandableNavSection label="Reports" icon={<PieChart size={17} />} subItems={reportsSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Reports"} onToggle={makeToggle("Reports")} onOpen={openSectionLabel("Reports")} />}
+                  {hasPerm("Reports") && (
+                    <ExpandableNavSection
+                      label="Reports"
+                      icon={<PieChart size={17} />}
+                      subItems={reportsSubItems}
+                      pathname={pathname}
+                      onNavClick={onNavClick}
+                      collapsed={collapsed}
+                      isOpen={openSection === "Reports"}
+                      onToggle={makeToggle("Reports")}
+                      onOpen={openSectionLabel("Reports")}
+                    />
+                  )}
 
-                {hasMod(MODULE_KEYS.APPROVAL_CENTER) && hasPerm("Approval Center") && (
-                  <ExpandableNavSection label="Approval Center" icon={<ShieldCheck size={17} />} subItems={approvalCenterSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Approval Center"} onToggle={makeToggle("Approval Center")} onOpen={openSectionLabel("Approval Center")} />
-                )}
-              </>
-            )}
+                  {hasMod(MODULE_KEYS.APPROVAL_CENTER) &&
+                    hasPerm("Approval Center") && (
+                      <ExpandableNavSection
+                        label="Approval Center"
+                        icon={<ShieldCheck size={17} />}
+                        subItems={approvalCenterSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Approval Center"}
+                        onToggle={makeToggle("Approval Center")}
+                        onOpen={openSectionLabel("Approval Center")}
+                      />
+                    )}
+                </>
+              )}
 
             {!loading && user?.role === "SuperAdmin" && (
               <>
                 {!collapsed && (
                   <div className="pt-3 pb-1">
-                    <p className="px-3.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-heading)" }}>Platform Admin</p>
+                    <p
+                      className="px-3.5 text-[10px] font-semibold uppercase tracking-widest"
+                      style={{ color: "var(--sidebar-heading)" }}
+                    >
+                      Platform Admin
+                    </p>
                   </div>
                 )}
-                <NavLink item={{ href: "/admin/companies", label: "Companies", icon: <Building2 size={17} /> }} active={pathname.startsWith("/admin/companies")} onClick={onNavClick} collapsed={collapsed} />
-                <NavLink item={{ href: "/admin/system-configs", label: "System Configs", icon: <Settings size={17} /> }} active={pathname.startsWith("/admin/system-configs")} onClick={onNavClick} collapsed={collapsed} />
+                <NavLink
+                  item={{
+                    href: "/admin/companies",
+                    label: "Companies",
+                    icon: <Building2 size={17} />,
+                  }}
+                  active={pathname.startsWith("/admin/companies")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/admin/system-configs",
+                    label: "System Configs",
+                    icon: <Settings size={17} />,
+                  }}
+                  active={pathname.startsWith("/admin/system-configs")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
               </>
             )}
 
@@ -1184,11 +1988,34 @@ function SidebarContent({
               <>
                 {!collapsed && (
                   <div className="pt-4 pb-1.5">
-                    <p className="px-3.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-heading)" }}>Portal</p>
+                    <p
+                      className="px-3.5 text-[10px] font-semibold uppercase tracking-widest"
+                      style={{ color: "var(--sidebar-heading)" }}
+                    >
+                      Portal
+                    </p>
                   </div>
                 )}
-                <NavLink item={{ href: "/subscription", label: "My Subscriptions", icon: <Briefcase size={17} /> }} active={pathname.startsWith("/subscription")} onClick={onNavClick} collapsed={collapsed} />
-                <NavLink item={{ href: "/customer/support", label: "Support Tickets", icon: <CheckSquare size={17} /> }} active={pathname.startsWith("/customer/support")} onClick={onNavClick} collapsed={collapsed} />
+                <NavLink
+                  item={{
+                    href: "/subscription",
+                    label: "My Subscriptions",
+                    icon: <Briefcase size={17} />,
+                  }}
+                  active={pathname.startsWith("/subscription")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
+                <NavLink
+                  item={{
+                    href: "/customer/support",
+                    label: "Support Tickets",
+                    icon: <CheckSquare size={17} />,
+                  }}
+                  active={pathname.startsWith("/customer/support")}
+                  onClick={onNavClick}
+                  collapsed={collapsed}
+                />
               </>
             )}
 
@@ -1196,21 +2023,75 @@ function SidebarContent({
               <>
                 {!collapsed && (
                   <div className="pt-4 pb-1.5">
-                    <p className="px-3.5 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--sidebar-heading)" }}>Settings</p>
+                    <p
+                      className="px-3.5 text-[10px] font-semibold uppercase tracking-widest"
+                      style={{ color: "var(--sidebar-heading)" }}
+                    >
+                      Settings
+                    </p>
                   </div>
                 )}
                 {isVariant2 ? (
                   <>
-                    {hasPerm("User Management") && <ExpandableNavSection label="User Management" icon={<Users size={17} />} subItems={userManagementSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "User Management"} onToggle={makeToggle("User Management")} onOpen={openSectionLabel("User Management")} />}
-                    {hasPerm("Audit Logs") && <NavLink item={{ href: "/audit-logs", label: "Audit Logs", icon: <ShieldCheck size={17} /> }} active={pathname.startsWith("/audit-logs")} onClick={onNavClick} collapsed={collapsed} />}
-                    {hasPerm("Settings") && <ExpandableNavSection label="Settings" icon={<Settings size={17} />} subItems={settingsSubItems} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Settings"} onToggle={makeToggle("Settings")} onOpen={openSectionLabel("Settings")} />}
+                    {hasPerm("User Management") && (
+                      <ExpandableNavSection
+                        label="User Management"
+                        icon={<Users size={17} />}
+                        subItems={userManagementSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "User Management"}
+                        onToggle={makeToggle("User Management")}
+                        onOpen={openSectionLabel("User Management")}
+                      />
+                    )}
+                    {hasPerm("Audit Logs") && (
+                      <NavLink
+                        item={{
+                          href: "/audit-logs",
+                          label: "Audit Logs",
+                          icon: <ShieldCheck size={17} />,
+                        }}
+                        active={pathname.startsWith("/audit-logs")}
+                        onClick={onNavClick}
+                        collapsed={collapsed}
+                      />
+                    )}
+                    {hasPerm("Settings") && (
+                      <ExpandableNavSection
+                        label="Settings"
+                        icon={<Settings size={17} />}
+                        subItems={settingsSubItems}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Settings"}
+                        onToggle={makeToggle("Settings")}
+                        onOpen={openSectionLabel("Settings")}
+                      />
+                    )}
                   </>
                 ) : (
                   <>
-                    {hasPerm("Settings") && <ExpandableNavSection label="Settings" icon={<Settings size={17} />} subItems={[
-                      ...(hasPerm("User Management") ? userManagementSubItems : []),
-                      ...settingsSubItems,
-                    ]} pathname={pathname} onNavClick={onNavClick} collapsed={collapsed} isOpen={openSection === "Settings"} onToggle={makeToggle("Settings")} onOpen={openSectionLabel("Settings")} />}
+                    {hasPerm("Settings") && (
+                      <ExpandableNavSection
+                        label="Settings"
+                        icon={<Settings size={17} />}
+                        subItems={[
+                          ...(hasPerm("User Management")
+                            ? userManagementSubItems
+                            : []),
+                          ...settingsSubItems,
+                        ]}
+                        pathname={pathname}
+                        onNavClick={onNavClick}
+                        collapsed={collapsed}
+                        isOpen={openSection === "Settings"}
+                        onToggle={makeToggle("Settings")}
+                        onOpen={openSectionLabel("Settings")}
+                      />
+                    )}
                   </>
                 )}
               </>
@@ -1220,7 +2101,12 @@ function SidebarContent({
       </nav>
 
       {/* ── User Profile Card ── */}
-      <div className={cn("shrink-0 border-t border-white/[0.07] p-3", collapsed && "px-1.5")}>
+      <div
+        className={cn(
+          "shrink-0 border-t border-white/[0.07] p-3",
+          collapsed && "px-1.5",
+        )}
+      >
         <div
           className={cn(
             "flex items-center gap-3 rounded-xl p-2 transition-colors",
@@ -1239,7 +2125,9 @@ function SidebarContent({
               <p className="text-[12.5px] font-semibold text-white truncate leading-tight">
                 {user?.name || "User"}
               </p>
-              <p className="text-[10.5px] text-white/70 truncate leading-tight">My account</p>
+              <p className="text-[10.5px] text-white/70 truncate leading-tight">
+                My account
+              </p>
             </div>
           )}
           {!collapsed && (
@@ -1254,7 +2142,6 @@ function SidebarContent({
           )}
         </div>
       </div>
-
     </>
   );
 }
@@ -1299,10 +2186,14 @@ const PATH_MODULE_MAP: Record<string, string> = {
   "/service/settings": "Service Settings",
   "/user-master": "User Management",
   "/audit-logs": "Audit Logs",
-  "/settings": "Settings"
+  "/settings": "Settings",
 };
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, loading } = useAuth();
@@ -1320,8 +2211,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           break;
         }
       }
-      
-      if (currentModule && user.permissions !== "ALL" && Array.isArray(user.permissions)) {
+
+      if (
+        currentModule &&
+        user.permissions !== "ALL" &&
+        Array.isArray(user.permissions)
+      ) {
         const p = user.permissions.find((x: any) => x.module === currentModule);
         if (p && !p.visible) {
           router.replace("/dashboard");
@@ -1339,13 +2234,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  const toggleSidebar = () => setIsCollapsed(prev => !prev);
-  const toggleMobileDrawer = () => setMobileDrawerOpen(prev => !prev);
-  const pageTitle = pathname.split("/").filter(Boolean).pop()?.replace(/-/g, " ") || "Dashboard";
+  const toggleSidebar = () => setIsCollapsed((prev) => !prev);
+  const toggleMobileDrawer = () => setMobileDrawerOpen((prev) => !prev);
+  const pageTitle =
+    pathname.split("/").filter(Boolean).pop()?.replace(/-/g, " ") ||
+    "Dashboard";
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg)" }}>
-
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{ background: "var(--bg)" }}
+    >
       {/* ── Mobile Drawer Overlay ── */}
       {mobileDrawerOpen && (
         <div
@@ -1361,11 +2260,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           "hidden md:flex",
           isCollapsed ? "w-[72px]" : "w-[236px]",
           // Mobile: show as drawer when open
-          mobileDrawerOpen && "fixed inset-y-0 left-0 md:hidden flex w-[260px] z-50"
+          mobileDrawerOpen &&
+            "fixed inset-y-0 left-0 md:hidden flex w-[260px] z-50",
         )}
         style={{
           background: "#000000",
-          boxShadow: "4px 0 32px rgba(0,0,0,0.45), inset -1px 0 0 rgba(255,255,255,0.05)"
+          boxShadow:
+            "4px 0 32px rgba(0,0,0,0.45), inset -1px 0 0 rgba(255,255,255,0.05)",
         }}
       >
         <SidebarContent
@@ -1380,17 +2281,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* ── Main Content ── */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <DashboardHeader pageTitle={pageTitle} user={user} toggleSidebar={toggleSidebar} onMobileMenuClick={toggleMobileDrawer} />
+        <DashboardHeader
+          pageTitle={pageTitle}
+          user={user}
+          toggleSidebar={toggleSidebar}
+          onMobileMenuClick={toggleMobileDrawer}
+        />
 
         <div className="flex-1 overflow-auto p-4 sm:p-5 md:p-6 lg:p-8 pb-20 md:pb-6">
-          <CurrencyProvider>
-            {children}
-          </CurrencyProvider>
+          <CurrencyProvider>{children}</CurrencyProvider>
         </div>
 
-        {user && (
-          <MobileBottomNav setDrawerOpen={toggleMobileDrawer} />
-        )}
+        {user && <MobileBottomNav setDrawerOpen={toggleMobileDrawer} />}
       </main>
     </div>
   );
