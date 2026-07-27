@@ -157,5 +157,16 @@ vite.config.ts.timestamp-*
 # Scratch / debug artifacts
 scratch/
 tsc_errors*.txt
+tsc_output*.txt
+search_results.txt
+page_diff*.txt
+flow_text.txt
+temp_user_inputs.txt
+brd
+brd_text.txt
+.~lock.*
+
+# Temp folder (local-only scripts, debug, fix, test helpers — never commit)
+temp/
 
 backup/
