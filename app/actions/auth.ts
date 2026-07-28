@@ -814,17 +814,9 @@ export async function updateCompanyVariantAction(variant: number) {
       };
     }
 
-    const companyRecord = await prisma.company.findUnique({
-      where: { id: userPayload.companyId },
-      select: { planLocked: true },
-    });
-    if (companyRecord?.planLocked) {
-      return {
-        success: false,
-        message:
-          "Your plan is managed by Suki Software. Contact us to upgrade.",
-      };
-    }
+    // Internal company bypasses planLocked — the internal-company check above
+    // is the real gate. planLocked remains relevant for non-internal companies,
+    // but they're already rejected above.
 
     const validVariant = Math.max(1, Math.min(4, Number(variant) || 1));
     const recomputedModules = JSON.stringify(
@@ -889,17 +881,8 @@ export async function updateCompanyModulesAction(moduleKeys: string[]) {
       };
     }
 
-    const companyRecord = await prisma.company.findUnique({
-      where: { id: userPayload.companyId },
-      select: { planLocked: true },
-    });
-    if (companyRecord?.planLocked) {
-      return {
-        success: false,
-        message:
-          "Your plan is managed by Suki Software. Contact us to upgrade.",
-      };
-    }
+    // Internal company bypasses planLocked — the internal-company check above
+    // is the real gate.
 
     const enabledModules = JSON.stringify(moduleKeys);
 
