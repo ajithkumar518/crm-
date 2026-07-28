@@ -16,6 +16,7 @@ export interface UserProfile {
   enabledModules?: string | string[];
   planLocked?: boolean;
   serviceCrmEnabled?: boolean;
+  isInternalCompany?: boolean;
   permissions?: any[] | 'ALL';
   company?: {
     id: string;
