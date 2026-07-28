@@ -125,7 +125,6 @@ export async function POST(
         let seqOffset = 0;
         while (codeExists) {
           const lastPO = await tx.purchaseOrder.findFirst({
-            where: { companyId: user.companyId },
             orderBy: { poCode: "desc" },
             select: { poCode: true },
           });
@@ -137,7 +136,7 @@ export async function POST(
           poSeq += seqOffset;
           poCode = `PO-${String(poSeq).padStart(4, "0")}`;
           const dup = await tx.purchaseOrder.findFirst({
-            where: { companyId: user.companyId, poCode },
+            where: { poCode },
             select: { id: true },
           });
           if (!dup) codeExists = false;

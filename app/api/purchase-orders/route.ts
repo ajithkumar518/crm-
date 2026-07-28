@@ -70,7 +70,6 @@ export async function POST(request: NextRequest) {
 
   // Auto-generate poCode using MAX-based sequential numbering to avoid race conditions
   const lastPO = await prisma.purchaseOrder.findFirst({
-    where: { companyId: user.companyId },
     orderBy: { poCode: "desc" },
     select: { poCode: true },
   });
