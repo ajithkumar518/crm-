@@ -144,7 +144,6 @@ export async function POST(request: NextRequest) {
   const rfq = await prisma.$transaction(async (tx) => {
     const yearCount = await tx.rFQ.count({
       where: {
-        companyId: user.companyId,
         rfqCode: { startsWith: `RFQ-${year}-` },
       },
     });

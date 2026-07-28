@@ -122,7 +122,6 @@ export async function POST(
       const year = new Date().getFullYear();
       const yearCount = await tx.quotation.count({
         where: {
-          companyId: user.companyId,
           quotationCode: { startsWith: `QT-${year}-` },
         },
       });

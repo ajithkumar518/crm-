@@ -36,7 +36,7 @@ async function generateLeadCode(companyId: string | null | undefined, offset: nu
   const year = new Date().getFullYear();
   const prefix = `LD-${year}-`;
   const count = await prisma.lead.count({
-    where: { leadCode: { startsWith: prefix }, ...(companyId ? { companyId } : {}) },
+    where: { leadCode: { startsWith: prefix } },
   });
   const seq = String(count + 1 + offset).padStart(5, "0");
   return `${prefix}${seq}`;

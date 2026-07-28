@@ -24,7 +24,7 @@ export async function POST(
       // Generate consistent quotation code: QT-YYYY-NNNNN
       const year = new Date().getFullYear();
       const yearCount = await tx.quotation.count({
-        where: { companyId: user.companyId, quotationCode: { startsWith: `QT-${year}-` } },
+        where: { quotationCode: { startsWith: `QT-${year}-` } },
       });
       const quotationCode = `QT-${year}-${String(yearCount + 1).padStart(5, "0")}`;
 

@@ -185,7 +185,6 @@ export async function POST(request: NextRequest) {
   const year = new Date().getFullYear();
   const yearCount = await prisma.quotation.count({
     where: {
-      companyId: user.companyId,
       quotationCode: { startsWith: `QT-${year}-` },
     },
   });

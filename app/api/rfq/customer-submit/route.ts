@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   // Generate RFQ code: RFQ-YYYY-NNNNN
   const year = new Date().getFullYear();
   const yearCount = await prisma.rFQ.count({
-    where: { companyId: user.companyId, rfqCode: { startsWith: `RFQ-${year}-` } },
+    where: { rfqCode: { startsWith: `RFQ-${year}-` } },
   });
   const rfqCode = `RFQ-${year}-${String(yearCount + 1).padStart(5, "0")}`;
 
