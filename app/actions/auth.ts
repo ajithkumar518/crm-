@@ -715,6 +715,10 @@ export async function getMeAction() {
         enabledModules: user.company?.enabledModules || "[]",
         planLocked: user.company?.planLocked ?? true,
         serviceCrmEnabled: user.company?.serviceCrmEnabled ?? false,
+        isInternalCompany:
+          !!user.company?.id &&
+          !!process.env.INTERNAL_COMPANY_ID &&
+          user.company.id === process.env.INTERNAL_COMPANY_ID,
         permissions,
       },
     };
@@ -800,6 +804,16 @@ export async function updateCompanyVariantAction(variant: number) {
       return { success: false, message: "No company associated" };
     }
 
+    // Only SUKI Software's internal demo company can switch variants
+    const internalCompanyId = process.env.INTERNAL_COMPANY_ID;
+    if (!internalCompanyId || userPayload.companyId !== internalCompanyId) {
+      return {
+        success: false,
+        message:
+          "Variant switching is only available for SUKI Software's internal demo account.",
+      };
+    }
+
     const companyRecord = await prisma.company.findUnique({
       where: { id: userPayload.companyId },
       select: { planLocked: true },
@@ -863,6 +877,16 @@ export async function updateCompanyModulesAction(moduleKeys: string[]) {
 
     if (!userPayload.companyId) {
       return { success: false, message: "No company associated" };
+    }
+
+    // Only SUKI Software's internal demo company can toggle modules
+    const internalCompanyId = process.env.INTERNAL_COMPANY_ID;
+    if (!internalCompanyId || userPayload.companyId !== internalCompanyId) {
+      return {
+        success: false,
+        message:
+          "Module management is only available for SUKI Software's internal demo account.",
+      };
     }
 
     const companyRecord = await prisma.company.findUnique({
