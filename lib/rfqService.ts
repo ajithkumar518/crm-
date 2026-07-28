@@ -63,7 +63,7 @@ export async function createOrHealRFQ(
 
   const year = new Date().getFullYear();
   const rfqPrefix = `RFQ-${year}-`;
-  const rfqCount = await tx.rFQ.count({ where: { rfqCode: { startsWith: rfqPrefix }, companyId } });
+  const rfqCount = await tx.rFQ.count({ where: { rfqCode: { startsWith: rfqPrefix } } });
   const rfqCode = `${rfqPrefix}${String(rfqCount + 1).padStart(5, "0")}`;
 
   const lineItemsToCreate = await Promise.all(allItems.map((item: any, idx: number) => mapLineItem(item, idx)));
