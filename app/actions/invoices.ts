@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
+import * as crypto from "crypto";
 type InvoiceStatus = "Unpaid" | "Paid" | "Overdue" | "Cancelled";
 
 /**
@@ -21,22 +22,37 @@ export async function createInvoiceAction(data: {
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const { customerId, amount, dueDate } = data;
 
     if (!customerId || amount <= 0 || !dueDate) {
-      return { success: false, message: "Customer ID, positive amount, and due date are required." };
+      return {
+        success: false,
+        message: "Customer ID, positive amount, and due date are required.",
+      };
     }
 
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
     if (!customer || customer.companyId !== userPayload.companyId) {
-      return { success: false, message: "Customer not found or access denied." };
+      return {
+        success: false,
+        message: "Customer not found or access denied.",
+      };
     }
 
-    const invoiceNumber = `INV-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    const invoiceNumber = `INV-${crypto.randomUUID().split("-")[0].toUpperCase()}`;
 
     const invoice = await prisma.invoice.create({
       data: {
@@ -44,21 +60,25 @@ export async function createInvoiceAction(data: {
         customerId,
         amount,
         dueDate: new Date(dueDate),
-        status: "Unpaid"
-      }
+        status: "Unpaid",
+      },
     });
 
     await logAudit(
       userPayload.id,
       "INVOICES",
       "CREATE_INVOICE",
-      `Issued invoice: ${invoiceNumber} to ${customer.name} (Amount: INR ${amount})`
+      `Issued invoice: ${invoiceNumber} to ${customer.name} (Amount: INR ${amount})`,
     );
 
     revalidatePath("/invoices");
     revalidatePath(`/customers/${customerId}`);
 
-    return { success: true, message: "Invoice created successfully", data: invoice };
+    return {
+      success: true,
+      message: "Invoice created successfully",
+      data: invoice,
+    };
   } catch (error) {
     console.error("Create Invoice Error:", error);
     return { success: false, message: "Failed to create invoice." };
@@ -79,21 +99,28 @@ export async function getInvoicesAction(filters?: {
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const whereClause: any = {
       ...(filters?.status ? { status: filters.status } : {}),
       customer: {
-        companyId: userPayload.companyId
-      }
+        companyId: userPayload.companyId,
+      },
     };
 
     // Customer can only view their own invoices
     if (userPayload.role === "Customer") {
       const customer = await prisma.customer.findFirst({
-        where: { email: userPayload.email, companyId: userPayload.companyId }
+        where: { email: userPayload.email, companyId: userPayload.companyId },
       });
       if (!customer) {
         return { success: true, data: [] };
@@ -112,9 +139,9 @@ export async function getInvoicesAction(filters?: {
     const invoices = await prisma.invoice.findMany({
       where: whereClause,
       include: {
-        customer: { select: { id: true, name: true, customerCode: true } }
+        customer: { select: { id: true, name: true, customerCode: true } },
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
     });
 
     return { success: true, data: invoices };
@@ -129,7 +156,7 @@ export async function getInvoicesAction(filters?: {
  */
 export async function updateInvoiceStatusAction(
   id: string,
-  status: InvoiceStatus
+  status: InvoiceStatus,
 ) {
   try {
     const userPayload = await verifyAuth();
@@ -138,42 +165,59 @@ export async function updateInvoiceStatusAction(
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const invoice = await prisma.invoice.findUnique({
       where: { id },
-      include: { customer: true }
+      include: { customer: true },
     });
     if (!invoice || invoice.customer.companyId !== userPayload.companyId) {
       return { success: false, message: "Invoice not found or access denied." };
     }
 
     // SalesExecutive can only update status of invoices for their assigned customers
-    if (userPayload.role === "SalesExecutive" && invoice.customer.assignedUserId !== userPayload.id) {
-      return { success: false, message: "Unauthorized: You do not own this customer's invoice." };
+    if (
+      userPayload.role === "SalesExecutive" &&
+      invoice.customer.assignedUserId !== userPayload.id
+    ) {
+      return {
+        success: false,
+        message: "Unauthorized: You do not own this customer's invoice.",
+      };
     }
 
     const updated = await prisma.invoice.update({
       where: { id },
       data: {
         status,
-        paidAt: status === "Paid" ? new Date() : null
-      }
+        paidAt: status === "Paid" ? new Date() : null,
+      },
     });
 
     await logAudit(
       userPayload.id,
       "INVOICES",
       "UPDATE_STATUS",
-      `Invoice ${invoice.invoiceNumber} status updated to ${status}`
+      `Invoice ${invoice.invoiceNumber} status updated to ${status}`,
     );
 
     revalidatePath("/invoices");
     revalidatePath(`/customers/${invoice.customerId}`);
 
-    return { success: true, message: `Invoice marked as ${status} successfully`, data: updated };
+    return {
+      success: true,
+      message: `Invoice marked as ${status} successfully`,
+      data: updated,
+    };
   } catch (error) {
     console.error("Update Invoice Error:", error);
     return { success: false, message: "Failed to update invoice status." };

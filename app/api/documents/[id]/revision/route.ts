@@ -4,19 +4,32 @@ import { verifyAuth } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import { existsSync } from "fs";
 import path from "path";
+import { randomUUID } from "crypto";
 
 import { enforceModuleGuard } from "@/lib/moduleGuard";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const user = await verifyAuth();
-  if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-  const guard = enforceModuleGuard(user, MODULE_KEYS.DOCUMENTS, "POST /api/documents/[id]/revision");
+  if (!user)
+    return NextResponse.json(
+      { success: false, message: "Unauthorized" },
+      { status: 401 },
+    );
+  const guard = enforceModuleGuard(
+    user,
+    MODULE_KEYS.DOCUMENTS,
+    "POST /api/documents/[id]/revision",
+  );
   if (guard) return guard;
-  if (user.role === "Customer") return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
+  if (user.role === "Customer")
+    return NextResponse.json(
+      { success: false, message: "Unauthorized" },
+      { status: 403 },
+    );
 
   const { id } = await params;
 
@@ -24,14 +37,67 @@ export async function POST(
   const existing = await prisma.cRMDocument.findFirst({
     where: { id, deletedAt: null, companyId: user.companyId },
   });
-  if (!existing) return NextResponse.json({ success: false, message: "Document not found" }, { status: 404 });
+  if (!existing)
+    return NextResponse.json(
+      { success: false, message: "Document not found" },
+      { status: 404 },
+    );
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
-  if (!file) return NextResponse.json({ success: false, message: "No file provided" }, { status: 400 });
+  if (!file)
+    return NextResponse.json(
+      { success: false, message: "No file provided" },
+      { status: 400 },
+    );
 
   if (file.size > 20 * 1024 * 1024) {
-    return NextResponse.json({ success: false, message: "File size exceeds 20MB limit" }, { status: 400 });
+    return NextResponse.json(
+      { success: false, message: "File size exceeds 20MB limit" },
+      { status: 400 },
+    );
+  }
+
+  const ALLOWED_EXTENSIONS = [
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".gif",
+    ".webp",
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    ".txt",
+    ".csv",
+  ];
+  const ALLOWED_MIME_PREFIXES = [
+    "image/",
+    "application/pdf",
+    "text/",
+    "application/vnd.openxmlformats",
+    "application/msword",
+    "application/vnd.ms-excel",
+    "application/vnd.ms-powerpoint",
+  ];
+  const fileExt = path.extname(file.name).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(fileExt)) {
+    return NextResponse.json(
+      { success: false, message: "File type not allowed" },
+      { status: 400 },
+    );
+  }
+  if (
+    file.type &&
+    !ALLOWED_MIME_PREFIXES.some((p) => file.type!.startsWith(p))
+  ) {
+    return NextResponse.json(
+      { success: false, message: "File type not allowed" },
+      { status: 400 },
+    );
   }
 
   // Resolve root document ID (if existing is already a revision, use its parent; otherwise use existing.id)
@@ -40,15 +106,15 @@ export async function POST(
   // Find the highest revision number for this document family
   const allRevisions = await prisma.cRMDocument.findMany({
     where: {
-      OR: [
-        { id: rootId },
-        { parentDocumentId: rootId },
-      ],
+      OR: [{ id: rootId }, { parentDocumentId: rootId }],
       deletedAt: null,
     },
     select: { revisionNumber: true },
   });
-  const maxRevision = allRevisions.reduce((max, r) => Math.max(max, r.revisionNumber), 0);
+  const maxRevision = allRevisions.reduce(
+    (max, r) => Math.max(max, r.revisionNumber),
+    0,
+  );
   const newRevisionNumber = maxRevision + 1;
 
   // Save file
@@ -57,8 +123,7 @@ export async function POST(
     await mkdir(uploadDir, { recursive: true });
   }
 
-  const fileExt = path.extname(file.name);
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${fileExt}`;
+  const fileName = `${Date.now()}-${randomUUID().split("-")[0]}${fileExt}`;
   const filePath = path.join(uploadDir, fileName);
   const fileUrl = `/uploads/documents/${fileName}`;
 
@@ -68,7 +133,10 @@ export async function POST(
   // Generate document code
   const year = new Date().getFullYear();
   const lastDoc = await prisma.cRMDocument.findFirst({
-    where: { companyId: user.companyId, documentCode: { startsWith: `DOC-${year}-` } },
+    where: {
+      companyId: user.companyId,
+      documentCode: { startsWith: `DOC-${year}-` },
+    },
     orderBy: { createdAt: "desc" },
     select: { documentCode: true },
   });
@@ -82,10 +150,7 @@ export async function POST(
     // Mark all existing revisions as non-current
     await tx.cRMDocument.updateMany({
       where: {
-        OR: [
-          { id: rootId },
-          { parentDocumentId: rootId },
-        ],
+        OR: [{ id: rootId }, { parentDocumentId: rootId }],
         deletedAt: null,
         isCurrent: true,
       },
@@ -119,5 +184,8 @@ export async function POST(
     });
   });
 
-  return NextResponse.json({ success: true, data: newRevision }, { status: 201 });
+  return NextResponse.json(
+    { success: true, data: newRevision },
+    { status: 201 },
+  );
 }
