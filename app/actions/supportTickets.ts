@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
+import * as crypto from "crypto";
 type TicketPriority = "Low" | "Medium" | "High" | "Critical";
 type TicketStatus = "Open" | "InProgress" | "Resolved" | "Closed";
 
@@ -23,8 +24,15 @@ export async function createSupportTicketAction(data: {
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     let resolvedCustomerId = data.customerId;
@@ -32,10 +40,13 @@ export async function createSupportTicketAction(data: {
     // If logged-in user is a customer, resolve their customer record automatically
     if (userPayload.role === "Customer") {
       const customer = await prisma.customer.findFirst({
-        where: { email: userPayload.email, companyId: userPayload.companyId }
+        where: { email: userPayload.email, companyId: userPayload.companyId },
       });
       if (!customer) {
-        return { success: false, message: "Customer profile not found for logged-in user." };
+        return {
+          success: false,
+          message: "Customer profile not found for logged-in user.",
+        };
       }
       resolvedCustomerId = customer.id;
     }
@@ -49,13 +60,16 @@ export async function createSupportTicketAction(data: {
 
     // Verify customer belongs to the tenant
     const targetCustomer = await prisma.customer.findUnique({
-      where: { id: resolvedCustomerId }
+      where: { id: resolvedCustomerId },
     });
     if (!targetCustomer || targetCustomer.companyId !== userPayload.companyId) {
-      return { success: false, message: "Customer not found or access denied." };
+      return {
+        success: false,
+        message: "Customer not found or access denied.",
+      };
     }
 
-    const ticketNumber = `TKT-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+    const ticketNumber = `TKT-${crypto.randomUUID().split("-")[0].toUpperCase()}`;
 
     const ticket = await prisma.supportTicket.create({
       data: {
@@ -64,21 +78,25 @@ export async function createSupportTicketAction(data: {
         title: data.title,
         description: data.description,
         priority: data.priority || "Medium",
-        status: "Open"
-      }
+        status: "Open",
+      },
     });
 
     await logAudit(
       userPayload.id,
       "TICKETS",
       "CREATE_TICKET",
-      `Created support ticket: ${ticketNumber} (${data.title})`
+      `Created support ticket: ${ticketNumber} (${data.title})`,
     );
 
     revalidatePath("/support-tickets");
     revalidatePath(`/customers/${resolvedCustomerId}`);
 
-    return { success: true, message: "Support ticket created successfully", data: ticket };
+    return {
+      success: true,
+      message: "Support ticket created successfully",
+      data: ticket,
+    };
   } catch (error) {
     console.error("Create Support Ticket Error:", error);
     return { success: false, message: "Failed to create support ticket." };
@@ -100,22 +118,29 @@ export async function getSupportTicketsAction(filters?: {
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const whereClause: any = {
       ...(filters?.status ? { status: filters.status } : {}),
       ...(filters?.priority ? { priority: filters.priority } : {}),
       customer: {
-        companyId: userPayload.companyId
-      }
+        companyId: userPayload.companyId,
+      },
     };
 
     // Customer can only view their own tickets
     if (userPayload.role === "Customer") {
       const customer = await prisma.customer.findFirst({
-        where: { email: userPayload.email, companyId: userPayload.companyId }
+        where: { email: userPayload.email, companyId: userPayload.companyId },
       });
       if (!customer) {
         return { success: true, data: [] };
@@ -131,7 +156,12 @@ export async function getSupportTicketsAction(filters?: {
       if (userPayload.role === "SalesExecutive") {
         whereClause.OR = [
           { assignedUserId: userPayload.id },
-          { customer: { assignedUserId: userPayload.id, companyId: userPayload.companyId } }
+          {
+            customer: {
+              assignedUserId: userPayload.id,
+              companyId: userPayload.companyId,
+            },
+          },
         ];
       }
     }
@@ -140,9 +170,9 @@ export async function getSupportTicketsAction(filters?: {
       where: whereClause,
       include: {
         customer: { select: { id: true, name: true, customerCode: true } },
-        assignedUser: { select: { id: true, name: true } }
+        assignedUser: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
     });
 
     return { success: true, data: tickets };
@@ -158,7 +188,7 @@ export async function getSupportTicketsAction(filters?: {
 export async function updateSupportTicketStatusAction(
   id: string,
   status: TicketStatus,
-  remarks?: string
+  remarks?: string,
 ) {
   try {
     const userPayload = await verifyAuth();
@@ -167,39 +197,54 @@ export async function updateSupportTicketStatusAction(
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const ticket = await prisma.supportTicket.findUnique({
       where: { id },
-      include: { customer: true }
+      include: { customer: true },
     });
     if (!ticket || ticket.customer.companyId !== userPayload.companyId) {
       return { success: false, message: "Ticket not found or access denied." };
     }
 
     // SalesExecutive can only update their assigned tickets or tickets for their assigned customers
-    if (userPayload.role === "SalesExecutive" && ticket.assignedUserId !== userPayload.id && ticket.customer.assignedUserId !== userPayload.id) {
+    if (
+      userPayload.role === "SalesExecutive" &&
+      ticket.assignedUserId !== userPayload.id &&
+      ticket.customer.assignedUserId !== userPayload.id
+    ) {
       return { success: false, message: "Unauthorized: Access denied." };
     }
 
     const updated = await prisma.supportTicket.update({
       where: { id },
-      data: { status }
+      data: { status },
     });
 
     await logAudit(
       userPayload.id,
       "TICKETS",
       "UPDATE_STATUS",
-      `Updated ticket ${ticket.ticketNumber} status to ${status}. Remarks: ${remarks || "None"}`
+      `Updated ticket ${ticket.ticketNumber} status to ${status}. Remarks: ${remarks || "None"}`,
     );
 
     revalidatePath("/support-tickets");
     revalidatePath(`/customers/${ticket.customerId}`);
 
-    return { success: true, message: "Ticket status updated successfully", data: updated };
+    return {
+      success: true,
+      message: "Ticket status updated successfully",
+      data: updated,
+    };
   } catch (error) {
     console.error("Update Support Ticket Error:", error);
     return { success: false, message: "Failed to update ticket status." };
@@ -209,47 +254,69 @@ export async function updateSupportTicketStatusAction(
 /**
  * Assign ticket to a support executive.
  */
-export async function assignSupportTicketAction(id: string, assignedUserId: string) {
+export async function assignSupportTicketAction(
+  id: string,
+  assignedUserId: string,
+) {
   try {
     const userPayload = await verifyAuth();
-    if (!userPayload || !["SalesManager", "Admin", "SuperAdmin"].includes(userPayload.role)) {
+    if (
+      !userPayload ||
+      !["SalesManager", "Admin", "SuperAdmin"].includes(userPayload.role)
+    ) {
       return { success: false, message: "Unauthorized: Admins/Leads only." };
     }
 
     // Tenant check: SuperAdmin supportMode check
-    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
-      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    if (
+      userPayload.role === "SuperAdmin" &&
+      (!userPayload.supportMode || !userPayload.companyId)
+    ) {
+      return {
+        success: false,
+        message:
+          "Unauthorized: SuperAdmin must access business data via support/impersonation mode.",
+      };
     }
 
     const ticket = await prisma.supportTicket.findUnique({
       where: { id },
-      include: { customer: true }
+      include: { customer: true },
     });
     if (!ticket || ticket.customer.companyId !== userPayload.companyId) {
       return { success: false, message: "Ticket not found or access denied." };
     }
 
-    const user = await prisma.user.findUnique({ where: { id: assignedUserId } });
+    const user = await prisma.user.findUnique({
+      where: { id: assignedUserId },
+    });
     if (!user || user.companyId !== userPayload.companyId) {
-      return { success: false, message: "Assigned user not found or belongs to a different company." };
+      return {
+        success: false,
+        message: "Assigned user not found or belongs to a different company.",
+      };
     }
 
     const updated = await prisma.supportTicket.update({
       where: { id },
-      data: { assignedUserId }
+      data: { assignedUserId },
     });
 
     await logAudit(
       userPayload.id,
       "TICKETS",
       "ASSIGN_TICKET",
-      `Assigned ticket ${ticket.ticketNumber} to ${user.name}`
+      `Assigned ticket ${ticket.ticketNumber} to ${user.name}`,
     );
 
     revalidatePath("/support-tickets");
     revalidatePath(`/customers/${ticket.customerId}`);
 
-    return { success: true, message: `Ticket assigned to ${user.name} successfully`, data: updated };
+    return {
+      success: true,
+      message: `Ticket assigned to ${user.name} successfully`,
+      data: updated,
+    };
   } catch (error) {
     console.error("Assign Support Ticket Error:", error);
     return { success: false, message: "Failed to assign ticket." };

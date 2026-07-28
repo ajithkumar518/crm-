@@ -27,7 +27,14 @@ import { logAudit } from "@/lib/audit";
 import { DB_DEFAULT_THEME } from "@/lib/theme";
 import { getModulesForVariant } from "@/lib/config/moduleVariantMap";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_secret";
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is missing.");
+  }
+  return secret;
+}
+const JWT_SECRET: string = getJwtSecret();
 const ALLOWED_DOMAINS = (
   process.env.ALLOWED_DOMAIN ||
   "sukisoftware.com,sukisoft.com,apexindustries.com,bharatmetalworks.com"
@@ -168,17 +175,34 @@ export async function loginWithPassword(
 
     // Block if isFirstLogin=true removed as per request to bypass OTP setup for all roles.
 
-    // Verify password
+    // Check account lockout
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      return {
+        success: false,
+        message: "Account is temporarily locked. Please try again later.",
+      };
+    }
+
     if (!user.passwordHash) {
       return { success: false, message: "Invalid email or password." };
     }
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
+      const MAX_ATTEMPTS = 5;
+      const newAttempts = (user.loginAttempts || 0) + 1;
+      const lockedUntil =
+        newAttempts >= MAX_ATTEMPTS
+          ? new Date(Date.now() + 30 * 60 * 1000)
+          : null;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { loginAttempts: newAttempts, lockedUntil },
+      });
       await logAudit(
         user.id,
         "AUTH",
         "LOGIN_FAILED",
-        `Failed login attempt for ${user.email}`,
+        `Failed login attempt ${newAttempts} for ${user.email}`,
       );
       return { success: false, message: "Invalid email or password." };
     }
@@ -188,7 +212,12 @@ export async function loginWithPassword(
     // Reset lockout + update lastLogin
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastLoginAt: new Date(), rememberMe },
+      data: {
+        lastLoginAt: new Date(),
+        rememberMe,
+        loginAttempts: 0,
+        lockedUntil: null,
+      },
     });
 
     // Fetch company variant + enabledModules for the auth cookie
@@ -306,7 +335,7 @@ export async function validateResetToken(token: string) {
   try {
     let payload: any;
     try {
-      payload = jwt.verify(token, JWT_SECRET);
+      payload = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
     } catch {
       return {
         success: false,
@@ -345,7 +374,7 @@ export async function saveNewPassword(token: string, newPassword: string) {
   try {
     let payload: any;
     try {
-      payload = jwt.verify(token, JWT_SECRET);
+      payload = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
     } catch {
       return {
         success: false,
@@ -544,7 +573,7 @@ export async function completeCustomerActivation(
   try {
     let payload: any;
     try {
-      payload = jwt.verify(token, JWT_SECRET);
+      payload = jwt.verify(token, JWT_SECRET, { algorithms: ["HS256"] });
     } catch {
       return {
         success: false,
@@ -652,10 +681,18 @@ export async function completeCustomerActivation(
 
 export async function logoutAction() {
   const cookieStore = await cookies();
+  const h = await headers();
+  const forwardedProto = (h.get("x-forwarded-proto") ?? "http")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  const isSecure = forwardedProto === "https";
   cookieStore.set({
     name: "token",
     value: "",
     httpOnly: true,
+    secure: isSecure,
+    sameSite: "strict",
     path: "/",
     maxAge: 0,
   });
@@ -1276,7 +1313,7 @@ export async function activateAccountAction(token: string, password: string) {
     // Validate the JWT
     let payload: any;
     try {
-      payload = jwt.verify(cleanToken, JWT_SECRET);
+      payload = jwt.verify(cleanToken, JWT_SECRET, { algorithms: ["HS256"] });
     } catch {
       return {
         success: false,
