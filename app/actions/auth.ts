@@ -27,11 +27,14 @@ import { logAudit } from "@/lib/audit";
 import { DB_DEFAULT_THEME } from "@/lib/theme";
 import { getModulesForVariant } from "@/lib/config/moduleVariantMap";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET environment variable is missing.");
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error("JWT_SECRET environment variable is missing.");
+  }
+  return secret;
 }
+const JWT_SECRET: string = getJwtSecret();
 const ALLOWED_DOMAINS = (
   process.env.ALLOWED_DOMAIN ||
   "sukisoftware.com,sukisoft.com,apexindustries.com,bharatmetalworks.com"
