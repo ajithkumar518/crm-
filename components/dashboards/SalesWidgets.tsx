@@ -1967,9 +1967,10 @@ export function RecentActivityFeed({
               {alert.icon}
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-[var(--text-primary)] leading-tight font-medium">
-                {alert.message}
-              </p>
+              <p 
+                className="text-xs text-[var(--text-primary)] leading-tight font-medium"
+                dangerouslySetInnerHTML={{ __html: alert.message }}
+              />
               <p className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider mt-1">
                 {alert.meta}
               </p>

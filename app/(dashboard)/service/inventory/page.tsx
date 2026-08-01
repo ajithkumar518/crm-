@@ -5,7 +5,9 @@ import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { Search, RefreshCw, Package, X, ChevronLeft, AlertTriangle, TrendingDown, Boxes, PlusCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/ui-utils";
 import { ServiceKPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICard";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 import { useToast } from "@/components/ToastProvider";
+import { useSearchParams } from "next/navigation";
 
 interface SparePart {
   id: string;
@@ -56,6 +58,15 @@ export default function InventoryPage() {
   const [holdings, setHoldings] = useState<any[]>([]);
   const [holdingsLoading, setHoldingsLoading] = useState(false);
   const toast = useToast();
+  
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get("view");
+  
+  useEffect(() => {
+    if (viewParam === "parts" || viewParam === "holdings") {
+      setView(viewParam);
+    }
+  }, [viewParam]);
 
   const fetchParts = useCallback(async () => {
     setLoading(true);
@@ -365,26 +376,15 @@ export default function InventoryPage() {
         <ServiceKPICard icon={<Package size={16} className="text-green-500" />} label="Inventory Value" value={`₹${kpis.totalValue.toFixed(0)}`} color="bg-green-500/10" />
       </ServiceKPIGrid>
 
-      <div className="flex items-center gap-4 border-b border-[var(--border)] pb-2">
-        <button
-          onClick={() => setView("parts")}
-          className={cn(
-            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all",
-            view === "parts" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          )}
-        >
-          <Boxes size={16} /> Parts Inventory
-        </button>
-        <button
-          onClick={() => setView("holdings")}
-          className={cn(
-            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all",
-            view === "holdings" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          )}
-        >
-          <Package size={16} /> Engineer Holdings
-        </button>
-      </div>
+      <StatusFilterBar
+        statuses={[
+          { value: "parts", label: "Parts Inventory" },
+          { value: "holdings", label: "Engineer Holdings" },
+        ]}
+        paramKey="view"
+        basePath="/service/inventory"
+        hideOverview={true}
+      />
 
       {view === "parts" ? (
         <>

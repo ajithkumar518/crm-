@@ -181,7 +181,7 @@ export function NotePanel({ entityType, entityId, className }: NotePanelProps) {
           notes.map((note) => (
             <div
               key={note.id}
-              className="px-5 py-4 group hover:bg-slate-50/60 transition-colors"
+              className={cn("px-5 py-4 group transition-colors", entityType !== "DEAL" && "hover:bg-slate-50/60")}
             >
               <div className="flex items-start gap-3">
                 {/* Avatar */}

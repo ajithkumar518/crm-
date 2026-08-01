@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { WarrantyAMCContextCard, AssetHistoryPanel } from "@/components/shared/ServiceComponents";
 import { ServiceKPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICard";
-import { Search, Plus, Filter, HardDrive, RefreshCw, Calendar, ChevronLeft, Package, AlertCircle, CheckCircle, ShieldCheck, X } from "lucide-react";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
+import { Search, Plus, Filter, HardDrive, RefreshCw, Calendar, ChevronLeft, Package, AlertCircle, CheckCircle, ShieldCheck, X, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/ui-utils";
 import { useToast } from "@/components/ToastProvider";
 
@@ -16,6 +17,7 @@ export default function CustomerAssetsPage() {
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [assetVisits, setAssetVisits] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("Installed"); // Installed, Warranty, AMC, History
   const [statusFilter, setStatusFilter] = useState("All");
   const [kpiFilter, setKpiFilter] = useState("");
   const [projectFilter, setProjectFilter] = useState("All");
@@ -24,6 +26,22 @@ export default function CustomerAssetsPage() {
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [customers, setCustomers] = useState<any[]>([]);
   const toast = useToast();
+  
+  const searchParams = useSearchParams();
+  const coverageParam = searchParams?.get("coverage");
+  const tabParam = searchParams?.get("tab");
+  
+  useEffect(() => {
+    if (tabParam === "history") {
+      setActiveTab("History");
+    } else if (coverageParam === "Warranty") {
+      setActiveTab("Warranty");
+    } else if (coverageParam === "AMC") {
+      setActiveTab("AMC");
+    } else {
+      setActiveTab("Installed");
+    }
+  }, [coverageParam, tabParam]);
 
   const fetchAssets = useCallback(async () => {
     setLoading(true);
@@ -127,6 +145,12 @@ export default function CustomerAssetsPage() {
 
   const filteredData = data.filter(item => {
     if (kpiFilter && kpiFilterMap[kpiFilter] && !kpiFilterMap[kpiFilter](item)) return false;
+    
+    // Tab filters
+    const now = new Date();
+    if (activeTab === "Warranty" && !(item.warrantyExpiryDate && new Date(item.warrantyExpiryDate) > now)) return false;
+    if (activeTab === "AMC" && !(item.amcExpiryDate && new Date(item.amcExpiryDate) > now)) return false;
+
     if (projectFilter !== "All" && item.projectId !== projectFilter) return false;
     if (statusFilter !== "All" && item.status !== statusFilter) return false;
     if (searchQuery.trim()) {
@@ -291,6 +315,44 @@ export default function CustomerAssetsPage() {
         <ServiceKPICard label="Under Warranty" value={kpiStats.underWarranty} icon={<ShieldCheck size={20} className="text-purple-500" />} color="bg-purple-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Under Warranty"} />
         <ServiceKPICard label="Under AMC" value={kpiStats.underAMC} icon={<ShieldCheck size={20} className="text-cyan-500" />} color="bg-cyan-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Under AMC"} />
       </ServiceKPIGrid>
+      <div className="flex items-center gap-4 border-b border-[var(--border)] pb-2 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab("Installed")}
+          className={cn(
+            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all whitespace-nowrap",
+            activeTab === "Installed" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <Package size={16} /> Installed Products
+        </button>
+        <button
+          onClick={() => setActiveTab("Warranty")}
+          className={cn(
+            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all whitespace-nowrap",
+            activeTab === "Warranty" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <ShieldCheck size={16} /> Under Warranty
+        </button>
+        <button
+          onClick={() => setActiveTab("AMC")}
+          className={cn(
+            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all whitespace-nowrap",
+            activeTab === "AMC" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <ShieldCheck size={16} /> Under AMC
+        </button>
+        <button
+          onClick={() => setActiveTab("History")}
+          className={cn(
+            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all whitespace-nowrap",
+            activeTab === "History" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <ClipboardList size={16} /> Service History
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-[var(--surface)] border border-[var(--border)] p-3 rounded-xl backdrop-blur-md">
         <div className="relative md:col-span-2">
@@ -327,7 +389,15 @@ export default function CustomerAssetsPage() {
       </div>
 
       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden backdrop-blur-md">
-        <DataTable data={filteredData} columns={columns} />
+        {activeTab === "History" ? (
+          <div className="p-8 text-center text-[var(--text-secondary)]">
+            <ClipboardList size={32} className="mx-auto mb-3 opacity-50" />
+            <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1">Service History</h3>
+            <p className="text-xs">Select a specific asset from the Installed Products tab to view its complete service history.</p>
+          </div>
+        ) : (
+          <DataTable data={filteredData} columns={columns} />
+        )}
       </div>
 
       {/* Edit Asset Modal */}

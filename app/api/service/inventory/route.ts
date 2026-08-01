@@ -140,6 +140,13 @@ export async function POST(request: NextRequest) {
         createdById: user.id,
       },
     });
+    
+    // Fix C2: decrement currentStock for damaged parts
+    await prisma.sparePart.update({
+      where: { id: sparePartId },
+      data: { currentStock: { decrement: qty } },
+    });
+    
     await logAudit(user.id, "SparePart", "Damaged", `Marked ${qty} units of ${part.partName} (${part.partCode}) as damaged`);
     return NextResponse.json({ success: true, data: movement });
   }

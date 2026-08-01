@@ -48,7 +48,8 @@ export async function PATCH(request: Request, { params }: { params: any }) {
         engineerId: visit.engineerId,
         checkInTime: { not: null },
         checkOutTime: null,
-        id: { not: id }
+        id: { not: id },
+        deletedAt: null
       },
       include: {
         customer: true,

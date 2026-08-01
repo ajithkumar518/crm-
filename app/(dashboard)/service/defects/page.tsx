@@ -8,6 +8,7 @@ import ServiceModuleDetailPage from "@/components/shared/ServiceModuleDetailPage
 import ServiceModuleForm from "@/components/shared/ServiceModuleForm";
 import { LinkedVisitsPanel } from "@/components/shared/ServiceComponents";
 import { ServiceKPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICard";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 import { Calendar, HelpCircle, Search as SearchIcon, Wrench, CheckCircle, RotateCcw } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
@@ -324,6 +325,16 @@ export default function ServiceDefectsPage() {
             <ServiceKPICard label="Under Investigation" value={kpiStats.underInvestigation} icon={<SearchIcon size={20} className="text-red-500" />} color="bg-red-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Under Investigation"} />
             <ServiceKPICard label="Closed This Week" value={kpiStats.closedThisWeek} icon={<CheckCircle size={20} className="text-green-500" />} color="bg-green-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Closed This Week"} />
           </ServiceKPIGrid>
+          <StatusFilterBar
+            statuses={[
+              { value: "New", label: "New Defects" },
+              { value: "Under Investigation", label: "Under Investigation" },
+              { value: "Corrective Action", label: "Corrective Action" },
+              { value: "Closed", label: "Closed Defects" },
+            ]}
+            paramKey="status"
+            basePath="/service/defects"
+          />
           <ServiceModuleListPage
             config={config}
             data={filteredKpiData}
@@ -331,7 +342,7 @@ export default function ServiceDefectsPage() {
             onRefresh={fetchData}
             onCreateNew={() => setIsFormOpen(true)}
             onRowClick={(row) => setSelectedRow(row)}
-            useLeftPanel={true}
+            useLeftPanel={false}
           />
         </div>
       )}

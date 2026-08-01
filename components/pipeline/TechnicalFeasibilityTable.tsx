@@ -167,7 +167,7 @@ export function TechnicalFeasibilityTable({
                   <td className="px-2 py-2.5">
                     <FormButton
                       type="button"
-                      variant="secondary"
+                      variant="primary"
                       size="sm"
                       onClick={() => onSaveRow(row.requirementItemId)}
                       disabled={!row.feasibility || row.saving}
@@ -219,7 +219,7 @@ export function TechnicalFeasibilityTable({
             {!readOnly && (
               <FormButton
                 type="button"
-                variant="secondary"
+                variant="primary"
                 size="sm"
                 onClick={() => onSaveRow(row.requirementItemId)}
                 disabled={!row.feasibility || row.saving}

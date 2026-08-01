@@ -8,6 +8,7 @@ import ServiceModuleDetailPage from "@/components/shared/ServiceModuleDetailPage
 import ServiceModuleForm from "@/components/shared/ServiceModuleForm";
 import { LinkedVisitsPanel } from "@/components/shared/ServiceComponents";
 import { ServiceKPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICard";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 import { Calendar, FileQuestion, AlertCircle, Clock, CheckCircle, AlertTriangle, Package } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { useAuth } from "@/components/AuthProvider";
@@ -350,6 +351,17 @@ export default function ServiceRequestsPage() {
             <ServiceKPICard label="SLA Breaches" value={kpiStats.slaBreaches} icon={<AlertTriangle size={20} className="text-red-500" />} color="bg-red-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "SLA Breaches"} />
             <ServiceKPICard label="Closed This Week" value={kpiStats.closedThisWeek} icon={<CheckCircle size={20} className="text-green-500" />} color="bg-green-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Closed This Week"} />
           </ServiceKPIGrid>
+          <StatusFilterBar
+            statuses={[
+              { value: "New", label: "New Requests" },
+              { value: "Assigned", label: "Assigned Requests" },
+              { value: "In Progress", label: "In Progress" },
+              { value: "Pending Customer", label: "Pending Requests" },
+              { value: "Closed", label: "Closed Requests" },
+            ]}
+            paramKey="status"
+            basePath="/service/requests"
+          />
           <ServiceModuleListPage
             config={config}
             data={filteredKpiData}
@@ -357,7 +369,7 @@ export default function ServiceRequestsPage() {
             onRefresh={fetchData}
             onCreateNew={() => setIsFormOpen(true)}
             onRowClick={(row) => setSelectedRow(row)}
-            useLeftPanel={true}
+            useLeftPanel={false}
             onTriggerAction={handleTriggerAction}
             onStatusTransition={handleStatusTransition}
           />

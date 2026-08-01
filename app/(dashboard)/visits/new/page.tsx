@@ -203,7 +203,7 @@ export default function NewVisitPage() {
       const data = await res.json();
       if (data.success) {
         toast.success("Visit planned successfully");
-        router.push(`/visits/${data.data.id}`);
+        router.push("/visits?status=PLANNED");
       } else {
         toast.error(data.message || "Failed to plan visit");
       }

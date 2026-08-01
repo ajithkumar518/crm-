@@ -246,9 +246,10 @@ export const DIRECTORY_STATUS: StatusOption[] = [
 // Backend: Task.status field
 // API: /api/tasks (via getTasksAction, filter by status)
 export const PLANNER_STATUS: StatusOption[] = [
+  { label: "Pending", value: "Pending" },
   { label: "Open", value: "Open" },
   { label: "In Progress", value: "InProgress" },
-  { label: "Done", value: "Done" },
+  { label: "Completed", value: "Done" },
   { label: "Overdue", value: "Overdue" },
   { label: "Cancelled", value: "Cancelled" },
 ];

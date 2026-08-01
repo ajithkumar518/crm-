@@ -1,16 +1,18 @@
 import React from "react";
 import { cn } from "@/lib/ui-utils";
+import { ArrowLeft } from "lucide-react";
 
 interface PageShellProps {
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
   breadcrumb?: { label: string; href?: string }[];
+  onBack?: () => void;
   children: React.ReactNode;
   className?: string;
 }
 
-export function PageShell({ title, subtitle, action, breadcrumb, children, className }: PageShellProps) {
+export function PageShell({ title, subtitle, action, breadcrumb, onBack, children, className }: PageShellProps) {
   const cleanTitle = title.toLowerCase().endsWith("overview") ? "Overview" : title;
   const cleanBreadcrumb = breadcrumb?.map((item) => ({
     ...item,
@@ -21,8 +23,17 @@ export function PageShell({ title, subtitle, action, breadcrumb, children, class
     <div className={cn("page-shell", className)}>
       {/* Header row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-        <div>
-          {cleanBreadcrumb && cleanBreadcrumb.length > 0 && (
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button 
+              onClick={onBack} 
+              className="p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 cursor-pointer transition-colors shrink-0"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
+          <div>
+            {cleanBreadcrumb && cleanBreadcrumb.length > 0 && (
             <nav className="flex items-center gap-1.5 mb-1.5">
               {cleanBreadcrumb.map((item, i) => (
                 <React.Fragment key={i}>
@@ -40,6 +51,7 @@ export function PageShell({ title, subtitle, action, breadcrumb, children, class
           )}
           <h1 className="tracking-tight leading-none" style={{ fontSize: "22px", fontWeight: 500, color: "var(--text-primary)" }}>{cleanTitle}</h1>
           {subtitle && <p className="mt-1" style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{subtitle}</p>}
+          </div>
         </div>
         {action && <div className="flex items-center gap-2 shrink-0">{action}</div>}
       </div>

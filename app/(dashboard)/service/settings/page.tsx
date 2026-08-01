@@ -72,30 +72,6 @@ export default function ServiceSettingsPage() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 min-h-[75vh]">
-      {/* Settings Navigation Sidebar */}
-      <div className="w-full lg:w-64 shrink-0 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5 space-y-1 backdrop-blur-md self-start">
-        <h3 className="px-3.5 pb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-          Service Metadata Settings
-        </h3>
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all text-left",
-                isActive 
-                  ? "bg-[var(--surface-2)] text-[var(--text-primary)] border border-[var(--border)] shadow-sm" 
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] border border-transparent"
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
 
       {/* Settings Content Area */}
       <div className="flex-1 min-w-0">

@@ -53,8 +53,8 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     const permitted = ["serialNumber", "productName", "customerId", "status", "purchaseDate", "warrantyExpiryDate", "amcExpiryDate"];
     for (const key of permitted) {
       if (body[key] !== undefined) {
-        if ((key === "purchaseDate" || key === "warrantyExpiryDate" || key === "amcExpiryDate") && body[key]) {
-          allowedFields[key] = new Date(body[key]);
+        if (key === "purchaseDate" || key === "warrantyExpiryDate" || key === "amcExpiryDate") {
+          allowedFields[key] = body[key] ? new Date(body[key]) : null;
         } else {
           allowedFields[key] = body[key];
         }

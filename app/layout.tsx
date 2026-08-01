@@ -83,9 +83,11 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <Script id="anti-fouc-script" strategy="beforeInteractive">
-          {antiFoucScript}
-        </Script>
+        <Script 
+          id="anti-fouc-script" 
+          strategy="beforeInteractive" 
+          dangerouslySetInnerHTML={{ __html: antiFoucScript }} 
+        />
       </head>
       <body className={inter.className}>
         <ThemeProvider

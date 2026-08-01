@@ -15,7 +15,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await verifyAuth();
+  try {
+    const user = await verifyAuth();
+
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   if (user.role === "Customer") return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
 
@@ -404,7 +406,8 @@ export async function POST(
       where: { id },
       include: { rfqs: true },
     });
-  });
+  }, { timeout: 15000 });
+
 
   // Audit log
   await logAudit(
@@ -456,6 +459,19 @@ export async function POST(
     rfqId,
     message: `Stage changed from ${currentStage} to ${targetStage}`,
   });
+  } catch (error: unknown) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[STAGE_CHANGE][ERROR] Failed to transition opportunity stage:", errorMsg);
+    return NextResponse.json(
+      {
+        success: false,
+        message: errorMsg || "Failed to update opportunity stage",
+      },
+      { status: 400 }
+    );
+  }
 }
+
+
 
 

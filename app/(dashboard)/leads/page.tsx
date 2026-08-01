@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLeadsAction, createLeadAction, updateLeadAction, deleteLeadAction } from "@/app/actions/leads";
 import { getLeadSourcesAction } from "@/app/actions/leadSources";
 import { getUsersAction } from "@/app/actions/users";
-import { Lead, User } from "@/types";
+import type { Lead, User } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/ToastProvider";
@@ -122,6 +122,9 @@ export default function LeadsPage() {
     isOpen: false, title: "", message: "", action: () => {},
   });
 
+  const deleteTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const [deletedUIIds, setDeletedUIIds] = useState<Set<string>>(new Set());
+
   // Workflow modal — fires after new lead is created (Plan Visit → Log Activity)
   const [workflowModal, setWorkflowModal] = useState<{ open: boolean; leadId: string; leadCode: string; leadName: string }>({
     open: false, leadId: "", leadCode: "", leadName: "",
@@ -212,6 +215,7 @@ export default function LeadsPage() {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     return leads.filter(l => {
+      if (deletedUIIds.has(l.id)) return false;
       // V2 Tab filter
       if (activeTab === "TodayFollowUp" || activeTab === "TodaysFollowUp") {
         // Follow-Up Due / Today's Follow-up: leads with a pending follow-up scheduled for today,
@@ -280,7 +284,7 @@ export default function LeadsPage() {
 
       return true;
     });
-  }, [leads, dateFrom, dateTo, followUpParam, fuStatusFilter, activeTab]);
+  }, [leads, dateFrom, dateTo, followUpParam, fuStatusFilter, activeTab, deletedUIIds]);
 
   const sortedAndFiltered = useMemo(() => {
     let result = filtered;
@@ -436,17 +440,65 @@ export default function LeadsPage() {
     setFormLoading(false);
   };
 
-  const handleDelete = (l: any) => {
+  const handleUndoDelete = (leadId: string) => {
+    if (deleteTimeoutsRef.current[leadId]) {
+      clearTimeout(deleteTimeoutsRef.current[leadId]);
+      delete deleteTimeoutsRef.current[leadId];
+    }
+    setDeletedUIIds((prev) => {
+      const next = new Set(prev);
+      next.delete(leadId);
+      return next;
+    });
+    toast.info("Lead restore successful.");
+  };
+
+  const executeDelete = async (leadId: string) => {
+    delete deleteTimeoutsRef.current[leadId];
+    setIsDeleting(true);
+    const res = await deleteLeadAction(leadId);
+    setIsDeleting(false);
+    if (!res.success) {
+      toast.error(res.message || "Delete failed.");
+      setDeletedUIIds((prev) => {
+        const next = new Set(prev);
+        next.delete(leadId);
+        return next;
+      });
+    } else {
+      toast.success("Lead deleted successfully.");
+      loadLeads();
+    }
+  };
+
+  const handleDelete = (l: Lead) => {
     setConfirmState({
       isOpen: true,
       title: "Delete Lead",
-      message: `Delete "${l.name}"? This will erase all their visits, followups, and communications. This cannot be undone.`,
-      action: async () => {
-        setIsDeleting(true);
-        const res = await deleteLeadAction(l.id);
-        setIsDeleting(false);
-        if (res.success) { toast.success("Lead deleted."); loadLeads(); }
-        else toast.error(res.message || "Delete failed.");
+      message: `Delete "${l.name}"? This will erase all their visits, followups, and communications.`,
+      action: () => {
+        setDeletedUIIds((prev) => new Set(prev).add(l.id));
+        
+        const timer = setTimeout(() => {
+          executeDelete(l.id);
+        }, 5000);
+        deleteTimeoutsRef.current[l.id] = timer;
+
+        toast.warning(
+          <div className="flex items-center gap-4">
+            <span>Lead "{l.name}" deleted.</span>
+            <button 
+              onClick={() => handleUndoDelete(l.id)} 
+              className="text-white bg-amber-600/30 px-3 py-1.5 rounded text-xs font-bold hover:bg-amber-600/50 transition-colors"
+            >
+              UNDO
+            </button>
+          </div>,
+          undefined,
+          5000
+        );
+
+        setConfirmState(prev => ({ ...prev, isOpen: false }));
       },
     });
   };

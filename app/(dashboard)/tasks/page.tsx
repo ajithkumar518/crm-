@@ -66,7 +66,7 @@ function TasksPageContent() {
   const { page, setPage, totalPages, paged: pagedTasks } = usePagination(tasks, itemsPerPage);
 
   const kpiTotal = tasks.length;
-  const kpiPending = tasks.filter(t => t.status === "Open" || t.status === "InProgress").length;
+  const kpiPending = tasks.filter(t => t.status === "Pending" || t.status === "Open" || t.status === "InProgress").length;
   const kpiOverdue = tasks.filter(t => t.status === "Overdue").length;
   const kpiDone = tasks.filter(t => t.status === "Done").length;
 
@@ -107,7 +107,7 @@ function TasksPageContent() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <SummaryCard label="Total Tasks" value={kpiTotal} icon={<CheckSquare size={20} />} variant="blue" subtitle="All tasks" />
-          <SummaryCard label="Pending" value={kpiPending} icon={<Clock size={20} />} variant="amber" subtitle="Open / In Progress" />
+          <SummaryCard label="Pending" value={kpiPending} icon={<Clock size={20} />} variant="amber" subtitle="Pending / Open / In Progress" />
           <SummaryCard label="Overdue" value={kpiOverdue} icon={<AlertTriangle size={20} />} variant="red" subtitle="Past due dates" />
           <SummaryCard label="Completed" value={kpiDone} icon={<CheckCircle2 size={20} />} variant="green" subtitle="Finished tasks" />
         </div>

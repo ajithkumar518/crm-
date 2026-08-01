@@ -1917,8 +1917,12 @@ export async function convertLeadV2Action(
       }
 
       // 3. Create Contact linked to new account
+      const contactCount = await tx.contact.count();
+      const generatedContactCode = `CON-${String(contactCount + 1).padStart(4, "0")}`;
+
       const contact = await tx.contact.create({
         data: {
+          contactCode: generatedContactCode,
           name: data.contact.fullName,
           email: data.contact.email || lead.email,
           phone: data.contact.phone || lead.phone,

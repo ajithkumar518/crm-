@@ -69,7 +69,10 @@ export async function GET(
         });
         const rate = materials[0];
         if (rate) {
-          materialCost += bom.quantity.toNumber() * rate.unitRate.toNumber() * (1 + bom.scrapPercent.toNumber() / 100);
+          const bomQty = Number(bom.quantity);
+          const unitRate = Number(rate.unitRate);
+          const scrap = Number(bom.scrapPercent);
+          materialCost += bomQty * unitRate * (1 + scrap / 100);
         }
       }
       sources.material_cost = "bom";
@@ -95,7 +98,11 @@ export async function GET(
         });
         const rate = rates[0];
         if (rate) {
-          labourCost += op.cycleTimeMin.toNumber() * rate.hourlyRate.toNumber() / 60 + op.setupTimeMin.toNumber() * rate.setupRate.toNumber() / 60;
+          const cycle = Number(op.cycleTimeMin);
+          const hourly = Number(rate.hourlyRate);
+          const setupTime = Number(op.setupTimeMin);
+          const setupRate = Number(rate.setupRate);
+          labourCost += (cycle * hourly) / 60 + (setupTime * setupRate) / 60;
         }
       }
       sources.labour_cost = "routing";
@@ -103,8 +110,8 @@ export async function GET(
 
     // Use category defaults for overhead and margin
     if (lineItem.product.category) {
-      overheadPercent = lineItem.product.category.defaultOverheadPercent?.toNumber() || 0;
-      marginPercent = lineItem.product.category.defaultMarginPercent?.toNumber() || 0;
+      overheadPercent = Number(lineItem.product.category.defaultOverheadPercent || 0);
+      marginPercent = Number(lineItem.product.category.defaultMarginPercent || 0);
       sources.overhead_percent = "category";
       sources.margin_percent = "category";
     }

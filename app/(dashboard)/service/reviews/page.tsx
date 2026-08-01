@@ -6,6 +6,7 @@ import { serviceModulesConfig } from "@/lib/config/serviceModuleConfig";
 import ServiceModuleListPage from "@/components/shared/ServiceModuleListPage";
 import ServiceModuleDetailPage from "@/components/shared/ServiceModuleDetailPage";
 import { ServiceKPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICard";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 import { Star, Inbox, ShieldAlert, Award, ArrowUpDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/ui-utils";
 
@@ -281,6 +282,16 @@ export default function ServiceReviewsPage() {
               active={false}
             />
           </ServiceKPIGrid>
+          <StatusFilterBar
+            statuses={[
+              { value: "Pending", label: "Pending" },
+              { value: "Submitted", label: "Submitted" },
+              { value: "LowRating", label: "Low Ratings" },
+            ]}
+            paramKey="status"
+            basePath="/service/reviews"
+          />
+
 
           {activeView === "engineer" ? (
             <div className="space-y-4">
@@ -362,7 +373,7 @@ export default function ServiceReviewsPage() {
               loading={loading}
               onRefresh={fetchData}
               onRowClick={(row) => setSelectedRow(row)}
-              useLeftPanel={true}
+              useLeftPanel={false}
             />
           )}
         </div>

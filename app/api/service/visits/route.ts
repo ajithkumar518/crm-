@@ -152,7 +152,7 @@ export async function POST(request: Request) {
         notes,
         statusId,
         engineerId,
-        scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
+        scheduledDate: scheduledDate ? (typeof scheduledDate === 'string' && scheduledDate.length === 10 ? new Date(`${scheduledDate}T12:00:00Z`) : new Date(scheduledDate)) : null,
         customerId: finalCustomerId,
         customerAssetId: finalCustomerAssetId,
         requestId,

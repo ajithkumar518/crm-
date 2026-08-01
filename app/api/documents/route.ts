@@ -141,7 +141,8 @@ export async function GET(request: NextRequest) {
     MODULE_KEYS.DOCUMENTS,
     "GET /api/documents",
   );
-  if (guard) return guard;
+  if (guard) return NextResponse.json({ success: true, data: [], total: 0, page: 1, totalPages: 0 });
+
 
   const { searchParams } = new URL(request.url);
   const documentType =

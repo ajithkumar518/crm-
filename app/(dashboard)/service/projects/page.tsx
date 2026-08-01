@@ -5,6 +5,8 @@ import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
 import { Search, Plus, RefreshCw, FolderKanban, X, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/ui-utils";
 import { useToast } from "@/components/ToastProvider";
+import { useSearchParams } from "next/navigation";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 
 interface Project {
   id: string;
@@ -30,6 +32,23 @@ export default function ProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
+  
+  const searchParams = useSearchParams();
+  const statusParam = searchParams?.get("status");
+  
+  useEffect(() => {
+    if (statusParam) {
+      if (statusParam === "Hold") {
+        setStatusFilter("On Hold");
+      } else if (statusParam === "Overview") {
+        setStatusFilter("All");
+      } else {
+        setStatusFilter(statusParam);
+      }
+    } else {
+      setStatusFilter("All");
+    }
+  }, [statusParam]);
 
   const fetchProjects = useCallback(async () => {
     setLoading(true);
@@ -230,6 +249,17 @@ export default function ProjectsPage() {
           <option value="Cancelled">Cancelled</option>
         </select>
       </div>
+
+      <StatusFilterBar
+        statuses={[
+          { value: "Active", label: "Active" },
+          { value: "Hold", label: "Hold" },
+          { value: "Completed", label: "Completed" },
+          { value: "Cancelled", label: "Cancelled" },
+        ]}
+        paramKey="status"
+        basePath="/service/projects"
+      />
 
       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden backdrop-blur-md">
         <DataTable data={data} columns={columns} />

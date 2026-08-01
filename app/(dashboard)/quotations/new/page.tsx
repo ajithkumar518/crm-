@@ -400,7 +400,7 @@ export default function NewQuotationPage() {
                     <Input type="number" step="0.01" min="0" max="100" placeholder="18" value={item.taxPercent} onChange={(e) => updateItem(idx, "taxPercent", e.target.value)} className={cn("text-xs py-1.5", item.taxPercent && validatePercentage(item.taxPercent, "Tax") && "border-rose-500")} />
                     {item.taxPercent && validatePercentage(item.taxPercent, "Tax") && <p className="text-[9px] text-rose-500 mt-0.5">{validatePercentage(item.taxPercent, "Tax")}</p>}
                   </div>
-                  <div className="col-span-0 flex flex-col items-end justify-end pb-1">
+                  <div className="col-span-0 flex flex-col items-start justify-end pb-1">
                     <span className="text-xs font-medium text-[var(--text-primary)]">{((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0) * (1 - (parseFloat(item.discountPercent) || 0) / 100)).toFixed(2)}</span>
                     {items.length > 1 && <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer mt-1"><Ico d={icons.x} size={12} /></button>}
                   </div>

@@ -8,6 +8,7 @@ import {
   BarChart, PieChart, Users, Settings, Wrench, HardDrive 
 } from "lucide-react";
 import { cn } from "@/lib/ui-utils";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 
 type ReportType = 
   | "requests" 
@@ -246,35 +247,20 @@ export default function ServiceReportsPage() {
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
-        <div className="w-full lg:w-64 shrink-0 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5 space-y-1 backdrop-blur-md">
-          <h3 className="px-3.5 pb-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border)] mb-2">
-            Report Types
-          </h3>
-          {[
-            { id: "requests", label: "Service Requests", icon: <FileSpreadsheet size={15} /> },
-            { id: "complaints", label: "Complaints", icon: <BarChart size={15} /> },
-            { id: "defects", label: "Product Defects", icon: <PieChart size={15} /> },
-            { id: "installations", label: "Installations", icon: <Wrench size={15} /> },
-            { id: "warranty", label: "Warranty & AMC", icon: <HardDrive size={15} /> },
-            { id: "engineer", label: "Engineer Performance", icon: <Users size={15} /> }
-          ].map(rt => (
-            <button
-              key={rt.id}
-              onClick={() => setReportType(rt.id as ReportType)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all text-left",
-                reportType === rt.id 
-                  ? "bg-[var(--surface-2)] text-[var(--text-primary)] border border-[var(--border)] shadow-sm" 
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] border border-transparent"
-              )}
-            >
-              {rt.icon}
-              {rt.label}
-            </button>
-          ))}
-        </div>
+      <StatusFilterBar
+        statuses={[
+          { value: "requests", label: "Service Request Report" },
+          { value: "complaints", label: "Complaint Report" },
+          { value: "defects", label: "Defect Report" },
+          { value: "installations", label: "Installation Report" },
+          { value: "warranty", label: "Warranty & AMC Report" },
+          { value: "engineer", label: "Engineer Performance Report" },
+        ]}
+        paramKey="report"
+        basePath="/service/reports"
+      />
 
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
         <div className="flex-1 min-w-0 space-y-4">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 backdrop-blur-md flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="flex items-center gap-4 w-full md:w-auto">

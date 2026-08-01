@@ -31,6 +31,8 @@ interface StatusFilterBarProps {
   paramKey?: string;
   /** Optional base path for URL updates (default: current pathname) */
   basePath?: string;
+  /** Whether to hide the automatic "Overview" tab (default: false) */
+  hideOverview?: boolean;
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -41,6 +43,7 @@ export function StatusFilterBar({
   className,
   paramKey = "status",
   basePath,
+  hideOverview = false,
 }: StatusFilterBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -49,11 +52,10 @@ export function StatusFilterBar({
   // The active status from URL ("" = Overview / no filter)
   const activeValue = searchParams.get(paramKey) || "";
 
-  // Build the full list with "Overview" prepended
-  const allTabs: StatusOption[] = [
-    { label: "Overview", value: "" },
-    ...statuses,
-  ];
+  // Build the full list with "Overview" prepended conditionally
+  const allTabs: StatusOption[] = hideOverview
+    ? statuses
+    : [{ label: "Overview", value: "" }, ...statuses];
 
   const updateUrl = useCallback(
     (value: string) => {

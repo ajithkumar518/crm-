@@ -7,16 +7,29 @@ import { ServiceKPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICa
 import { Search, ShieldAlert, Award, FileText, ClipboardList, LifeBuoy, AlertCircle, CalendarClock, Plus, X, Pencil } from "lucide-react";
 import { cn } from "@/lib/ui-utils";
 import { useToast } from "@/components/ToastProvider";
+import { useSearchParams } from "next/navigation";
 
 export default function WarrantyAMCPage() {
   const toast = useToast();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
   const [amcContracts, setAmcContracts] = useState<any[]>([]);
   const [warrantyClaims, setWarrantyClaims] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"AMC" | "Warranty">("AMC");
+  
+  const [activeTab, setActiveTab] = useState<string>(
+    tabParam || "AMC"
+  );
+  
   const [loading, setLoading] = useState(true);
   const [kpiFilter, setKpiFilter] = useState("");
+
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   // AMC Create/Edit modal state
   const [showAmcModal, setShowAmcModal] = useState(false);
@@ -263,27 +276,30 @@ export default function WarrantyAMCPage() {
 
   const kpiFilterMap: Record<string, () => boolean> = {
     "Total Assets Covered": () => true,
-    "Active Warranty": () => activeTab === "Warranty",
+    "Active Warranty": () => activeTab === "ActiveWarranty",
     "Active AMC": () => activeTab === "AMC",
     "Expiring in 30 Days": () => true,
     "Expired": () => true,
   };
 
-  const filteredAMC = amcContracts.filter(item => {
+  const filteredWarranty = warrantyClaims.filter(item => {
+    if (activeTab === "ActiveWarranty" && !(item.status?.name === "Active" || item.status?.name === "Open")) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      item.contractNumber?.toLowerCase().includes(q) ||
+      item.title?.toLowerCase().includes(q) ||
       item.customerAsset?.productName?.toLowerCase().includes(q) ||
       item.customer?.name?.toLowerCase().includes(q)
     );
   });
 
-  const filteredWarranty = warrantyClaims.filter(item => {
+  const filteredAMC = amcContracts.filter(item => {
+    if (activeTab === "AMC" && item.status?.name !== "Active") return false;
+    if (activeTab === "AMCRenewals" && item.renewalStatus !== "Pending") return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      item.title?.toLowerCase().includes(q) ||
+      item.contractNumber?.toLowerCase().includes(q) ||
       item.customerAsset?.productName?.toLowerCase().includes(q) ||
       item.customer?.name?.toLowerCase().includes(q)
     );
@@ -402,7 +418,7 @@ export default function WarrantyAMCPage() {
           <h1 className="text-xl font-black text-[var(--text-primary)]">Warranty & AMC Contracts</h1>
           <p className="text-xs text-[var(--text-muted)]">Manage coverage verification, expiration notifications, and claims.</p>
         </div>
-        {activeTab === "AMC" && (
+        {(activeTab === "AMC" || activeTab === "AMCRenewals") && (
           <button
             onClick={openCreateAmcModal}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-bold transition-colors"
@@ -410,7 +426,7 @@ export default function WarrantyAMCPage() {
             <Plus size={14} /> New AMC Contract
           </button>
         )}
-        {activeTab === "Warranty" && (
+        {(activeTab === "Warranty" || activeTab === "ActiveWarranty") && (
           <button
             onClick={openCreateClaimModal}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-bold transition-colors"
@@ -428,24 +444,42 @@ export default function WarrantyAMCPage() {
         <ServiceKPICard label="Expired" value={kpiStats.expired} icon={<AlertCircle size={20} className="text-red-500" />} color="bg-red-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Expired"} />
       </ServiceKPIGrid>
 
-      <div className="flex items-center gap-4 border-b border-[var(--border)] pb-2">
+      <div className="flex items-center gap-4 border-b border-[var(--border)] pb-2 overflow-x-auto">
         <button
-          onClick={() => setActiveTab("AMC")}
+          onClick={() => setActiveTab("ActiveWarranty")}
           className={cn(
-            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all",
-            activeTab === "AMC" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all whitespace-nowrap",
+            activeTab === "ActiveWarranty" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           )}
         >
-          <ClipboardList size={16} /> AMC Contracts
+          <ShieldAlert size={16} /> Active Warranty
         </button>
         <button
           onClick={() => setActiveTab("Warranty")}
           className={cn(
-            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all",
+            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all whitespace-nowrap",
             activeTab === "Warranty" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           )}
         >
           <FileText size={16} /> Warranty Claims
+        </button>
+        <button
+          onClick={() => setActiveTab("AMC")}
+          className={cn(
+            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all whitespace-nowrap",
+            activeTab === "AMC" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <ClipboardList size={16} /> Active AMC
+        </button>
+        <button
+          onClick={() => setActiveTab("AMCRenewals")}
+          className={cn(
+            "flex items-center gap-2 text-sm font-bold pb-2 border-b-2 transition-all whitespace-nowrap",
+            activeTab === "AMCRenewals" ? "border-blue-500 text-blue-500" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <CalendarClock size={16} /> AMC Renewals
         </button>
       </div>
 
@@ -453,7 +487,7 @@ export default function WarrantyAMCPage() {
         <Search size={14} className="absolute left-6 text-[var(--text-muted)] pointer-events-none" />
         <input 
           type="text" 
-          placeholder={`Search ${activeTab === "AMC" ? "contracts" : "claims"} by title, product, or customer...`}
+          placeholder={`Search ${activeTab.includes("AMC") ? "contracts" : "claims"} by title, product, or customer...`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors placeholder-[var(--text-muted)]"
@@ -465,8 +499,8 @@ export default function WarrantyAMCPage() {
           <div className="p-8 text-center text-sm text-[var(--text-muted)] animate-pulse">Loading data...</div>
         ) : (
           <DataTable 
-            data={activeTab === "AMC" ? filteredAMC : filteredWarranty} 
-            columns={activeTab === "AMC" ? amcColumns : warrantyColumns} 
+            data={activeTab.includes("AMC") ? filteredAMC : filteredWarranty} 
+            columns={activeTab.includes("AMC") ? amcColumns : warrantyColumns} 
           />
         )}
       </div>

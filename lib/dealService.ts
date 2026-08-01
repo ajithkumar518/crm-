@@ -208,7 +208,8 @@ export async function transitionDealStatus(
       });
       const actor = ctx.actorId === "system" ? (await getSystemActorId(db)) : ctx.actorId;
       for (const po of pos) {
-        await createCustomerAssetsFromPO(po.id, actor);
+        // Run in background to avoid SQLite deadlocks if this uses global prisma
+        createCustomerAssetsFromPO(po.id, actor).catch(console.error);
       }
       
       // Explicitly link any matching assets to this deal
@@ -274,45 +275,48 @@ export async function transitionDealStatus(
     }
   }
 
-  // Audit log
-  await logAudit(
+  // Audit log - DO NOT AWAIT to avoid SQLite deadlocks if this uses global prisma
+  logAudit(
     ctx.actorId,
     "Deal",
     "StatusTransition",
     `Deal "${deal.dealName}" transitioned: ${fromStatus} → ${toStatus}${ctx.reason ? `. Reason: ${ctx.reason}` : ""}`
-  );
+  ).catch((e: unknown) => console.error("Audit log error in deal transition:", e));
 
-  // Notify assigned user if changed by someone else
+  // Notify assigned user if changed by someone else - DO NOT AWAIT
   if (deal.assignedUserId && deal.assignedUserId !== ctx.actorId) {
-    await dispatchNotification({
+    dispatchNotification({
       userId: deal.assignedUserId,
       title: "Deal Status Changed",
       message: `Your deal "${deal.dealName}" moved from ${fromStatus} to ${toStatus}.`,
       type: "deal",
       link: `/sales-pipeline/${dealId}`,
-    });
+    }).catch((e: unknown) => console.error("Notification error in deal transition:", e));
   }
 
   // Notify managers for high-value deals
   if (deal.dealValue > 500000) {
-    const managers = await db.user.findMany({
+    const managers = await db.user.findMany({ // Fixed: Use db instead of global prisma
       where: { role: { in: ["Admin", "SalesManager"] }, isActive: true, companyId: ctx.companyId },
       select: { id: true }
-    });
+    }).catch(() => []);
+
     const managerIds = managers.map(m => m.id).filter(id => id !== ctx.actorId);
     if (managerIds.length > 0) {
-      await dispatchNotificationsToMany({
+      // DO NOT AWAIT
+      dispatchNotificationsToMany({
         userIds: managerIds,
         title: "High-Value Deal Status Changed",
         message: `Deal "${deal.dealName}" moved from ${fromStatus} to ${toStatus}.`,
         type: "deal",
         link: `/sales-pipeline/${dealId}`,
-      });
+      }).catch((e: unknown) => console.error("Manager notification error in deal transition:", e));
     }
   }
 
   return { rfqId };
 }
+
 
 /**
  * Returns the first active SuperAdmin/Admin id to use as system actor,
@@ -323,5 +327,11 @@ async function getSystemActorId(db: typeof prisma): Promise<string> {
     where: { role: { in: ["SuperAdmin", "Admin"] }, isActive: true },
     select: { id: true },
   });
-  return admin?.id ?? "system";
+  if (admin?.id) return admin.id;
+
+  const anyUser = await db.user.findFirst({
+    select: { id: true },
+  });
+  return anyUser?.id ?? "";
 }
+

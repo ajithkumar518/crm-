@@ -100,45 +100,78 @@ export default function CompetitorDetailPage() {
   if (!competitor) return <PageContainer className="space-y-4 p-0"><div className="py-12 text-center text-sm text-[var(--text-muted)]">Not found.</div></PageContainer>;
 
   return (
-    <PageContainer className="space-y-4 p-0">
+    <div className="page-shell">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">{competitor.name}</h1>
-        <p className="text-sm text-[var(--text-muted)] mt-0.5">Competitor profile</p>
-      </div>
-      <Link href="/competitors" className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] hover:underline mb-4">
-        <ArrowLeft size={14} /> Back to competitors
-      </Link>
-
-      <div className="flex gap-1 border-b mb-5">
-        {(["overview", "products"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-[var(--accent)] text-[var(--accent)]" : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)]"}`}
-          >
-            {t === "products" ? `Products (${competitor.products?.length ?? 0})` : "Overview"}
-          </button>
-        ))}
+        <Link href="/competitors" className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors mb-4">
+          <ArrowLeft size={16} /> Back to competitors
+        </Link>
       </div>
 
-      {tab === "overview" && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card title="Profile">
-            <Row label="Website" value={competitor.website ? <a href={competitor.website} target="_blank" rel="noreferrer" className="text-[var(--accent)] hover:underline inline-flex items-center gap-1">{competitor.website} <ExternalLink size={12} /></a> : "—"} />
-            <Row label="Status" value={<StatusPill status={competitor.isActive ? "Active" : "Inactive"} />} />
-            <Row label="Lost Deals" value={competitor._count?.lostDealAnalyses ?? 0} />
-          </Card>
-          <Card title="Description">
-            <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{competitor.description || "—"}</p>
-          </Card>
-          <Card title="Strengths">
-            <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{competitor.strengths || "—"}</p>
-          </Card>
-          <Card title="Weaknesses">
-            <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{competitor.weaknesses || "—"}</p>
-          </Card>
+      {/* Header card */}
+      <div className="crm-card p-6 border-t-4 border-t-[var(--primary)]">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-5">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-black shrink-0 shadow-sm text-white bg-[var(--primary)]">
+            {competitor.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{competitor.name}</h1>
+              <StatusPill status={competitor.isActive ? "Active" : "Inactive"} />
+            </div>
+            <div className="flex flex-wrap items-center gap-4 mt-3">
+              {competitor.website && (
+                <a href={competitor.website} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-slate-500 text-sm hover:text-[var(--primary)] transition-colors">
+                  <ExternalLink size={13} className="text-slate-400" /> {competitor.website.replace(/^https?:\/\//, '')}
+                </a>
+              )}
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+
+      <div className="flex gap-6 mt-5">
+        <div className="flex-1 min-w-0">
+          {/* Tab Selectors */}
+          <div className="flex border-b border-slate-200 gap-6 overflow-x-auto pb-px mb-5">
+            {(["overview", "products"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
+                  tab === t
+                    ? "border-[var(--primary)] text-[var(--primary)]"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {t === "products" ? `Products (${competitor.products?.length ?? 0})` : "Overview"}
+              </button>
+            ))}
+          </div>
+
+          {tab === "overview" && (
+            <div className="grid gap-5 md:grid-cols-2">
+              <div className="crm-card p-6">
+                <h3 className="text-sm font-bold text-slate-700 mb-4">Profile</h3>
+                <div className="space-y-4">
+                  <Row label="Website" value={competitor.website ? <a href={competitor.website} target="_blank" rel="noreferrer" className="text-[var(--primary)] hover:underline inline-flex items-center gap-1">{competitor.website} <ExternalLink size={12} /></a> : "—"} />
+                  <Row label="Status" value={<StatusPill status={competitor.isActive ? "Active" : "Inactive"} />} />
+                  <Row label="Lost Deals" value={competitor._count?.lostDealAnalyses ?? 0} />
+                </div>
+              </div>
+              <div className="crm-card p-6">
+                <h3 className="text-sm font-bold text-slate-700 mb-4">Description</h3>
+                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{competitor.description || "—"}</p>
+              </div>
+              <div className="crm-card p-6">
+                <h3 className="text-sm font-bold text-slate-700 mb-4">Strengths</h3>
+                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{competitor.strengths || "—"}</p>
+              </div>
+              <div className="crm-card p-6">
+                <h3 className="text-sm font-bold text-slate-700 mb-4">Weaknesses</h3>
+                <p className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed">{competitor.weaknesses || "—"}</p>
+              </div>
+            </div>
+          )}
 
       {tab === "products" && (
         <div>
@@ -221,24 +254,17 @@ export default function CompetitorDetailPage() {
       )}
 
       <ConfirmModal {...confirmState} onCancel={() => setConfirmState({ ...confirmState, isOpen: false })} />
-    </PageContainer>
-  );
-}
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="analytics-chart-card">
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-3">{title}</h4>
-      {children}
+        </div>
+      </div>
     </div>
   );
 }
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex justify-between py-1.5 text-sm">
-      <span className="text-[var(--text-muted)]">{label}</span>
-      <span className="text-[var(--text-primary)] font-medium text-right">{value}</span>
+    <div className="flex justify-between items-start py-2 border-b border-slate-100 last:border-0">
+      <span className="text-sm text-slate-500 font-medium">{label}</span>
+      <span className="text-sm text-slate-900 text-right">{value}</span>
     </div>
   );
 }

@@ -17,7 +17,7 @@ export function ServiceKPICard({ label, value, icon, color, onClick, active }: S
     <button
       onClick={() => onClick?.(active ? "" : label)}
       className={cn(
-        "flex items-center gap-3 rounded-xl border p-4 text-left transition-all",
+        "flex-1 min-w-[180px] flex items-center gap-3 rounded-xl border p-4 text-left transition-all",
         active
           ? "border-blue-500 bg-blue-500/5 ring-2 ring-blue-500/20"
           : "border-[var(--border)] bg-[var(--surface)] hover:border-blue-500/40"
@@ -36,7 +36,7 @@ export function ServiceKPICard({ label, value, icon, color, onClick, active }: S
 
 export function ServiceKPIGrid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="flex flex-wrap gap-3">
       {children}
     </div>
   );

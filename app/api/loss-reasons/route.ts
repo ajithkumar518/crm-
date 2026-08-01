@@ -8,7 +8,8 @@ export async function GET(request: NextRequest) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   const guard = enforceModuleGuard(user, MODULE_KEYS.DEALS, "GET /api/loss-reasons");
-  if (guard) return guard;
+  if (guard) return NextResponse.json({ success: true, data: [] });
+
 
   const { searchParams } = new URL(request.url);
   const isActive = searchParams.get("isActive");

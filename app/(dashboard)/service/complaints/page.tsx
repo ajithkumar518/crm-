@@ -8,6 +8,7 @@ import ServiceModuleDetailPage from "@/components/shared/ServiceModuleDetailPage
 import ServiceModuleForm from "@/components/shared/ServiceModuleForm";
 import { LinkedVisitsPanel } from "@/components/shared/ServiceComponents";
 import { ServiceKPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICard";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 import { Calendar, AlertTriangle, Search as SearchIcon, TrendingUp, CheckCircle, RotateCcw } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { useAuth } from "@/components/AuthProvider";
@@ -344,6 +345,16 @@ export default function ServiceComplaintsPage() {
             <ServiceKPICard label="Under Investigation" value={kpiStats.underInvestigation} icon={<SearchIcon size={20} className="text-red-500" />} color="bg-red-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Under Investigation"} />
             <ServiceKPICard label="Resolved This Week" value={kpiStats.resolvedThisWeek} icon={<CheckCircle size={20} className="text-green-500" />} color="bg-green-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Resolved This Week"} />
           </ServiceKPIGrid>
+          <StatusFilterBar
+            statuses={[
+              { value: "New", label: "Open Complaints" },
+              { value: "Investigating", label: "Under Investigation" },
+              { value: "Resolved", label: "Resolved Complaints" },
+              { value: "Closed", label: "Closed Complaints" },
+            ]}
+            paramKey="status"
+            basePath="/service/complaints"
+          />
           <ServiceModuleListPage
             config={config}
             data={filteredKpiData}
@@ -351,7 +362,7 @@ export default function ServiceComplaintsPage() {
             onRefresh={fetchData}
             onCreateNew={() => setIsFormOpen(true)}
             onRowClick={(row) => setSelectedRow(row)}
-            useLeftPanel={true}
+            useLeftPanel={false}
             onTriggerAction={handleTriggerAction}
             onStatusTransition={handleStatusTransition}
           />

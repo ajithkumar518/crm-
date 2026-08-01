@@ -36,7 +36,7 @@ export default function OpportunitiesReportPage() {
 
   useEffect(() => {
     fetch("/api/users").then(res => res.json()).then(data => { if (data.success) setUsers(data.data || []); });
-    fetch("/api/settings/pipeline-stages").then(res => res.json()).then(data => { if (data.success) setStageOptions((data.data || []).map((s: any) => s.name)); });
+    fetch("/api/settings/pipeline-stages").then(res => res.json()).then(data => { if (data.success) setStageOptions((data.data || []).map((s: any) => s.stageName)); });
   }, []);
 
   const loadReport = async () => {

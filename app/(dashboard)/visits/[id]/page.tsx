@@ -11,7 +11,7 @@ import { SectionCardHeader } from "@/components/ui/SectionCardHeader";
 import { formatDate, formatDateTime, cn, getCheckInWindow } from "@/lib/ui-utils";
 import {
   MapPin, CheckCircle, Clock, CalendarClock,
-  AlertTriangle, UserPlus, Briefcase, Users, FileText, Navigation,
+  AlertTriangle, UserPlus, Briefcase, Users, FileText, Navigation, ArrowLeft,
 } from "lucide-react";
 
 const STATUS_PILLS: Record<string, string> = {
@@ -459,6 +459,7 @@ export default function VisitDetailPage() {
       title="Visit Details"
       subtitle={visit.customer?.name}
       breadcrumb={[{ label: "Visits", href: "/visits" }]}
+      onBack={() => router.back()}
     >
       <div className="space-y-5">
         {/* Header Card */}
@@ -1087,7 +1088,7 @@ export default function VisitDetailPage() {
               onChange={(e) => setRescheduleForm({ ...rescheduleForm, new_planned_time: e.target.value })}
             />
           </FormField>
-          <FormField label="Reason">
+          <FormField label="Reason" required>
             <Textarea
               rows={2}
               value={rescheduleForm.reason}

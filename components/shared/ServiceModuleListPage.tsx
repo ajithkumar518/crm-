@@ -36,7 +36,7 @@ export default function ServiceModuleListPage({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const statusParam = searchParams?.get("status");
-  const [activeTab, setActiveTab] = useState<string>("All");
+  const [activeTab, setActiveTab] = useState<string>("Overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({});
 
@@ -45,9 +45,9 @@ export default function ServiceModuleListPage({
 
   const tabList = useMemo(() => {
     if (config.id === "reviews") {
-      return ["All", "Pending", "Submitted", "LowRating"];
+      return ["Overview", "Pending", "Submitted", "LowRating"];
     }
-    return ["All", ...config.statusOrder];
+    return ["Overview", ...config.statusOrder];
   }, [config.id, config.statusOrder]);
 
   useEffect(() => {
@@ -59,11 +59,11 @@ export default function ServiceModuleListPage({
         if (matched) {
           setActiveTab(matched.id);
         } else {
-          setActiveTab("All");
+          setActiveTab("Overview");
         }
       }
     } else {
-      setActiveTab("All");
+      setActiveTab("Overview");
     }
   }, [statusParam, config.id, config.statuses]);
 
@@ -71,7 +71,7 @@ export default function ServiceModuleListPage({
     setActiveTab(statusId);
     if (!searchParams) return;
     const params = new URLSearchParams(searchParams.toString());
-    if (statusId === "All") {
+    if (statusId === "Overview") {
       params.delete("status");
     } else {
       params.set("status", statusId === "LowRating" ? "LowRating" : statusId.toLowerCase());
@@ -103,7 +103,7 @@ export default function ServiceModuleListPage({
 
   // Compute live status counts from data
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: data.length };
+    const counts: Record<string, number> = { Overview: data.length };
     if (config.id === "reviews") {
       counts["Pending"] = data.filter(item => item.status === "Pending").length;
       counts["Submitted"] = data.filter(item => item.status === "Submitted").length;
@@ -212,7 +212,7 @@ export default function ServiceModuleListPage({
   // Filter & Search data locally
   const filteredData = data.filter(item => {
     // Status Filter (Tab or Left Panel)
-    if (activeTab !== "All") {
+    if (activeTab !== "Overview") {
       if (config.id === "reviews" && activeTab === "LowRating") {
         if (!item.isEscalation) return false;
       } else if (item.status !== activeTab) {
@@ -354,9 +354,9 @@ export default function ServiceModuleListPage({
       </div>
 
       {/* Horizontal Status tabs (when NOT using left panel) */}
-      {!useLeftPanel && (
-        <div className="flex items-center gap-1 border-b border-[var(--border)] pb-px overflow-x-auto">
-          {["All", ...config.statusOrder].map(status => {
+      {!useLeftPanel && !["requests", "complaints", "defects", "reviews"].includes(config.id) && (
+        <div className="flex items-center gap-1 border-b border-[var(--border)] pb-px overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          {["Overview", ...config.statusOrder].map(status => {
             const isActive = activeTab === status;
             return (
               <button
@@ -430,7 +430,7 @@ export default function ServiceModuleListPage({
               if (status === "Pending") statusColor = "#FF6901";
               else if (status === "Submitted") statusColor = "#10B981";
               else if (status === "LowRating") statusColor = "#EF4444";
-              else if (status !== "All") {
+              else if (status !== "Overview") {
                 statusColor = config.statuses.find(s => s.id === status)?.color || null;
               }
 

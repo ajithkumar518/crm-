@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 
 /**
@@ -107,8 +107,8 @@ export function ReportFilterLayout({
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           }}
         >
-          {filters.map((filterNode, idx) => (
-            <div key={idx} className="min-w-0">
+          {React.Children.toArray(filters).map((filterNode, idx) => (
+            <div key={`filter-wrapper-${idx}`} className="min-w-0">
               {filterNode}
             </div>
           ))}

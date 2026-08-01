@@ -409,7 +409,7 @@ export default function PurchaseOrderDetailPage() {
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/60 shadow-sm p-6 space-y-5">
             <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider">PO Details</h2>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="PO Number" value={po.poNumber || "—"} />
+              <Field label="PO Number" value={po.poCode || po.poNumber || "—"} />
               <Field label="PO Date" value={po.poDate ? new Date(po.poDate).toLocaleDateString() : "—"} />
               <Field label="Expected Delivery" value={po.expectedDelivery ? new Date(po.expectedDelivery).toLocaleDateString() : "—"} />
               <Field label="Actual Delivery" value={po.actualDelivery ? new Date(po.actualDelivery).toLocaleDateString() : "—"} />

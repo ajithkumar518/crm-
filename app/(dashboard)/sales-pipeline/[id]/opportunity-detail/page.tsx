@@ -31,6 +31,7 @@ import { getUsersAction } from "@/app/actions/users";
 import { validateEmail, validatePhone, validateNumeric } from "@/lib/formValidation";
 import { useHasModule, ModuleGate, LockedSection } from "@/components/ModuleGate";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
+import type { User as PrismaUser } from "@prisma/client";
 
 const STAGE_DISPLAY_LABELS: Record<string, string> = {
   Qualified:            "Qualified",
@@ -1653,8 +1654,8 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                   >
                     <option value="">Select costing engineer...</option>
                     {users
-                      .filter((u: any) => u.role === "CostingEngineer" || u.role === "Admin" || u.role === "SalesManager")
-                      .map((u: any) => (
+                      .filter((u: PrismaUser) => u.role === "CostingEngineer" || u.role === "Admin" || u.role === "SalesManager")
+                      .map((u: PrismaUser) => (
                         <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
                       ))}
                   </Select>

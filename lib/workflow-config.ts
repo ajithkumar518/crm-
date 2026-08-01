@@ -147,12 +147,15 @@ export const CATALOG_WORKFLOW: WorkflowConfig = {
 // ─── 8. Planner (Tasks) ─────────────────────────────────────────────────────────
 export const PLANNER_WORKFLOW: WorkflowConfig = {
   module: "planner",
-  nodes: ["Open", "InProgress", "Done", "Overdue", "Cancelled"],
+  nodes: ["Pending", "Open", "InProgress", "Done", "Overdue", "Cancelled"],
   edges: [
+    { from: "Pending", to: "Open", type: "positive" },
     { from: "Open", to: "InProgress", type: "positive" },
     { from: "InProgress", to: "Done", type: "positive" },
+    { from: "Pending", to: "Overdue", type: "negative" },
     { from: "Open", to: "Overdue", type: "negative" },
     { from: "InProgress", to: "Overdue", type: "negative" },
+    { from: "Pending", to: "Cancelled", type: "negative", requiredFields: ["cancellationReason"] },
     { from: "Open", to: "Cancelled", type: "negative", requiredFields: ["cancellationReason"] },
     { from: "InProgress", to: "Cancelled", type: "negative", requiredFields: ["cancellationReason"] },
   ],

@@ -54,30 +54,31 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'follow-ups', label: 'Follow Ups', href: '/follow-up', iconEmoji: '🔔', keywords: ['follow', 'followup', 'reminder'], type: 'module' },
   { key: 'reports', label: 'Reports', href: '/reports', iconEmoji: '📑', keywords: ['report', 'analytics', 'export'], type: 'module' },
   // Sub-modules
-  { key: 'leads-all', label: 'All Leads', href: '/leads', iconEmoji: '👤', keywords: ['all leads', 'leads list'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
+  { key: 'leads-all', label: 'Overview', href: '/leads', iconEmoji: '👤', keywords: ['all leads', 'leads list'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
   { key: 'leads-new', label: 'New Leads', href: '/leads?status=New', iconEmoji: '👤', keywords: ['new lead', 'add lead'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
   { key: 'leads-followup', label: "Today's Follow-up", href: '/leads?status=TodaysFollowUp', iconEmoji: '👤', keywords: ['followup today', 'due today'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
   { key: 'leads-sql', label: 'SQL', href: '/leads?status=SQL', iconEmoji: '👤', keywords: ['sql', 'sales qualified', 'qualified'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
   { key: 'leads-lost', label: 'Lost Leads', href: '/leads?status=Lost', iconEmoji: '👤', keywords: ['lost', 'lost lead'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads' },
-  { key: 'accounts-all', label: 'All Accounts', href: '/customer-master', iconEmoji: '🏢', keywords: ['all accounts', 'accounts list'], type: 'submodule', parentLabel: 'Accounts', parentKey: 'accounts' },
+  { key: 'accounts-all', label: 'Overview', href: '/customer-master', iconEmoji: '🏢', keywords: ['all accounts', 'accounts list'], type: 'submodule', parentLabel: 'Accounts', parentKey: 'accounts' },
   { key: 'accounts-active', label: 'Active Accounts', href: '/customer-master?status=ActiveCustomer', iconEmoji: '🏢', keywords: ['active', 'customer'], type: 'submodule', parentLabel: 'Accounts', parentKey: 'accounts' },
-  { key: 'contacts-all', label: 'All Contacts', href: '/contacts', iconEmoji: '📋', keywords: ['all contacts', 'contacts list'], type: 'submodule', parentLabel: 'Contacts', parentKey: 'contacts' },
+  { key: 'contacts-all', label: 'Overview', href: '/contacts', iconEmoji: '📋', keywords: ['all contacts', 'contacts list'], type: 'submodule', parentLabel: 'Contacts', parentKey: 'contacts' },
   // Activities sub-modules
   { key: 'activities-calls', label: 'Calls', href: '/activities?type=Call', iconEmoji: '📞', keywords: ['call', 'phone'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities' },
   { key: 'activities-meetings', label: 'Meetings', href: '/activities?type=Meeting', iconEmoji: '📞', keywords: ['meeting', 'schedule'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities' },
   { key: 'activities-emails', label: 'Emails', href: '/activities?type=Email', iconEmoji: '📞', keywords: ['email', 'mail'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities' },
   { key: 'activities-notes', label: 'Notes', href: '/activities?type=Note', iconEmoji: '📞', keywords: ['note', 'memo'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities' },
   // Tasks sub-modules
+  { key: 'tasks-all', label: 'Overview', href: '/tasks', iconEmoji: '✅', keywords: ['all tasks', 'tasks list'], type: 'submodule', parentLabel: 'Tasks', parentKey: 'tasks' },
   { key: 'tasks-pending', label: 'Pending', href: '/tasks?status=Pending', iconEmoji: '✅', keywords: ['pending', 'todo'], type: 'submodule', parentLabel: 'Tasks', parentKey: 'tasks' },
-  { key: 'tasks-completed', label: 'Completed', href: '/tasks?status=Completed', iconEmoji: '✅', keywords: ['completed', 'done'], type: 'submodule', parentLabel: 'Tasks', parentKey: 'tasks' },
+  { key: 'tasks-completed', label: 'Completed', href: '/tasks?status=Done', iconEmoji: '✅', keywords: ['completed', 'done'], type: 'submodule', parentLabel: 'Tasks', parentKey: 'tasks' },
   { key: 'tasks-overdue', label: 'Overdue', href: '/tasks?status=Overdue', iconEmoji: '✅', keywords: ['overdue', 'late'], type: 'submodule', parentLabel: 'Tasks', parentKey: 'tasks' },
   // Follow Ups sub-modules
-  { key: 'follow-ups-all', label: 'All follow ups', href: '/follow-up', iconEmoji: '🔔', keywords: ['all follow ups', 'followups list'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
+  { key: 'follow-ups-all', label: 'Overview', href: '/follow-up', iconEmoji: '🔔', keywords: ['all follow ups', 'followups list'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   { key: 'follow-ups-pending', label: 'Pending', href: '/follow-up?status=Pending', iconEmoji: '🔔', keywords: ['pending', 'due'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   { key: 'follow-ups-completed', label: 'Completed', href: '/follow-up?status=Completed', iconEmoji: '🔔', keywords: ['completed', 'done'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   { key: 'follow-ups-overdue', label: 'Overdue', href: '/follow-up?status=Overdue', iconEmoji: '🔔', keywords: ['overdue', 'late'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   // Pipeline sub-modules
-  { key: 'pipeline-all', label: 'All Opportunities', href: '/sales-pipeline/pipeline-list', iconEmoji: '📈', keywords: ['all opportunities', 'pipeline list'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
+  { key: 'pipeline-all', label: 'Overview', href: '/sales-pipeline/pipeline-list', iconEmoji: '📈', keywords: ['all opportunities', 'pipeline list'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-qualified', label: 'Qualified', href: '/sales-pipeline/pipeline-list?stage=Qualified', iconEmoji: '📈', keywords: ['qualified', 'sql'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-rg', label: 'Requirement Gathering', href: '/sales-pipeline/pipeline-list?stage=RequirementGathering', iconEmoji: '📈', keywords: ['requirement', 'gathering', 'rg'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-meeting', label: 'Meeting Scheduled', href: '/sales-pipeline/pipeline-list?stage=MeetingScheduled', iconEmoji: '📈', keywords: ['meeting', 'scheduled'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
@@ -88,7 +89,8 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'pipeline-overdue', label: 'Overdue', href: '/sales-pipeline/pipeline-list?stage=overdue', iconEmoji: '📈', keywords: ['overdue', 'stale'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-lost', label: 'Lost', href: '/sales-pipeline/pipeline-list?stage=Lost', iconEmoji: '📈', keywords: ['lost', 'closed lost'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-rejected', label: 'Rejected', href: '/sales-pipeline/pipeline-list?stage=Rejected', iconEmoji: '📈', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
-  // Quotation sub-modules
+  // V1 quotations sub-modules
+  { key: 'quotations-overview', label: 'Overview', href: '/quotations', iconEmoji: '💰', keywords: ['all quotations', 'overview'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-draft', label: 'Draft', href: '/quotations?status=Draft', iconEmoji: '💰', keywords: ['draft', 'not sent'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-sent', label: 'Sent', href: '/quotations?status=Sent', iconEmoji: '💰', keywords: ['sent', 'delivered'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-accepted', label: 'Accepted', href: '/quotations?status=Accepted', iconEmoji: '💰', keywords: ['accepted', 'won'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
@@ -187,7 +189,7 @@ export const V3_EXTRAS: NavItem[] = [
   { key: 'negotiations-won', label: 'Won', href: '/negotiations?status=Closed-Success', iconEmoji: '🤝', keywords: ['won', 'successful'], type: 'submodule', parentLabel: 'Negotiations', parentKey: 'negotiations' , variantMin: 3 },
   { key: 'negotiations-lost', label: 'Lost', href: '/negotiations?status=Closed-Failure', iconEmoji: '🤝', keywords: ['lost', 'failed'], type: 'submodule', parentLabel: 'Negotiations', parentKey: 'negotiations' , variantMin: 3 },
   // V3 purchase orders sub-modules
-  { key: 'purchase-orders-overview', label: 'PO Overview', href: '/purchase-orders', iconEmoji: '📋', keywords: ['all purchase orders', 'po list', 'overview'], type: 'submodule', parentLabel: 'Purchase Orders', parentKey: 'purchase-orders' , variantMin: 3 },
+  { key: 'purchase-orders-overview', label: 'Overview', href: '/purchase-orders', iconEmoji: '📋', keywords: ['all purchase orders', 'po list', 'overview'], type: 'submodule', parentLabel: 'Purchase Orders', parentKey: 'purchase-orders' , variantMin: 3 },
   { key: 'purchase-orders-new', label: 'New PO', href: '/purchase-orders?status=New', iconEmoji: '📋', keywords: ['new', 'created'], type: 'submodule', parentLabel: 'Purchase Orders', parentKey: 'purchase-orders' , variantMin: 3 },
   { key: 'purchase-orders-validation', label: 'Under Validation', href: '/purchase-orders?status=UnderValidation', iconEmoji: '📋', keywords: ['validation', 'checking'], type: 'submodule', parentLabel: 'Purchase Orders', parentKey: 'purchase-orders' , variantMin: 3 },
   { key: 'purchase-orders-approved', label: 'Approved PO', href: '/purchase-orders?status=Approved', iconEmoji: '📋', keywords: ['approved', 'confirmed'], type: 'submodule', parentLabel: 'Purchase Orders', parentKey: 'purchase-orders' , variantMin: 3 },
@@ -228,27 +230,27 @@ export const V4_EXTRAS: NavItem[] = [
   { key: 'targets', label: 'Targets', href: '/targets', iconEmoji: '🏆', keywords: ['target', 'quota', 'achievement'], type: 'module' , variantMin: 4 },
   { key: 'forecast', label: 'Forecasts', href: '/forecast', iconEmoji: '📈', keywords: ['forecast', 'projection', 'target vs achievement'], type: 'module' , variantMin: 4 },
   // V4 competitors sub-modules
-  { key: 'competitors-overview', label: 'Competitor Overview', href: '/competitors', iconEmoji: '⚔️', keywords: ['all competitors', 'competitors list', 'overview'], type: 'submodule', parentLabel: 'Competitors', parentKey: 'competitors' , variantMin: 4 },
+  { key: 'competitors-overview', label: 'Overview', href: '/competitors', iconEmoji: '⚔️', keywords: ['all competitors', 'competitors list', 'overview'], type: 'submodule', parentLabel: 'Competitors', parentKey: 'competitors' , variantMin: 4 },
   { key: 'competitors-products', label: 'Competitor Products', href: '/competitors/products', iconEmoji: '⚔️', keywords: ['product', 'offering'], type: 'submodule', parentLabel: 'Competitors', parentKey: 'competitors' , variantMin: 4 },
   { key: 'competitors-lost', label: 'Lost Deals Analysis', href: '/competitors/lost-analysis', iconEmoji: '⚔️', keywords: ['lost', 'analysis', 'win loss'], type: 'submodule', parentLabel: 'Competitors', parentKey: 'competitors' , variantMin: 4 },
   { key: 'competitors-winloss', label: 'Win/Loss Analysis', href: '/competitors/win-loss', iconEmoji: '⚔️', keywords: ['win', 'loss', 'ratio'], type: 'submodule', parentLabel: 'Competitors', parentKey: 'competitors' , variantMin: 4 },
   // V4 key accounts sub-modules
-  { key: 'key-accounts-overview', label: 'KAM Overview', href: '/key-accounts', iconEmoji: '👑', keywords: ['all key accounts', 'kam list', 'overview'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
+  { key: 'key-accounts-overview', label: 'Overview', href: '/key-accounts', iconEmoji: '👑', keywords: ['all key accounts', 'kam list', 'overview'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
   { key: 'key-accounts-strategic', label: 'Strategic Accounts', href: '/key-accounts?importance=Critical', iconEmoji: '👑', keywords: ['strategic', 'critical'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
   { key: 'key-accounts-revenue', label: 'Revenue Potential', href: '/key-accounts/revenue-potential', iconEmoji: '👑', keywords: ['revenue', 'potential', 'pipeline'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
   { key: 'key-accounts-visits', label: 'Visit Schedule', href: '/key-accounts/visit-schedule', iconEmoji: '👑', keywords: ['visit', 'schedule', 'review'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
   { key: 'key-accounts-relationships', label: 'Relationship Mapping', href: '/key-accounts/relationships', iconEmoji: '👑', keywords: ['relationship', 'mapping', 'contacts'], type: 'submodule', parentLabel: 'Key Accounts', parentKey: 'key-accounts' , variantMin: 4 },
   // V4 territories sub-modules
-  { key: 'territories-overview', label: 'Territory Overview', href: '/territories', iconEmoji: '🗺️', keywords: ['all territories', 'territories list', 'overview'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
+  { key: 'territories-overview', label: 'Overview', href: '/territories', iconEmoji: '🗺️', keywords: ['all territories', 'territories list', 'overview'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
   { key: 'territories-regions', label: 'Regions', href: '/territories?view=regions', iconEmoji: '🗺️', keywords: ['region', 'area'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
   { key: 'territories-accounts', label: 'Territory Accounts', href: '/territories/accounts', iconEmoji: '🗺️', keywords: ['territory account', 'customer'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
   { key: 'territories-performance', label: 'Territory Performance', href: '/territories/performance', iconEmoji: '🗺️', keywords: ['performance', 'metrics'], type: 'submodule', parentLabel: 'Territories', parentKey: 'territories' , variantMin: 4 },
   // V4 targets sub-modules
-  { key: 'targets-overview', label: 'Target Overview', href: '/targets', iconEmoji: '🏆', keywords: ['all targets', 'targets list', 'overview'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
+  { key: 'targets-overview', label: 'Overview', href: '/targets', iconEmoji: '🏆', keywords: ['all targets', 'targets list', 'overview'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
   { key: 'targets-achievement', label: 'Achievement Tracking', href: '/targets/achievement', iconEmoji: '🏆', keywords: ['achievement', 'tracking', 'vs target'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
   { key: 'targets-new', label: 'Set New Target', href: '/targets/new', iconEmoji: '🏆', keywords: ['new target', 'create target'], type: 'submodule', parentLabel: 'Targets', parentKey: 'targets' , variantMin: 4 },
   // V4 forecast sub-modules
-  { key: 'forecast-overview', label: 'Forecast Overview', href: '/forecast', iconEmoji: '📈', keywords: ['all forecasts', 'forecast list', 'overview'], type: 'submodule', parentLabel: 'Forecasts', parentKey: 'forecast' , variantMin: 4 },
+  { key: 'forecast-overview', label: 'Overview', href: '/forecast', iconEmoji: '📈', keywords: ['all forecasts', 'forecast list', 'overview'], type: 'submodule', parentLabel: 'Forecasts', parentKey: 'forecast' , variantMin: 4 },
   { key: 'forecast-vs-achievement', label: 'Target vs Achievement', href: '/forecast/target-vs-achievement', iconEmoji: '📈', keywords: ['target vs achievement', 'comparison'], type: 'submodule', parentLabel: 'Forecasts', parentKey: 'forecast' , variantMin: 4 },
   { key: 'forecast-new', label: 'Add Forecast Entry', href: '/forecast/new', iconEmoji: '📈', keywords: ['new forecast', 'add entry'], type: 'submodule', parentLabel: 'Forecasts', parentKey: 'forecast' , variantMin: 4 },
   // V4 reports extras

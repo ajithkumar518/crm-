@@ -139,8 +139,8 @@ export default function MyVisitsPage() {
   };
 
   const handleComplete = async () => {
-    if (!outcomeNotes.trim() || outcomeNotes.trim().length < 5) {
-      toast.error("Please describe the work performed (at least 5 characters).");
+    if (!outcomeNotes.trim() || outcomeNotes.trim().length < 20) {
+      toast.error("Work performed notes are required and must be at least 20 characters long.");
       return;
     }
     
@@ -414,10 +414,10 @@ export default function MyVisitsPage() {
                 <div className="flex justify-between items-center mt-1">
                   <span className={cn(
                     "text-[10px]",
-                    outcomeNotes.trim().length < 5 ? "text-red-500" : "text-green-500"
+                    outcomeNotes.trim().length < 20 ? "text-red-500" : "text-green-500"
                   )}>
-                    {outcomeNotes.trim().length < 5
-                      ? `Type ${5 - outcomeNotes.trim().length} more character(s) to enable submit`
+                    {outcomeNotes.trim().length < 20
+                      ? `${20 - outcomeNotes.trim().length} more character(s) needed`
                       : "✓ Ready to submit"}
                   </span>
                   <span className="text-[10px] text-[var(--text-muted)]">{outcomeNotes.length} chars</span>
@@ -546,7 +546,7 @@ export default function MyVisitsPage() {
               </button>
               <button
                 onClick={handleComplete}
-                disabled={completing || outcomeNotes.trim().length < 5}
+                disabled={completing || outcomeNotes.trim().length < 20}
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {completing ? "Completing..." : "Check Out & Complete"}

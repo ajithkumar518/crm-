@@ -63,13 +63,19 @@ export async function PATCH(request: Request, { params }: { params: any }) {
       return NextResponse.json({ error: "At least one spare part item must be listed when the outcome is 'Parts Pending'." }, { status: 400 });
     }
 
-    // 8. Find the "Completed" status for the visit module
-    const completedStatus = await prisma.serviceStatus.findFirst({
+    // 8. Find the "Completed" or "Resolved" status for the visit module
+    let completedStatus = await prisma.serviceStatus.findFirst({
       where: { name: "Completed", module: "visit" },
     });
 
     if (!completedStatus) {
-      return NextResponse.json({ error: "Completed status not found in ServiceStatus database table." }, { status: 500 });
+      completedStatus = await prisma.serviceStatus.findFirst({
+        where: { name: "Resolved", module: "visit" },
+      });
+    }
+
+    if (!completedStatus) {
+      return NextResponse.json({ error: "Completed/Resolved status not found in ServiceStatus database table." }, { status: 500 });
     }
 
     // 9. Compute durations
@@ -268,11 +274,13 @@ export async function PATCH(request: Request, { params }: { params: any }) {
         // Activate Asset if installation is resolved
         if (outcome === "Resolved" && updatedVisit.customerAssetId) {
           const wMonths = parseInt(warrantyMonths) || 12;
+          const activationDate = new Date(checkOutTime);
           const warrantyExpiryDate = new Date(checkOutTime);
           warrantyExpiryDate.setMonth(warrantyExpiryDate.getMonth() + wMonths);
 
           const assetUpdateData: any = {
             status: "Active",
+            activationDate, // H5 Fix
             warrantyExpiryDate,
           };
           if (actualSerialNumber && typeof actualSerialNumber === "string" && actualSerialNumber.trim() !== "") {
@@ -299,7 +307,8 @@ export async function PATCH(request: Request, { params }: { params: any }) {
               notes: `Auto-created follow-up visit from completed VST-${id.substring(0, 8).toUpperCase()}`,
               statusId: scheduledStatus.id,
               engineerId: updatedVisit.engineerId,
-              scheduledDate: new Date(followUpDate),
+              // H1 Fix: Avoid UTC midnight shifts for YYYY-MM-DD strings
+              scheduledDate: typeof followUpDate === 'string' && followUpDate.length === 10 ? new Date(`${followUpDate}T12:00:00Z`) : new Date(followUpDate),
               customerId: updatedVisit.customerId,
               customerAssetId: updatedVisit.customerAssetId,
               requestId: updatedVisit.requestId,

@@ -139,7 +139,7 @@ export const serviceModulesConfig: Record<string, ServiceModuleConfig> = {
   complaints: {
     id: "complaints",
     routeBase: "/service/complaints",
-    displayTitle: "Customer Complaints",
+    displayTitle: "Complaint",
     entityLabel: "Complaint",
     iconName: "AlertTriangle",
     statuses: [
@@ -262,7 +262,7 @@ export const serviceModulesConfig: Record<string, ServiceModuleConfig> = {
   installations: {
     id: "installations",
     routeBase: "/service/installations",
-    displayTitle: "Equipment Installations",
+    displayTitle: "Installation",
     entityLabel: "Installation",
     iconName: "Hammer",
     statuses: [
@@ -359,14 +359,26 @@ export const serviceModulesConfig: Record<string, ServiceModuleConfig> = {
     iconName: "Calendar",
     statuses: [
       { id: "Scheduled", label: "Scheduled", color: "#3B82F6" },
+      { id: "In Progress", label: "In Progress", color: "#F59E0B" },
       { id: "Completed", label: "Completed", color: "#10B981" },
+      { id: "Resolved", label: "Resolved", color: "#10B981" },
       { id: "Overdue", label: "Overdue", color: "#EF4444" },
+      { id: "New", label: "New", color: "var(--brand-primary, #FF6901)" },
+      { id: "Assigned", label: "Assigned", color: "#2090FF" },
+      { id: "Pending Customer", label: "Pending Customer", color: "#A855F7" },
+      { id: "Closed", label: "Closed", color: "#6B7280" },
     ],
-    statusOrder: ["Scheduled", "Completed", "Overdue"],
+    statusOrder: ["New", "Scheduled", "Assigned", "In Progress", "Pending Customer", "Completed", "Resolved", "Closed", "Overdue"],
     allowedTransitions: {
-      Scheduled: ["Completed"],
-      Completed: [],
-      Overdue: ["Completed"],
+      New: ["Scheduled", "Assigned", "In Progress"],
+      Scheduled: ["In Progress", "Completed", "Resolved"],
+      Assigned: ["In Progress", "Completed", "Resolved"],
+      "In Progress": ["Completed", "Resolved", "Pending Customer"],
+      "Pending Customer": ["In Progress", "Resolved"],
+      Completed: ["Closed"],
+      Resolved: ["Closed"],
+      Overdue: ["In Progress", "Completed", "Resolved"],
+      Closed: []
     },
     listColumns: [
       { id: "visitDate", label: "Visit Date", type: "date" },
@@ -378,8 +390,13 @@ export const serviceModulesConfig: Record<string, ServiceModuleConfig> = {
     ],
     filterDefinitions: [
       { id: "status", label: "Status", type: "select", options: [
+        { value: "New", label: "New" },
         { value: "Scheduled", label: "Scheduled" },
+        { value: "Assigned", label: "Assigned" },
+        { value: "In Progress", label: "In Progress" },
         { value: "Completed", label: "Completed" },
+        { value: "Resolved", label: "Resolved" },
+        { value: "Closed", label: "Closed" },
         { value: "Overdue", label: "Overdue" }
       ]},
       { id: "engineerId", label: "Engineer", type: "select", options: [] },
@@ -396,11 +413,17 @@ export const serviceModulesConfig: Record<string, ServiceModuleConfig> = {
       { id: "assignments", title: "Engineer & Customer", fields: ["engineerId", "customerId", "assetId"] }
     ],
     allowedActions: [
-      { id: "complete", label: "Mark Completed", variant: "success", requiredStatus: ["Scheduled", "Overdue"] },
+      { id: "complete", label: "Mark Completed", variant: "success", requiredStatus: ["Scheduled", "Overdue", "In Progress", "Assigned", "New"] },
     ],
     badgeColorRules: {
+      New: "bg-orange-500/10 text-orange-500 border-orange-500/20",
       Scheduled: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      Assigned: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      "In Progress": "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+      "Pending Customer": "bg-purple-500/10 text-purple-500 border-purple-500/20",
       Completed: "bg-green-500/10 text-green-500 border-green-500/20",
+      Resolved: "bg-green-500/10 text-green-500 border-green-500/20",
+      Closed: "bg-gray-500/10 text-gray-500 border-gray-500/20",
       Overdue: "bg-red-500/10 text-red-500 border-red-500/20",
     },
     reportMappings: {

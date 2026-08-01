@@ -37,27 +37,37 @@ export function KPICard({
   trend?: { value: string; direction: "up" | "down" | "neutral" };
 }) {
   return (
-    <div className="analytics-kpi">
+    <div className="crm-card p-5 flex flex-col gap-3 group hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all duration-300">
       <div className="flex items-center justify-between">
-        <span className="text-[13px] font-medium text-[var(--text-secondary)]">{label}</span>
-        {icon && <span style={iconColor ? { color: iconColor } : undefined} className={iconColor ? undefined : "text-[var(--text-muted)]"}>{icon}</span>}
+        <span className="text-[11px] text-[var(--text-muted)] font-bold uppercase tracking-wider">{label}</span>
+        {icon && (
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3"
+            style={{ 
+              backgroundColor: iconColor ? `${iconColor}15` : "var(--accent-soft)", 
+              color: iconColor || "var(--accent)" 
+            }}
+          >
+            {icon}
+          </div>
+        )}
       </div>
-      <div className="text-[28px] font-bold text-[var(--text-primary)] leading-tight">{value}</div>
-      <div className="flex items-center gap-2">
+      <div className="text-[22px] sm:text-2xl font-black text-[var(--text-primary)] m-0 tracking-tight">{value}</div>
+      <div className="flex items-center gap-2 mt-auto">
         {trend && (
           <span
-            className={`text-[12px] font-medium inline-flex items-center gap-0.5 ${
+            className={`text-xs font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
               trend.direction === "up"
-                ? "text-[var(--status-success-text)]"
+                ? "bg-emerald-50 text-emerald-700"
                 : trend.direction === "down"
-                ? "text-[var(--status-danger-text)]"
-                : "text-[var(--text-muted)]"
+                ? "bg-rose-50 text-rose-700"
+                : "bg-slate-50 text-slate-700"
             }`}
           >
             {trend.direction === "up" ? "▲" : trend.direction === "down" ? "▼" : "■"} {trend.value}
           </span>
         )}
-        {sublabel && <span className="text-[12px] text-[var(--text-muted)]">{sublabel}</span>}
+        {sublabel && <span className="text-[11px] font-medium text-[var(--text-muted)]">{sublabel}</span>}
       </div>
     </div>
   );
@@ -76,15 +86,17 @@ export function ChartCard({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="analytics-chart-card">
-      <div className="flex items-start justify-between mb-4">
+    <div className="crm-card p-6 flex flex-col h-full hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-shadow duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h4 className="text-[15px] font-medium text-[var(--text-primary)]">{title}</h4>
-          {subtitle && <p className="text-[12px] text-[var(--text-muted)] mt-0.5">{subtitle}</p>}
+          <h4 className="text-sm font-bold text-slate-800 tracking-tight">{title}</h4>
+          {subtitle && <p className="text-[11px] font-medium text-slate-400 mt-1 uppercase tracking-wider">{subtitle}</p>}
         </div>
         {action}
       </div>
-      {children}
+      <div className="flex-1 min-h-[200px]">
+        {children}
+      </div>
     </div>
   );
 }
@@ -121,12 +133,14 @@ export function CompetitorPageHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-100">
       <div>
-        <h1 className="text-[24px] font-medium text-[var(--text-primary)]">{title}</h1>
-        <p className="text-[13px] text-[var(--text-secondary)] mt-0.5">{subtitle}</p>
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">{title}</h1>
+        <p className="text-sm font-medium text-slate-500 mt-1">{subtitle}</p>
       </div>
-      {children}
+      <div className="flex items-center gap-3">
+        {children}
+      </div>
     </div>
   );
 }

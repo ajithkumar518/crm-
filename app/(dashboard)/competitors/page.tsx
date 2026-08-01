@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/ToastProvider";
-import PageContainer from "@/components/PageContainer";
+import { PageShell } from "@/components/ui/PageShell";
 import {
   KPICard, ChartCard, ThreatBadge, CompetitorPageHeader,
   ViewToggle, EmptyState, LoadingState, getChartColor, ColorDot,
@@ -148,15 +148,17 @@ export default function CompetitorsPage() {
   const initials = (name: string) => name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   return (
-    <PageContainer className="space-y-5 p-0">
-      <CompetitorPageHeader title="Competitors Overview" subtitle="Track competitors, their products and win/loss insights">
-        {canManage && (
+    <PageShell 
+      title="Competitors Overview" 
+      subtitle="Track competitors, their products and win/loss insights"
+      action={
+        canManage && (
           <button onClick={openNew} className="btn-primary">
             <Plus size={16} /> New Competitor
           </button>
-        )}
-      </CompetitorPageHeader>
-
+        )
+      }
+    >
       {/* Search + view toggle */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px] max-w-md">
@@ -191,13 +193,23 @@ export default function CompetitorsPage() {
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--text-secondary)" }} axisLine={false} tickLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
-                  <YAxis tick={{ fontSize: 12, fill: "var(--text-secondary)" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 11, fill: "var(--text-muted)" }} 
+                    tickFormatter={(val) => val.length > 20 ? val.substring(0, 20) + '...' : val}
+                    axisLine={false} 
+                    tickLine={false} 
+                    interval={0} 
+                    angle={-25} 
+                    textAnchor="end" 
+                    height={70} 
+                  />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip
-                    contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", fontSize: 13, background: "var(--surface)" }}
+                    contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", fontSize: 12, background: "var(--surface)", fontWeight: 500 }}
                     cursor={{ fill: "var(--surface-2)" }}
                   />
-                  <Bar dataKey="count" radius={[6, 6, 0, 0]} name="Deals">
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]} name="Deals" barSize={36}>
                     {chartData.map((entry, idx) => (
                       <Cell key={idx} fill={entry.color} />
                     ))}
@@ -209,43 +221,43 @@ export default function CompetitorsPage() {
 
           {/* Data row: grid or table */}
           {view === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
               {competitors.map((c) => (
-                <div key={c.id} className="competitor-card block cursor-pointer" onClick={() => router.push(`/competitors/${c.id}`)}>
-                  <div className="flex items-start justify-between mb-3">
+                <div key={c.id} className="crm-card p-5 block cursor-pointer hover:border-[var(--primary)] transition-colors group" onClick={() => router.push(`/competitors/${c.id}`)}>
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-[14px] font-medium text-white"
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white shadow-sm"
                         style={{ backgroundColor: getChartColor(c.name) }}
                       >
                         {initials(c.name)}
                       </div>
                       <div>
-                        <div className="text-[14px] font-medium text-[var(--text-primary)]">{c.name}</div>
+                        <div className="text-base font-bold text-slate-900 group-hover:text-[var(--primary)] transition-colors">{c.name}</div>
                         {c.website && (
-                          <a href={c.website} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-[12px] text-[var(--accent)] hover:underline inline-flex items-center gap-0.5">
-                            {c.website} <ExternalLink size={10} />
+                          <a href={c.website} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-slate-500 hover:text-[var(--primary)] inline-flex items-center gap-1 mt-0.5">
+                            <ExternalLink size={12} /> {c.website.replace(/^https?:\/\//, '')}
                           </a>
                         )}
                       </div>
                     </div>
                     <ThreatBadge level={c.stats?.threatLevel ?? "Low"} />
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="grid grid-cols-3 gap-3 bg-slate-50 rounded-lg p-3 text-center mb-4 border border-slate-100">
                     <div>
-                      <div className="text-[18px] font-bold text-[var(--text-primary)]">{c.stats?.winRate != null ? `${c.stats.winRate}%` : "—"}</div>
-                      <div className="text-[11px] text-[var(--text-muted)]">Win Rate</div>
+                      <div className="text-lg font-extrabold text-slate-800">{c.stats?.winRate != null ? `${c.stats.winRate}%` : "—"}</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-1">Win Rate</div>
                     </div>
                     <div>
-                      <div className="text-[18px] font-bold text-[var(--text-primary)]">{c.stats?.activeDeals ?? 0}</div>
-                      <div className="text-[11px] text-[var(--text-muted)]">Active Deals</div>
+                      <div className="text-lg font-extrabold text-slate-800">{c.stats?.activeDeals ?? 0}</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-1">Active Deals</div>
                     </div>
                     <div>
-                      <div className="text-[18px] font-bold text-[var(--text-primary)]">{c._count?.products ?? 0}</div>
-                      <div className="text-[11px] text-[var(--text-muted)]">Products</div>
+                      <div className="text-lg font-extrabold text-slate-800">{c._count?.products ?? 0}</div>
+                      <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mt-1">Products</div>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border-subtle)]">
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                     <StatusPill status={c.isActive ? "Active" : "Inactive"} />
                     {c.stats?.lastActivity && (
                       <span className="text-[11px] text-[var(--text-muted)]">
@@ -353,6 +365,6 @@ export default function CompetitorsPage() {
       )}
 
       <ConfirmModal {...confirmState} onCancel={() => setConfirmState({ ...confirmState, isOpen: false })} />
-    </PageContainer>
+    </PageShell>
   );
 }

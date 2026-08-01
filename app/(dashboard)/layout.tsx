@@ -1188,7 +1188,7 @@ function SidebarContent({
   };
 
   const serviceRequestSubItems = [
-    { href: "/service/requests", label: "All Requests" },
+    { href: "/service/requests", label: "Overview" },
     { href: "/service/requests?status=New", label: "New Requests" },
     { href: "/service/requests?status=Assigned", label: "Assigned Requests" },
     { href: "/service/requests?status=In Progress", label: "In Progress" },
@@ -1200,7 +1200,7 @@ function SidebarContent({
   ];
 
   const serviceComplaintSubItems = [
-    { href: "/service/complaints", label: "All Complaints" },
+    { href: "/service/complaints", label: "Overview" },
     { href: "/service/complaints?status=New", label: "Open Complaints" },
     {
       href: "/service/complaints?status=Investigating",
@@ -1214,7 +1214,7 @@ function SidebarContent({
   ];
 
   const serviceDefectSubItems = [
-    { href: "/service/defects", label: "All Defects" },
+    { href: "/service/defects", label: "Overview" },
     { href: "/service/defects?status=New", label: "New Defects" },
     {
       href: "/service/defects?status=Under Investigation",
@@ -1227,8 +1227,10 @@ function SidebarContent({
     { href: "/service/defects?status=Closed", label: "Closed Defects" },
   ];
 
+
+
   const serviceInstallationSubItems = [
-    { href: "/service/installations", label: "All Installations" },
+    { href: "/service/installations", label: "Overview" },
     {
       href: "/service/installations?status=Scheduled",
       label: "Scheduled Installations",
@@ -1241,27 +1243,32 @@ function SidebarContent({
   ];
 
   const serviceWarrantyAMCSubItems = [
-    {
-      href: "/service/warranty-amc?status=WarrantyActive",
-      label: "Active Warranty",
-    },
-    { href: "/service/warranty-amc?status=Claim", label: "Warranty Claims" },
-    { href: "/service/warranty-amc?status=AMCActive", label: "Active AMC" },
-    { href: "/service/warranty-amc?status=Renewals", label: "AMC Renewals" },
+    { href: "/service/warranty-amc?tab=ActiveWarranty", label: "Active Warranty" },
+    { href: "/service/warranty-amc?tab=Warranty", label: "Warranty Claims" },
+    { href: "/service/warranty-amc?tab=AMC", label: "Active AMC" },
+    { href: "/service/warranty-amc?tab=AMCRenewals", label: "AMC Renewals" },
   ];
 
   const serviceVisitSubItems = [
-    { href: "/service/visits", label: "All Visits" },
+    { href: "/service/visits", label: "Overview" },
     { href: "/service/visits?status=Scheduled", label: "Scheduled Visits" },
     { href: "/service/visits?status=Emergency", label: "Emergency Visits" },
     { href: "/service/visits?status=Completed", label: "Completed Visits" },
-    { href: "/service/visits?status=Overdue", label: "Overdue Visits" },
+    { href: "/service/visits?status=Overdue", label: "Overdue" },
   ];
 
   const serviceAssetSubItems = [
     { href: "/service/assets", label: "Installed Products" },
-    { href: "/service/assets?status=Warranty", label: "Under Warranty" },
-    { href: "/service/assets?status=AMC", label: "Under AMC" },
+    { href: "/service/assets?coverage=Warranty", label: "Under Warranty" },
+    { href: "/service/assets?coverage=AMC", label: "Under AMC" },
+    { href: "/service/assets?tab=history", label: "Service History" },
+  ];
+
+  const serviceReviewSubItems = [
+    { href: "/service/reviews", label: "Overview" },
+    { href: "/service/reviews?status=Pending", label: "Pending Reviews" },
+    { href: "/service/reviews?status=Published", label: "Published Reviews" },
+    { href: "/service/reviews?status=Archived", label: "Archived" },
   ];
 
   const serviceReportSubItems = [
@@ -1293,10 +1300,6 @@ function SidebarContent({
     { href: "/service/settings?tab=engineers", label: "Service Engineers" },
     { href: "/service/settings?tab=priorities", label: "Priority Levels" },
     { href: "/service/settings?tab=statuses", label: "Service Status" },
-    {
-      href: "/service/settings?tab=escalation-rules",
-      label: "Escalation Rules",
-    },
   ];
 
   // Accordion: only one section open at a time
@@ -1458,126 +1461,119 @@ function SidebarContent({
                     </p>
                   </div>
                 )}
-                <NavLink
-                  item={{
-                    href: "/service/requests",
-                    label: "Requests",
-                    icon: <Wrench size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/requests")}
-                  onClick={onNavClick}
+                <ExpandableNavSection
+                  label="Service Requests"
+                  icon={<Wrench size={17} />}
+                  subItems={serviceRequestSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Service Requests"}
+                  onToggle={makeToggle("Service Requests")}
+                  onOpen={openSectionLabel("Service Requests")}
                 />
-                <NavLink
-                  item={{
-                    href: "/service/complaints",
-                    label: "Complaints",
-                    icon: <AlertTriangle size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/complaints")}
-                  onClick={onNavClick}
+                <ExpandableNavSection
+                  label="Complaint"
+                  icon={<AlertTriangle size={17} />}
+                  subItems={serviceComplaintSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Complaint"}
+                  onToggle={makeToggle("Complaint")}
+                  onOpen={openSectionLabel("Complaint")}
                 />
-                <NavLink
-                  item={{
-                    href: "/service/defects",
-                    label: "Defects",
-                    icon: <HelpCircle size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/defects")}
-                  onClick={onNavClick}
+                <ExpandableNavSection
+                  label="Defect Management"
+                  icon={<HelpCircle size={17} />}
+                  subItems={serviceDefectSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Defect Management"}
+                  onToggle={makeToggle("Defect Management")}
+                  onOpen={openSectionLabel("Defect Management")}
                 />
-                <NavLink
-                  item={{
-                    href: "/service/installations",
-                    label: "Installations",
-                    icon: <Hammer size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/installations")}
-                  onClick={onNavClick}
+                <ExpandableNavSection
+                  label="Installation"
+                  icon={<Hammer size={17} />}
+                  subItems={serviceInstallationSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Installation"}
+                  onToggle={makeToggle("Installation")}
+                  onOpen={openSectionLabel("Installation")}
                 />
-                <NavLink
-                  item={{
-                    href: "/service/warranty-amc",
-                    label: "Warranty & AMC",
-                    icon: <Award size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/warranty-amc")}
-                  onClick={onNavClick}
+                <ExpandableNavSection
+                  label="Warranty & AMC"
+                  icon={<Award size={17} />}
+                  subItems={serviceWarrantyAMCSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Warranty"}
+                  onToggle={makeToggle("Warranty")}
+                  onOpen={openSectionLabel("Warranty")}
                 />
-                <NavLink
-                  item={{
-                    href: "/service/visits",
-                    label: "Visits",
-                    icon: <Calendar size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/visits")}
-                  onClick={onNavClick}
+                <ExpandableNavSection
+                  label="Service Visits"
+                  icon={<Calendar size={17} />}
+                  subItems={serviceVisitSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Service Visits"}
+                  onToggle={makeToggle("Service Visits")}
+                  onOpen={openSectionLabel("Service Visits")}
                 />
-                <NavLink
-                  item={{
-                    href: "/service/reviews",
-                    label: "Reviews & Feedback",
-                    icon: <Star size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/reviews")}
-                  onClick={onNavClick}
+
+                <ExpandableNavSection
+                  label="Customer Assets"
+                  icon={<Package size={17} />}
+                  subItems={serviceAssetSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Customer Assets"}
+                  onToggle={makeToggle("Customer Assets")}
+                  onOpen={openSectionLabel("Customer Assets")}
                 />
-                <NavLink
-                  item={{
-                    href: "/service/assets",
-                    label: "Assets",
-                    icon: <Package size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/assets")}
-                  onClick={onNavClick}
+
+                <ExpandableNavSection
+                  label="Reviews & Feedback"
+                  icon={<Star size={17} />}
+                  subItems={serviceReviewSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Reviews & Feedback"}
+                  onToggle={makeToggle("Reviews & Feedback")}
+                  onOpen={openSectionLabel("Reviews & Feedback")}
                 />
-                <NavLink
-                  item={{
-                    href: "/service/projects",
-                    label: "Projects",
-                    icon: <FolderKanban size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/projects")}
-                  onClick={onNavClick}
+
+                <ExpandableNavSection
+                  label="Service Reports"
+                  icon={<ChartBar size={17} />}
+                  subItems={serviceReportSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
-                />
-                <NavLink
-                  item={{
-                    href: "/service/inventory",
-                    label: "Inventory",
-                    icon: <Boxes size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/inventory")}
-                  onClick={onNavClick}
-                  collapsed={collapsed}
-                />
-                <NavLink
-                  item={{
-                    href: "/service/reports",
-                    label: "Reports",
-                    icon: <ChartBar size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/reports")}
-                  onClick={onNavClick}
-                  collapsed={collapsed}
+                  isOpen={openSection === "Service Reports"}
+                  onToggle={makeToggle("Service Reports")}
+                  onOpen={openSectionLabel("Service Reports")}
                 />
                 <div className="border-t border-white/[0.06] my-2 pt-1" />
-                <NavLink
-                  item={{
-                    href: "/service/settings",
-                    label: "Settings",
-                    icon: <Settings size={17} />,
-                  }}
-                  active={pathname.startsWith("/service/settings")}
-                  onClick={onNavClick}
+                <ExpandableNavSection
+                  label="Service Settings"
+                  icon={<Settings size={17} />}
+                  subItems={serviceSettingsSubItems}
+                  pathname={pathname}
+                  onNavClick={onNavClick}
                   collapsed={collapsed}
+                  isOpen={openSection === "Service Settings"}
+                  onToggle={makeToggle("Service Settings")}
+                  onOpen={openSectionLabel("Service Settings")}
                 />
               </>
             )}
@@ -2288,7 +2284,7 @@ export default function DashboardLayout({
           onMobileMenuClick={toggleMobileDrawer}
         />
 
-        <div className="flex-1 overflow-auto p-4 sm:p-5 md:p-6 lg:p-8 pb-20 md:pb-6">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-5 md:p-6 lg:p-8 pb-20 md:pb-6">
           <CurrencyProvider>{children}</CurrencyProvider>
         </div>
 

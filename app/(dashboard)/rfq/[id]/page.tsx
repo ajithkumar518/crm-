@@ -579,6 +579,7 @@ export default function RFQDetailPage() {
       title={rfq.rfqCode}
       subtitle={rfq.customer?.name}
       breadcrumb={[{ label: "RFQs", href: "/rfq" }]}
+      onBack={() => router.push("/rfq?status=New")}
     >
       <div className="space-y-6">
         {/* Deal linkage link */}

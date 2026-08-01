@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
+import { serviceModulesConfig } from "@/lib/config/serviceModuleConfig";
 
 export async function GET(request: Request, { params }: { params: any }) {
   try {
@@ -33,7 +34,7 @@ export async function GET(request: Request, { params }: { params: any }) {
       },
     });
 
-    if (!installation) {
+    if (!installation || installation.deletedAt) {
       return NextResponse.json({ error: "Installation not found" }, { status: 404 });
     }
 
@@ -55,8 +56,11 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     const body = await request.json();
     
     // Check if the record exists
-    const existing = await prisma.installation.findUnique({ where: { id } });
-    if (!existing) {
+    const existing = await prisma.installation.findUnique({ 
+      where: { id },
+      include: { status: true }
+    });
+    if (!existing || existing.deletedAt) {
       return NextResponse.json({ error: "Installation not found" }, { status: 404 });
     }
 
@@ -65,6 +69,17 @@ export async function PATCH(request: Request, { params }: { params: any }) {
     const permitted = ["title", "description", "categoryId", "priorityId", "statusId", "customerId", "customerAssetId", "assignedTeamId", "assignedEngineerId", "closedAt"];
     for (const key of permitted) {
       if (body[key] !== undefined) allowedFields[key] = body[key];
+    }
+
+    // State Transition Enforcement (C1)
+    if (allowedFields.statusId && allowedFields.statusId !== existing.statusId) {
+      const newStatus = await prisma.serviceStatus.findUnique({ where: { id: allowedFields.statusId } });
+      if (!newStatus) return NextResponse.json({ error: "Invalid status ID" }, { status: 400 });
+      
+      const allowedTransitions = serviceModulesConfig.installations.allowedTransitions[existing.status.name] || [];
+      if (!allowedTransitions.includes(newStatus.name)) {
+        return NextResponse.json({ error: `Invalid status transition from ${existing.status.name} to ${newStatus.name}` }, { status: 400 });
+      }
     }
 
     const updated = await prisma.installation.update({
@@ -101,8 +116,14 @@ export async function DELETE(request: Request, { params }: { params: any }) {
     }
 
     const { id } = await params;
-    await prisma.installation.delete({
+    
+    // Soft Delete Implementation (C3)
+    await prisma.installation.update({
       where: { id },
+      data: {
+        deletedAt: new Date(),
+        deletedById: user.id
+      }
     });
     return NextResponse.json({ success: true });
   } catch (error: any) {

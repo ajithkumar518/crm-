@@ -9,6 +9,7 @@ import { cn } from "@/lib/ui-utils";
 import { Search, Plus, RefreshCw, ChevronLeft, X, Calendar, CheckCircle, AlertTriangle, Clock, CalendarDays } from "lucide-react";
 import { SignaturePad, PhotoUploader } from "@/components/shared/ProofOfWork";
 import { ServiceKPICard as KPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICard";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
 
@@ -48,6 +49,16 @@ export default function ServiceVisitsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [engineerFilter, setEngineerFilter] = useState("");
   const [completeModal, setCompleteModal] = useState<any>(null);
+
+  const statusParam = searchParams?.get("status");
+  
+  useEffect(() => {
+    if (statusParam && ["Scheduled", "Emergency", "Completed", "Overdue"].includes(statusParam)) {
+      setStatusFilter(statusParam);
+    } else {
+      setStatusFilter("");
+    }
+  }, [statusParam]);
   const [outcomeNotes, setOutcomeNotes] = useState("");
   const [selectedOutcome, setSelectedOutcome] = useState("Resolved");
   const [reasonNextSteps, setReasonNextSteps] = useState("");
@@ -1115,6 +1126,16 @@ export default function ServiceVisitsPage() {
         <KPICard label="Overdue" value={stats.overdue} icon={<AlertTriangle size={20} className="text-red-500" />} color="bg-red-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Overdue"} />
         <KPICard label="Completed This Month" value={stats.completedThisMonth} icon={<CheckCircle size={20} className="text-green-500" />} color="bg-green-500/10" onClick={(f) => setKpiFilter(f)} active={kpiFilter === "Completed This Month"} />
       </ServiceKPIGrid>
+      <StatusFilterBar
+        statuses={[
+          { value: "Scheduled", label: "Scheduled" },
+          { value: "Emergency", label: "Emergency" },
+          { value: "Completed", label: "Completed" },
+          { value: "Overdue", label: "Overdue" },
+        ]}
+        paramKey="status"
+        basePath="/service/visits"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-[var(--surface)] border border-[var(--border)] p-3 rounded-xl backdrop-blur-md">
         <div className="relative md:col-span-2">
@@ -1134,6 +1155,7 @@ export default function ServiceVisitsPage() {
         >
           <option value="">All Statuses</option>
           <option value="Scheduled">Scheduled</option>
+          <option value="Emergency">Emergency</option>
           <option value="Completed">Completed</option>
           <option value="Overdue">Overdue</option>
         </select>
