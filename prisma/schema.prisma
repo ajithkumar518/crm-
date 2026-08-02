@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "sqlserver"
   url      = env("DATABASE_URL")
 }
 
@@ -17,13 +17,13 @@ model User {
   role                        String                      @default("SalesExecutive")
   userType                    String                      @default("internal")
   phone                       String?
-  profilePhoto                String?                     
+  profilePhoto                String?                     @db.NVarChar(Max)
   isActive                    Boolean                     @default(true)
   isFirstLogin                Boolean                     @default(true)
   otpCode                     String?
   otpExpiry                   DateTime?
   otpAttempts                 Int                         @default(0)
-  resetToken                  String?                     
+  resetToken                  String?                     @db.NVarChar(Max)
   resetTokenExpiry            DateTime?
   loginAttempts               Int                         @default(0)
   lockedUntil                 DateTime?
@@ -32,7 +32,7 @@ model User {
   invitedAt                   DateTime?
   rememberMe                  Boolean                     @default(false)
   lastActivityAt              DateTime?
-  activationToken             String?                     
+  activationToken             String?                     @db.NVarChar(Max)
   activationTokenExpiry       DateTime?
   passwordSetAt               DateTime?
   createdAt                   DateTime                    @default(now())
@@ -167,14 +167,14 @@ model Customer {
   deletedById            String?
   leadSource             String?
   accountType            String                  @default("Prospect")
-  billingAddress         String?                 
+  billingAddress         String?                 @db.NVarChar(Max)
   creditLimit            Float                   @default(0)
   creditTermsDays        Int                     @default(30)
   gstNumber              String?
   industryType           String?
   isKeyAccountV2         Boolean                 @default(false)
   lastActivityDate       DateTime?
-  shippingAddress        String?                 
+  shippingAddress        String?                 @db.NVarChar(Max)
   creditHistories        AccountCreditHistory[]
   accountStatusHistories AccountStatusHistory[]
   callLogs               CallLog[]
@@ -220,7 +220,7 @@ model Subscription {
   startDate          DateTime
   endDate            DateTime
   status             String    @default("Active")
-  notes              String?   
+  notes              String?   @db.NVarChar(Max)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
   renewalAlertSent30 Boolean   @default(false)
@@ -245,17 +245,17 @@ model CustomerVisit {
   purpose                   String
   checkInTime               DateTime?
   checkOutTime              DateTime?
-  meetingSummary            String?                  
+  meetingSummary            String?                  @db.NVarChar(Max)
   outcome                   String?
   customerDecision          String?
-  rejectionReason           String?                  
+  rejectionReason           String?                  @db.NVarChar(Max)
   nextMeetingDate           DateTime?
-  nextMeetingNotes          String?                  
+  nextMeetingNotes          String?                  @db.NVarChar(Max)
   status                    String                   @default("PLANNED")
   priority                  String                   @default("Normal")
   meetingType               String?
   source                    String?
-  agenda                    String?                  
+  agenda                    String?                  @db.NVarChar(Max)
   department                String?
   createdAt                 DateTime                 @default(now())
   updatedAt                 DateTime                 @updatedAt
@@ -270,42 +270,42 @@ model CustomerVisit {
   plannedDate               DateTime?
   plannedTime               String?
   plantLocationId           String?
-  visitSummary              String?                  
+  visitSummary              String?                  @db.NVarChar(Max)
   checkOutGpsAnomaly        Boolean?
   checkOutGpsLocation       String?
-  customerUnavailableReason String?                  
+  customerUnavailableReason String?                  @db.NVarChar(Max)
   durationMinutes           Int?
   outcomeType               String?
   parentVisitId             String?
   rescheduleCount           Int                      @default(0)
-  rescheduleReason          String?                  
+  rescheduleReason          String?                  @db.NVarChar(Max)
   autoCheckedOut            Boolean                  @default(false)
-  autoCheckoutReason        String?                  
+  autoCheckoutReason        String?                  @db.NVarChar(Max)
   longVisit                 Boolean                  @default(false)
-  longVisitJustification    String?                  
+  longVisitJustification    String?                  @db.NVarChar(Max)
   visited4HrWarningSent     Boolean                  @default(false)
   visited8HrAlertSent       Boolean                  @default(false)
   // Office visit specific fields
-  visitorNames              String?                  
+  visitorNames              String?                  @db.NVarChar(Max)
   meetingRoom               String?
   signInTime                DateTime?
   signOutTime               DateTime?
-  documentsExchanged        String?                  
+  documentsExchanged        String?                  @db.NVarChar(Max)
   // Field visit specific fields
   gpsDistanceFromSite       Float?
   travelMode                String?
   distanceTraveledKm        Float?
   expenseAmount             Float?
   locationVerified          Boolean                  @default(true)
-  manualLocationNote        String?                  
+  manualLocationNote        String?                  @db.NVarChar(Max)
   // Unified fields
-  outcomeNotes              String?                  
+  outcomeNotes              String?                  @db.NVarChar(Max)
   nextActionDate            DateTime?
-  nextActionNotes           String?                  
+  nextActionNotes           String?                  @db.NVarChar(Max)
   entityType                String?
   entityId                  String?
   assignedUserId            String?
-  cancelledReason           String?                  
+  cancelledReason           String?                  @db.NVarChar(Max)
   checkInBy                 String?
   company                   Company?                 @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   customer                  Customer                 @relation(fields: [customerId], references: [id], onUpdate: NoAction)
@@ -374,7 +374,7 @@ model CustomerVisitStatusLog {
   toStatus   String
   changedBy  String
   changedAt  DateTime
-  reason     String?  
+  reason     String?  @db.NVarChar(Max)
   companyId  String?
 
   visit         CustomerVisit @relation(fields: [visitId], references: [id], onDelete: Cascade)
@@ -398,15 +398,15 @@ model MarketingVisit {
   checkOutLat        Float?
   checkOutLng        Float?
   checkInPhoto       String?
-  remarks            String?         
+  remarks            String?         @db.NVarChar(Max)
   nextMeetingDate    DateTime?
   createdAt          DateTime        @default(now())
   purpose            String?
-  meetingDescription String?         
+  meetingDescription String?         @db.NVarChar(Max)
   outcome            String?
   customerDecision   String?
-  rejectionReason    String?         
-  nextMeetingNotes   String?         
+  rejectionReason    String?         @db.NVarChar(Max)
+  nextMeetingNotes   String?         @db.NVarChar(Max)
   status             String          @default("REQUESTED")
   approvedByUserId   String?
   approvedAt         DateTime?
@@ -452,12 +452,12 @@ model AuditLog {
   userId        String?
   module        String
   action        String
-  details       String?  
+  details       String?  @db.NVarChar(Max)
   resourceId    String?
-  previousState String?  
-  newState      String?  
+  previousState String?  @db.NVarChar(Max)
+  newState      String?  @db.NVarChar(Max)
   ipAddress     String?
-  userAgent     String?  
+  userAgent     String?  @db.NVarChar(Max)
   severity      String   @default("INFO")
   companyId     String?
   timestamp     DateTime @default(now())
@@ -492,20 +492,20 @@ model FollowUp {
   dealId            String?
   assignedUserId    String
   nextMeetingDate   DateTime
-  remarks           String?            
+  remarks           String?            @db.NVarChar(Max)
   status            String             @default("Pending")
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   visitId           String?
   visitType         String?
   completedAt       DateTime?
-  notes             String?            
+  notes             String?            @db.NVarChar(Max)
   dueDate           DateTime?
   reminderAt        DateTime?
   completedById     String?
   sourceType        String?
   sourceId          String?
-  completionNotes   String?            
+  completionNotes   String?            @db.NVarChar(Max)
   priority          String             @default("Medium")
   escalationLevel   Int                @default(0)
   autoCreated       Boolean            @default(false)
@@ -544,7 +544,7 @@ model Notification {
   id        String   @id @default(uuid())
   userId    String
   title     String
-  message   String   
+  message   String   @db.NVarChar(Max)
   type      String
   link      String?
   isRead    Boolean  @default(false)
@@ -575,17 +575,17 @@ model Deal {
   dealValue              Float
   expectedCloseDate      DateTime
   assignedUserId         String?
-  notes                  String?                      
+  notes                  String?                      @db.NVarChar(Max)
   status                 String                       @default("Qualified")
   createdAt              DateTime                     @default(now())
   updatedAt              DateTime                     @updatedAt
   discountPercent        Float                        @default(0.0)
   discountStatus         String                       @default("None")
   isLocked               Boolean                      @default(false)
-  discountNotes          String?                      
+  discountNotes          String?                      @db.NVarChar(Max)
   discountApprovedById   String?
-  lostReason             String?                      
-  approvalRemarks        String?                      
+  lostReason             String?                      @db.NVarChar(Max)
+  approvalRemarks        String?                      @db.NVarChar(Max)
   companyId              String?
   deletedAt              DateTime?
   deletedById            String?
@@ -595,8 +595,8 @@ model Deal {
   lostReasonRefId        String?
   opportunityCode        String?
   probabilityPercent     Int                          @default(20)
-  stageEnteredAt         DateTime? // Timestamp when current stage was entered â€” for per-stage overdue computation
-  rejectedReason         String?                       // Reason for rejection (distinct from lostReason)
+  stageEnteredAt         DateTime? // Timestamp when current stage was entered — for per-stage overdue computation
+  rejectedReason         String?                      @db.NVarChar(Max) // Reason for rejection (distinct from lostReason)
   approvalHistory        ApprovalHistory[]
   linkedVisits           CustomerVisit[]              @relation("VisitLinkedOpportunity")
   assignedUser           User?                        @relation(fields: [assignedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -633,13 +633,13 @@ model Deal {
 model OpportunityDetail {
   id                      String    @id @default(uuid())
   dealId                  String    @unique
-  currentChallenges       String?   
-  painPoints              String?   
-  painPointsList          String?   
-  requiredFeatures        String?   
-  modulesRequired         String?   
+  currentChallenges       String?   @db.NVarChar(Max)
+  painPoints              String?   @db.NVarChar(Max)
+  painPointsList          String?   @db.NVarChar(Max)
+  requiredFeatures        String?   @db.NVarChar(Max)
+  modulesRequired         String?   @db.NVarChar(Max)
   deploymentType          String?
-  integrationsRequired    String?   
+  integrationsRequired    String?   @db.NVarChar(Max)
   userCountSales          Int?
   userCountManagers       Int?
   userCountAdmins         Int?
@@ -651,76 +651,76 @@ model OpportunityDetail {
   budgetOwner             String?
   expectedGoLive          DateTime?
   currentVendor           String?
-  competitorsEvaluated    String?   
+  competitorsEvaluated    String?   @db.NVarChar(Max)
 
 
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
-  apiThirdPartyReqs       String?   
-  approvalProcess         String?   
+  apiThirdPartyReqs       String?   @db.NVarChar(Max)
+  approvalProcess         String?   @db.NVarChar(Max)
   billingCycle            String?
-  businessGoals           String?   
-  businessNeed            String?   
-  buyingAuthorityNotes    String?   
+  businessGoals           String?   @db.NVarChar(Max)
+  businessNeed            String?   @db.NVarChar(Max)
+  buyingAuthorityNotes    String?   @db.NVarChar(Max)
   companyName             String?
   contactPerson           String?
-  customizationNeeded     String?   
+  customizationNeeded     String?   @db.NVarChar(Max)
   dataMigrationRequired   String?
   email                   String?
   employeeCount           Int?
-  existingSoftwareStack   String?   
+  existingSoftwareStack   String?   @db.NVarChar(Max)
   expectedBudget          Float?
-  expectedOutcome         String?   
+  expectedOutcome         String?   @db.NVarChar(Max)
   finalDiscussedBudget    Float?
-  followUpSummary         String?   
+  followUpSummary         String?   @db.NVarChar(Max)
   industry                String?
-  internalSalesNotes      String?   
-  itTeamNotes             String?   
+  internalSalesNotes      String?   @db.NVarChar(Max)
+  itTeamNotes             String?   @db.NVarChar(Max)
   licenseCount            Int?
-  managementNotes         String?   
-  nextSteps               String?   
+  managementNotes         String?   @db.NVarChar(Max)
+  nextSteps               String?   @db.NVarChar(Max)
   numberOfUsers           Int?
-  objections              String?   
+  objections              String?   @db.NVarChar(Max)
   phone                   String?
-  presalesNotes           String?   
+  presalesNotes           String?   @db.NVarChar(Max)
   probability             Int?
-  reportingRequirements   String?   
-  requiredDepartments     String?   
-  risksBlockers           String?   
-  securityCompliance      String?   
-  successCriteria         String?   
-  technicalConstraints    String?   
+  reportingRequirements   String?   @db.NVarChar(Max)
+  requiredDepartments     String?   @db.NVarChar(Max)
+  risksBlockers           String?   @db.NVarChar(Max)
+  securityCompliance      String?   @db.NVarChar(Max)
+  successCriteria         String?   @db.NVarChar(Max)
+  technicalConstraints    String?   @db.NVarChar(Max)
   urgencyPriority         String?
-  userRolesPermissions    String?   
+  userRolesPermissions    String?   @db.NVarChar(Max)
   requirementCompletedAt  DateTime?
   sampleRequested         Boolean   @default(false)
   sampleApproved          Boolean   @default(false)
   sampleApprovedDate      DateTime?
-  sampleRejectedReason    String?   
+  sampleRejectedReason    String?   @db.NVarChar(Max)
   // V2 fields
-  requiresSamples         String? // "yes" | "no" | null â€” set during Qualified stage
-  sampleStatus            String? // "pending" | "approved" | "rejected" | null â€” tracks sample management branch
+  requiresSamples         String? // "yes" | "no" | null — set during Qualified stage
+  sampleStatus            String? // "pending" | "approved" | "rejected" | null — tracks sample management branch
   techDiscussionDate      DateTime? // V2 Part B: technical discussion date
-  techDiscussionAttendees String?    // V2 Part B: attendees
-  techDiscussionQuestions String?    // V2 Part B: questions raised
-  techDiscussionConfirmed Boolean   @default(false) // V2 Part B: exit gate checkbox (deprecated â€” now handled by TechnicalDiscussion stage gate)
+  techDiscussionAttendees String?   @db.NVarChar(Max) // V2 Part B: attendees
+  techDiscussionQuestions String?   @db.NVarChar(Max) // V2 Part B: questions raised
+  techDiscussionConfirmed Boolean   @default(false) // V2 Part B: exit gate checkbox (deprecated — now handled by TechnicalDiscussion stage gate)
   // V5 Manufacturing Pipeline fields
-  leadVerified            Boolean   @default(false) // Qualified stage â€” replaces businessNeed bool (avoids key collision with RG's businessNeed textarea)
+  leadVerified            Boolean   @default(false) // Qualified stage — replaces businessNeed bool (avoids key collision with RG's businessNeed textarea)
   tdDiscussionDate        DateTime? // TechnicalDiscussion stage header date
-  tdAttendees             String?    // TechnicalDiscussion stage attendees
-  tdEngineerId            String? // TechnicalDiscussion stage â€” assigned engineer user ID
-  additionalNotes         String?    // RG stage â€” consolidates narrative notes (objections, risks, next steps, etc.)
-  // Commercial Information â€” extra fields used in RG form
-  paymentTerms            String?   
-  competitorInfo          String?   
-  commercialRisks         String?   
+  tdAttendees             String?   @db.NVarChar(Max) // TechnicalDiscussion stage attendees
+  tdEngineerId            String? // TechnicalDiscussion stage — assigned engineer user ID
+  additionalNotes         String?   @db.NVarChar(Max) // RG stage — consolidates narrative notes (objections, risks, next steps, etc.)
+  // Commercial Information — extra fields used in RG form
+  paymentTerms            String?   @db.NVarChar(Max)
+  competitorInfo          String?   @db.NVarChar(Max)
+  commercialRisks         String?   @db.NVarChar(Max)
   discountRequested       Float?
   proposalValue           Float?
-  negotiationNotes        String?   
+  negotiationNotes        String?   @db.NVarChar(Max)
   deal                    Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
 }
 
-// â”€â”€â”€ Meeting Log (replaces flat meeting fields) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Meeting Log (replaces flat meeting fields) ─────────────────────────────────
 model MeetingLog {
   id              String    @id @default(cuid())
   dealId          String
@@ -729,11 +729,11 @@ model MeetingLog {
   meetingDate     DateTime?
   meetingType     String?
   meetingMode     String?
-  participants    String?   
-  agenda          String?   
+  participants    String?   @db.NVarChar(Max)
+  agenda          String?   @db.NVarChar(Max)
   conductedAt     DateTime?
   outcome         String?   // "Accepted", "Rejected", "Follow-up needed"
-  notes           String?    // Demo feedback or meeting outcome notes
+  notes           String?   @db.NVarChar(Max) // Demo feedback or meeting outcome notes
   rejectionReason String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -742,7 +742,7 @@ model MeetingLog {
   @@index([meetingDate])
 }
 
-// â”€â”€â”€ Manufacturing Pipeline â€” Product Requirement Items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Manufacturing Pipeline — Product Requirement Items ─────────────────────
 // One row per product per deal, capturing manufacturing-specific requirement data.
 // Created during Requirement Gathering stage; referenced in Technical Discussion.
 model OpportunityRequirementItem {
@@ -751,12 +751,12 @@ model OpportunityRequirementItem {
   deal              Deal                      @relation("DealRequirementItems", fields: [dealId], references: [id], onDelete: Cascade)
   productName       String
   estimatedQuantity Int
-  targetPriceMin    Float?                  
-  targetPriceMax    Float?                  
+  targetPriceMin    Decimal?                  @db.Decimal(12, 2)
+  targetPriceMax    Decimal?                  @db.Decimal(12, 2)
   material          String?
   requiredDelivery  DateTime?
-  specNotes         String?                   
-  attachmentUrl     String?                   
+  specNotes         String?                   @db.NVarChar(Max)
+  attachmentUrl     String?                   @db.NVarChar(Max)
   displayOrder      Int                       @default(0)
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
@@ -766,7 +766,7 @@ model OpportunityRequirementItem {
   @@index([dealId])
 }
 
-// â”€â”€â”€ Technical Discussion â€” Per-product feasibility note â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Technical Discussion — Per-product feasibility note ────────────────────
 // One row per OpportunityRequirementItem, capturing engineer feasibility review.
 // Created during Technical Discussion stage; referenced in RFQ auto-creation.
 model OpportunityTechnicalNote {
@@ -774,8 +774,8 @@ model OpportunityTechnicalNote {
   requirementItemId String                     @unique
   requirementItem   OpportunityRequirementItem @relation(fields: [requirementItemId], references: [id], onDelete: Cascade)
   feasibility       String // Feasible | FeasibleWithChanges | NotFeasible
-  confirmedSpec     String?                    
-  toolingRequired   String?                    
+  confirmedSpec     String?                    @db.NVarChar(Max)
+  toolingRequired   String?                    @db.NVarChar(Max)
   engineerId        String
   engineer          User                       @relation("EngineerTechnicalNotes", fields: [engineerId], references: [id], onUpdate: NoAction)
   reviewedAt        DateTime                   @default(now())
@@ -788,7 +788,7 @@ model CallLog {
   id         String    @id @default(uuid())
   customerId String?
   leadId     String?
-  notes      String?   
+  notes      String?   @db.NVarChar(Max)
   duration   Int?
   userId     String
   timestamp  DateTime  @default(now())
@@ -809,8 +809,8 @@ model DealStageHistory {
   changedById             String
   changedAt               DateTime @default(now())
   durationInPreviousStage Int?
-  outcomeNotes            String?  
-  stageDataSnapshot       String?  
+  outcomeNotes            String?  @db.NVarChar(Max)
+  stageDataSnapshot       String?  @db.NVarChar(Max)
   changedBy               User     @relation(fields: [changedById], references: [id], onUpdate: NoAction)
   deal                    Deal     @relation(fields: [dealId], references: [id], onUpdate: NoAction)
 
@@ -833,7 +833,7 @@ model Lead {
   status                 String                  @default("New")
   assignedUserId         String?
   leadSource             String                  @default("Website")
-  notes                  String?                 
+  notes                  String?                 @db.NVarChar(Max)
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   slaStatus              String                  @default("Pending")
@@ -856,7 +856,7 @@ model Lead {
   industryType           String?
   isDuplicateOf          String?
   leadScore              Int                     @default(0)
-  lostReason             String?                 
+  lostReason             String?                 @db.NVarChar(Max)
   lostReasonRefId        String?
   callLogs               CallLog[]
   communicationLogs      CommunicationLog[]
@@ -884,7 +884,7 @@ model LeadOwnerHistory {
   fromUserId    String?
   toUserId      String?
   changedById   String?
-  reason        String?  
+  reason        String?  @db.NVarChar(Max)
   timestamp     DateTime @default(now())
   changedByUser User?    @relation("OwnerHistoryChangedBy", fields: [changedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   fromUser      User?    @relation("OwnerHistoryFrom", fields: [fromUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -904,10 +904,10 @@ model CommunicationLog {
   channel                String
   direction              String
   status                 String
-  content                String                  
+  content                String                  @db.NVarChar(Max)
   sentByUserId           String?
   sentAt                 DateTime                @default(now())
-  agenda                 String?                 
+  agenda                 String?                 @db.NVarChar(Max)
   companyId              String?
   dealId                 String?
   deletedAt              DateTime?
@@ -916,7 +916,7 @@ model CommunicationLog {
   location               String?
   meetingDate            DateTime?
   mode                   String?
-  outcome                String?                 
+  outcome                String?                 @db.NVarChar(Max)
   followUpId             String?
   attendees              ActivityAttendee[]
   competitorInvolvements CompetitorInvolvement[] @relation("CompetitorInvolvementActivity")
@@ -955,7 +955,7 @@ model SupportTicket {
   ticketNumber   String   @unique
   customerId     String
   title          String
-  description    String   
+  description    String   @db.NVarChar(Max)
   priority       String   @default("Medium")
   status         String   @default("Open")
   assignedUserId String?
@@ -975,10 +975,10 @@ model Proposal {
   customerId     String
   dealId         String?
   title          String
-  description    String?           
+  description    String?           @db.NVarChar(Max)
   value          Float             @default(0.0)
   validUntil     DateTime
-  proposalPdfUrl String?           
+  proposalPdfUrl String?           @db.NVarChar(Max)
   status         String            @default("Draft")
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
@@ -1001,10 +1001,10 @@ model ProposalVersion {
   proposalId     String
   versionNumber  Int
   title          String
-  description    String?  
+  description    String?  @db.NVarChar(Max)
   value          Float
   validUntil     DateTime
-  proposalPdfUrl String?  
+  proposalPdfUrl String?  @db.NVarChar(Max)
   status         String
   changedById    String
   createdAt      DateTime @default(now())
@@ -1021,7 +1021,7 @@ model ApprovalHistory {
   resolvedById    String?
   discountPercent Float     @default(0)
   status          String
-  remarks         String?   
+  remarks         String?   @db.NVarChar(Max)
   previousStatus  String?
   createdAt       DateTime  @default(now())
   resolvedAt      DateTime?
@@ -1104,7 +1104,7 @@ model LeadSource {
 
 model Note {
   id          String    @id @default(uuid())
-  content     String    
+  content     String    @db.NVarChar(Max)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   createdById String
@@ -1129,7 +1129,7 @@ model Contact {
   company                String?
   title                  String?
   status                 String                  @default("Active")
-  notes                  String?                 
+  notes                  String?                 @db.NVarChar(Max)
   ownerId                String
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
@@ -1168,7 +1168,7 @@ model Contact {
 model Task {
   id                 String        @id @default(uuid())
   title              String
-  description        String?       
+  description        String?       @db.NVarChar(Max)
   status             String        @default("Open")
   priority           String        @default("Medium")
   dueDate            DateTime?
@@ -1182,7 +1182,7 @@ model Task {
   taskCode           String?
   dealId             String?
   assignedBy         String?
-  cancellationReason String?       
+  cancellationReason String?       @db.NVarChar(Max)
   completedAt        DateTime?
   AssignedBy         User?         @relation("TaskAssignedBy", fields: [assignedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   User               User          @relation(fields: [assignedTo], references: [id], onUpdate: NoAction)
@@ -1205,10 +1205,10 @@ model ProductCategory {
   companyId              String?
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
-  defaultSpecifications  String?           
+  defaultSpecifications  String?           @db.NVarChar(Max)
   parentCategoryId       String?
-  defaultOverheadPercent Float           @default(0) 
-  defaultMarginPercent   Float           @default(0) 
+  defaultOverheadPercent Decimal           @default(0) @db.Decimal(5, 2)
+  defaultMarginPercent   Decimal           @default(0) @db.Decimal(5, 2)
   products               Product[]
   company                Company?          @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   parentCategory         ProductCategory?  @relation("CategoryHierarchy", fields: [parentCategoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1224,7 +1224,7 @@ model Product {
   productCode        String
   name               String
   categoryId         String?
-  description        String?                
+  description        String?                @db.NVarChar(Max)
   unit               String?
   basePrice          Float?
   isActive           Boolean                @default(true)
@@ -1236,7 +1236,7 @@ model Product {
   updatedAt          DateTime               @updatedAt
   minOrderQuantity   Float?
   productType        String?
-  productImageUrl    String?                
+  productImageUrl    String?                @db.NVarChar(Max)
   category           ProductCategory?       @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   company            Company?               @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   specifications     ProductSpecification[]
@@ -1316,12 +1316,12 @@ model RFQ {
   productId              String?
   status                 String                  @default("New")
   receivedDate           DateTime                @default(now())
-  requirementDetails     String?                 
+  requirementDetails     String?                 @db.NVarChar(Max)
   targetPrice            Float?
   deliveryDate           DateTime?
   quantity               Float?
   assignedUserId         String?
-  notes                  String?                 
+  notes                  String?                 @db.NVarChar(Max)
   companyId              String?
   deletedAt              DateTime?
   deletedById            String?
@@ -1376,23 +1376,23 @@ model Quotation {
   totalAmount              Float                       @default(0)
   discountPercent          Float                       @default(0)
   finalAmount              Float                       @default(0)
-  overallMarginPercent     Float?                    
-  termsAndConditions       String?                     
+  overallMarginPercent     Decimal?                    @db.Decimal(8, 2)
+  termsAndConditions       String?                     @db.NVarChar(Max)
   sentAt                   DateTime?
   acceptedAt               DateTime?
   rejectedAt               DateTime?
-  rejectionReason          String?                     
+  rejectionReason          String?                     @db.NVarChar(Max)
   createdById              String
   companyId                String?
   deletedAt                DateTime?
   deletedById              String?
   createdAt                DateTime                    @default(now())
   updatedAt                DateTime                    @updatedAt
-  deliveryTerms            String?                     
+  deliveryTerms            String?                     @db.NVarChar(Max)
   freightTerms             String?
   leadTimeDays             Int?
-  paymentTerms             String?                     
-  pdfUrl                   String?                     
+  paymentTerms             String?                     @db.NVarChar(Max)
+  pdfUrl                   String?                     @db.NVarChar(Max)
   revisionNumber           Int                         @default(1)
   subtotal                 Float                       @default(0)
   taxAmount                Float                       @default(0)
@@ -1401,7 +1401,7 @@ model Quotation {
   negotiationId            String?
   parentQuotationId        String?
   currentRound             Int                         @default(0)
-  holdReason               String?                     
+  holdReason               String?                     @db.NVarChar(Max)
   holdAt                   DateTime?
   negotiations             Negotiation[]
   purchaseOrders           PurchaseOrder[]
@@ -1448,8 +1448,8 @@ model QuotationItem {
   lineTotal          Float                     @default(0)
   taxPercent         Float                     @default(18)
   unit               String?
-  costBasisUnitPrice Float?                  
-  marginPercent      Float?                  
+  costBasisUnitPrice Decimal?                  @db.Decimal(12, 2)
+  marginPercent      Decimal?                  @db.Decimal(8, 2)
   priceSource        String                    @default("RFQCosting")
   quantityBreakId    String?
   product            Product?                  @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1522,9 +1522,9 @@ model SampleRequest {
   rejectedDate     DateTime?
   revisionDate     DateTime?
   quantity         Float
-  specifications   String?   
-  customerFeedback String?   
-  revisionNotes    String?   
+  specifications   String?   @db.NVarChar(Max)
+  customerFeedback String?   @db.NVarChar(Max)
+  revisionNotes    String?   @db.NVarChar(Max)
   trackingNumber   String?
   assignedUserId   String?
   approvedById     String?
@@ -1565,11 +1565,11 @@ model Negotiation {
   finalAmount            Float?
   discountRequested      Float                   @default(0)
   discountApproved       Float?
-  customerDemands        String?                 
-  internalNotes          String?                 
+  customerDemands        String?                 @db.NVarChar(Max)
+  internalNotes          String?                 @db.NVarChar(Max)
   negotiationType        String?
   negotiationReason      String?
-  discussionNotes        String?                 
+  discussionNotes        String?                 @db.NVarChar(Max)
   outcome                String?
   closedAt               DateTime?
   assignedUserId         String?
@@ -1577,8 +1577,8 @@ model Negotiation {
   companyId              String?
   deletedAt              DateTime?
   deletedById            String?
-  costBasisUnitPrice     Float?                
-  overallMarginPercent   Float?                
+  costBasisUnitPrice     Decimal?                @db.Decimal(18, 2)
+  overallMarginPercent   Decimal?                @db.Decimal(8, 2)
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   approvedBy             User?                   @relation("ApprovedNegotiations", fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1613,7 +1613,7 @@ model NegotiationRevision {
   discountPercent           Float       @default(0)
   cumulativeDiscountPercent Float       @default(0)
   submittedAgainstRound     Int         @default(0)
-  reason                    String?     
+  reason                    String?     @db.NVarChar(Max)
   status                    String      @default("Pending")
   createdById               String
   approvedById              String?
@@ -1651,30 +1651,30 @@ model PurchaseOrder {
   taxAmount           Float               @default(0)
   paymentTerms        String?
   deliveryTerms       String?
-  shippingAddress     String?             
-  billingAddress      String?             
-  notes               String?             
+  shippingAddress     String?             @db.NVarChar(Max)
+  billingAddress      String?             @db.NVarChar(Max)
+  notes               String?             @db.NVarChar(Max)
   assignedUserId      String?
   companyId           String?
   deletedAt           DateTime?
   deletedById         String?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
-  erpPayload          String?             
+  erpPayload          String?             @db.NVarChar(Max)
   erpReferenceNumber  String?
-  erpResponse         String?             
+  erpResponse         String?             @db.NVarChar(Max)
   erpSyncStatus       String?
   erpSyncedAt         DateTime?
-  poDocumentUrl       String?             
-  specialInstructions String?             
-  validationChecklist String?             
+  poDocumentUrl       String?             @db.NVarChar(Max)
+  specialInstructions String?             @db.NVarChar(Max)
+  validationChecklist String?             @db.NVarChar(Max)
   quotationFinalAmount Float?             @default(0)
   amountReconciled    Boolean             @default(false)
   approvedAt          DateTime?
   approvedById        String?
-  rejectionReason     String?             
+  rejectionReason     String?             @db.NVarChar(Max)
   onHoldAt            DateTime?
-  onHoldReason        String?             
+  onHoldReason        String?             @db.NVarChar(Max)
   approvedBy          User?               @relation("ApprovedPurchaseOrders", fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedUser        User?               @relation("AssignedPurchaseOrders", fields: [assignedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   company             Company?            @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1722,12 +1722,12 @@ model CRMDocument {
   documentType     String
   entityType       String
   entityId         String
-  fileUrl          String        
+  fileUrl          String        @db.NVarChar(Max)
   fileSize         Int?
   mimeType         String?
   version          Int           @default(1)
-  description      String?       
-  tags             String?       
+  description      String?       @db.NVarChar(Max)
+  tags             String?       @db.NVarChar(Max)
   uploadedById     String
   companyId        String?
   deletedAt        DateTime?
@@ -1764,8 +1764,8 @@ model ApprovalRequest {
   status            String    @default("Pending")
   requestedAmount   Float?
   requestedDiscount Float?
-  justification     String?   
-  remarks           String?   
+  justification     String?   @db.NVarChar(Max)
+  remarks           String?   @db.NVarChar(Max)
   requestedById     String
   resolvedById      String?
   resolvedAt        DateTime?
@@ -1790,7 +1790,7 @@ model EmailTemplate {
   id        String   @id @default(uuid())
   name      String
   subject   String
-  body      String   
+  body      String   @db.NVarChar(Max)
   module    String
   isActive  Boolean  @default(true)
   companyId String?
@@ -1810,14 +1810,14 @@ model WelcomeEmailLog {
   sentAt         DateTime @default(now())
   companyId      String
   userId         String
-  errorDetails   String?  
+  errorDetails   String?  @db.NVarChar(Max)
   createdAt      DateTime @default(now())
 }
 
 model WhatsAppTemplate {
   id        String   @id @default(uuid())
   name      String
-  message   String   
+  message   String   @db.NVarChar(Max)
   module    String
   isActive  Boolean  @default(true)
   companyId String?
@@ -1833,9 +1833,9 @@ model Competitor {
   id                   String                  @id @default(uuid())
   name                 String
   website              String?
-  description          String?                 
-  strengths            String?                 
-  weaknesses           String?                 
+  description          String?                 @db.NVarChar(Max)
+  strengths            String?                 @db.NVarChar(Max)
+  weaknesses           String?                 @db.NVarChar(Max)
   isActive             Boolean                 @default(true)
   companyId            String?
   company              Company?                @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1856,9 +1856,9 @@ model CompetitorProduct {
   id           String                  @id @default(uuid())
   competitorId String
   name         String
-  description  String?                 
+  description  String?                 @db.NVarChar(Max)
   priceRange   String?
-  ourAdvantage String?                 
+  ourAdvantage String?                 @db.NVarChar(Max)
   createdAt    DateTime                @default(now())
   updatedAt    DateTime                @updatedAt
   competitor   Competitor              @relation(fields: [competitorId], references: [id], onDelete: Cascade)
@@ -1876,8 +1876,8 @@ model LostDealAnalysis {
   lossReason         LossReason? @relation(fields: [lossReasonId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   competitorWonPrice Float?
   ourFinalPrice      Float?
-  lostReason         String?     
-  lessonsLearned     String?     
+  lostReason         String?     @db.NVarChar(Max)
+  lessonsLearned     String?     @db.NVarChar(Max)
   recordedById       String
   companyId          String?
   company            Company?    @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1909,7 +1909,7 @@ model Territory {
   id             String             @id @default(uuid())
   name           String
   region         String
-  states         String?            
+  states         String?            @db.NVarChar(Max)
   assignedUserId String?
   isActive       Boolean            @default(true)
   companyId      String?
@@ -1972,7 +1972,7 @@ model KeyAccount {
   strategicImportance String    @default("High")
   relationshipStatus  String?
   nextReviewDate      DateTime?
-  notes               String?   
+  notes               String?   @db.NVarChar(Max)
   companyId           String?
   company             Company?  @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   deletedAt           DateTime?
@@ -1991,7 +1991,7 @@ model LeadStatusHistory {
   fromStatus  String?
   toStatus    String
   changedById String?
-  notes       String?  
+  notes       String?  @db.NVarChar(Max)
   changedAt   DateTime @default(now())
   lead        Lead     @relation(fields: [leadId], references: [id], onUpdate: NoAction)
 
@@ -2005,7 +2005,7 @@ model AccountStatusHistory {
   fromStatus  String?
   toStatus    String
   changedById String?
-  notes       String?  
+  notes       String?  @db.NVarChar(Max)
   changedAt   DateTime @default(now())
   customer    Customer @relation(fields: [customerId], references: [id], onUpdate: NoAction)
 
@@ -2021,7 +2021,7 @@ model AccountCreditHistory {
   oldTermsDays   Int      @default(30)
   newTermsDays   Int      @default(30)
   approvedById   String?
-  notes          String?  
+  notes          String?  @db.NVarChar(Max)
   changedAt      DateTime @default(now())
   customer       Customer @relation(fields: [customerId], references: [id], onUpdate: NoAction)
 
@@ -2033,7 +2033,7 @@ model PlantLocation {
   id           String          @id @default(uuid())
   customerId   String
   locationName String
-  address      String          
+  address      String          @db.NVarChar(Max)
   city         String?
   state        String?
   pincode      String?
@@ -2055,14 +2055,14 @@ model PlantLocation {
 model RFQLineItem {
   id                    String                     @id @default(uuid())
   rfqId                 String
-  itemDescription       String                     
+  itemDescription       String                     @db.NVarChar(Max)
   productId             String?
   quantity              Float                      @default(1)
   unit                  String?
   targetPrice           Float?
   requestedDeliveryDate DateTime?
-  specifications        String?                    
-  notes                 String?                    
+  specifications        String?                    @db.NVarChar(Max)
+  notes                 String?                    @db.NVarChar(Max)
   displayOrder          Int                        @default(0)
   costingStatus         String                     @default("Pending")
   needsFeasibilityReview Boolean                   @default(false)
@@ -2094,7 +2094,7 @@ model RFQCostingSheet {
   otherCost         Float                     @default(0)
   computedUnitPrice Float                     @default(0)
   submittedById     String?
-  notes             String?                   
+  notes             String?                   @db.NVarChar(Max)
   createdAt         DateTime                  @default(now())
   rfq               RFQ                       @relation(fields: [rfqId], references: [id], onUpdate: NoAction)
   rfqLineItem       RFQLineItem               @relation(fields: [rfqLineItemId], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -2114,7 +2114,7 @@ model RFQStatusHistory {
   fromStatus  String?
   toStatus    String
   changedById String?
-  notes       String?  
+  notes       String?  @db.NVarChar(Max)
   changedAt   DateTime @default(now())
   changedBy   User?    @relation("ChangedRFQStatus", fields: [changedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   rfq         RFQ      @relation(fields: [rfqId], references: [id], onUpdate: NoAction)
@@ -2130,7 +2130,7 @@ model QuotationStatusHistory {
   fromStatus  String?
   toStatus    String
   changedById String?
-  notes       String?   
+  notes       String?   @db.NVarChar(Max)
   changedAt   DateTime  @default(now())
   changedBy   User?     @relation("ChangedQuotationStatus", fields: [changedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   quotation   Quotation @relation(fields: [quotationId], references: [id], onUpdate: NoAction)
@@ -2147,7 +2147,7 @@ model QuotationRevisionSnapshot {
   roundNumber     Int       @default(0)
   triggeredBy     String    @default("manual_edit")
   triggerRefId    String?
-  snapshotJson    String    
+  snapshotJson    String    @db.NVarChar(Max)
   subtotal        Float?
   taxAmount       Float?
   finalAmount     Float?
@@ -2171,7 +2171,7 @@ model QuotationApproval {
   approverId           String?
   status               String    @default("Pending")
   discountPercent      Float     @default(0)
-  notes                String?   
+  notes                String?   @db.NVarChar(Max)
   decidedAt            DateTime?
   createdAt            DateTime  @default(now())
   requiredApproverRole String?
@@ -2194,8 +2194,8 @@ model QuotationDocument {
   revisionNumber Int
   roundNumber    Int      @default(0)
   fileName       String
-  fileUrl        String   
-  snapshotJson   String?  
+  fileUrl        String   @db.NVarChar(Max)
+  snapshotJson   String?  @db.NVarChar(Max)
   fileSize       Int?
   generatedById  String
   generatedAt    DateTime @default(now())
@@ -2271,7 +2271,7 @@ model TaskComment {
   id          String   @id @default(uuid())
   taskId      String
   userId      String
-  commentText String   
+  commentText String   @db.NVarChar(Max)
   createdAt   DateTime @default(now())
   task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   user        User     @relation(fields: [userId], references: [id], onUpdate: NoAction)
@@ -2304,8 +2304,8 @@ model ReportSchedule {
   reportId     String
   frequency    String
   format       String
-  recipientIds String    
-  filtersJson  String?   
+  recipientIds String    @db.NVarChar(Max)
+  filtersJson  String?   @db.NVarChar(Max)
   isActive     Boolean   @default(true)
   lastRunAt    DateTime?
   createdById  String
@@ -2324,7 +2324,7 @@ model ReportExportLog {
   id           String   @id @default(uuid())
   reportId     String
   exportedById String
-  filtersJson  String?  
+  filtersJson  String?  @db.NVarChar(Max)
   format       String
   companyId    String?
   exportedAt   DateTime @default(now())
@@ -2357,24 +2357,24 @@ model CompetitorInvolvement {
   competitorStatus  String
   threatLevel       String
 
-  currentVendor            String? 
-  customerPainPoint        String? 
-  customerPreference       String? 
-  requiredFeatures         String? 
-  competitorStrengths      String? 
-  competitorWeaknesses     String? 
-  ourAdvantages            String? 
-  ourGaps                  String? 
-  technicalComparisonNotes String? 
-  demoFeedback             String? 
+  currentVendor            String? @db.NVarChar(Max)
+  customerPainPoint        String? @db.NVarChar(Max)
+  customerPreference       String? @db.NVarChar(Max)
+  requiredFeatures         String? @db.NVarChar(Max)
+  competitorStrengths      String? @db.NVarChar(Max)
+  competitorWeaknesses     String? @db.NVarChar(Max)
+  ourAdvantages            String? @db.NVarChar(Max)
+  ourGaps                  String? @db.NVarChar(Max)
+  technicalComparisonNotes String? @db.NVarChar(Max)
+  demoFeedback             String? @db.NVarChar(Max)
 
   competitorQuotedPrice     Float?
   ourQuotedPrice            Float?
-  commercialTermsComparison String? 
-  paymentTermsComparison    String? 
-  deliveryComparison        String? 
+  commercialTermsComparison String? @db.NVarChar(Max)
+  paymentTermsComparison    String? @db.NVarChar(Max)
+  deliveryComparison        String? @db.NVarChar(Max)
 
-  negotiationActionPlan      String? 
+  negotiationActionPlan      String? @db.NVarChar(Max)
   discountRequestedDueToComp Boolean @default(false)
   expectedCompetitorDiscount Float?
   discountApprovalStatus     String?
@@ -2383,9 +2383,9 @@ model CompetitorInvolvement {
   finalResult          String? @default("Open")
   selectedCompetitorId String?
   winLossReasonId      String?
-  secondaryReason      String? 
-  correctiveAction     String? 
-  managerReviewNotes   String? 
+  secondaryReason      String? @db.NVarChar(Max)
+  correctiveAction     String? @db.NVarChar(Max)
+  managerReviewNotes   String? @db.NVarChar(Max)
 
   createdById String
   updatedById String?
@@ -2421,7 +2421,7 @@ model CompetitorInvolvement {
 model ServiceCategory {
   id             String           @id @default(uuid())
   name           String
-  description    String?          
+  description    String?          @db.NVarChar(Max)
   isActive       Boolean          @default(true)
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -2438,7 +2438,7 @@ model ServiceCategory {
 model ComplaintType {
   id          String      @id @default(uuid())
   name        String
-  description String?     
+  description String?     @db.NVarChar(Max)
   categoryId  String?
   isActive    Boolean     @default(true)
   createdAt   DateTime    @default(now())
@@ -2451,7 +2451,7 @@ model ComplaintType {
 model DefectType {
   id          String   @id @default(uuid())
   name        String
-  description String?  
+  description String?  @db.NVarChar(Max)
   categoryId  String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -2482,7 +2482,7 @@ model ServiceStatus {
   module             String           @default("request")
   color              String
   order              Int
-  allowedTransitions String?           // stored as JSON
+  allowedTransitions String?          @db.NVarChar(Max) // stored as JSON
   isActive           Boolean          @default(true)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
@@ -2498,7 +2498,7 @@ model ServiceStatus {
 model ServiceTeam {
   id             String            @id @default(uuid())
   name           String
-  description    String?           
+  description    String?           @db.NVarChar(Max)
   managerId      String?
   isActive       Boolean           @default(true)
   createdAt      DateTime          @default(now())
@@ -2571,7 +2571,7 @@ model MaterialRate {
   id           String    @id @default(cuid())
   materialCode String
   materialName String
-  unitRate     Float   
+  unitRate     Decimal   @db.Decimal(12, 2)
   unit         String
   currency     String    @default("INR")
   validFrom    DateTime
@@ -2586,8 +2586,8 @@ model MaterialRate {
 model LaborRate {
   id         String    @id @default(cuid())
   workCenter String
-  hourlyRate Float   
-  setupRate  Float   @default(0) 
+  hourlyRate Decimal   @db.Decimal(12, 2)
+  setupRate  Decimal   @default(0) @db.Decimal(12, 2)
   currency   String    @default("INR")
   validFrom  DateTime
   validTo    DateTime?
@@ -2602,8 +2602,8 @@ model BOMItem {
   productId    String
   product      Product @relation(fields: [productId], references: [id])
   materialCode String
-  quantity     Float 
-  scrapPercent Float @default(0) 
+  quantity     Decimal @db.Decimal(12, 4)
+  scrapPercent Decimal @default(0) @db.Decimal(5, 2)
   companyId    String?
 
   @@index([productId])
@@ -2618,8 +2618,8 @@ model RoutingOperation {
   sequence      Int
   operationName String
   workCenter    String
-  cycleTimeMin  Float 
-  setupTimeMin  Float @default(0) 
+  cycleTimeMin  Decimal @db.Decimal(10, 3)
+  setupTimeMin  Decimal @default(0) @db.Decimal(10, 3)
   companyId     String?
 
   @@index([productId, sequence])
@@ -2646,7 +2646,7 @@ model RFQLineItemQuantityBreak {
 model ServiceRequest {
   id                 String    @id @default(uuid())
   title              String
-  description        String?   
+  description        String?   @db.NVarChar(Max)
   categoryId         String
   priorityId         String
   statusId           String
@@ -2669,8 +2669,13 @@ model ServiceRequest {
   assignedTeam     ServiceTeam?     @relation(fields: [assignedTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   deletedAt        DateTime?
+
+
   deletedById      String?
+
+
 
   visits ServiceVisit[]
   review ServiceReview? @relation("RequestReview")
@@ -2681,7 +2686,7 @@ model ServiceRequest {
 model Complaint {
   id                 String    @id @default(uuid())
   title              String
-  description        String?   
+  description        String?   @db.NVarChar(Max)
   categoryId         String
   complaintTypeId    String
   priorityId         String
@@ -2706,8 +2711,13 @@ model Complaint {
   assignedTeam     ServiceTeam?     @relation(fields: [assignedTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   deletedAt        DateTime?
+
+
   deletedById      String?
+
+
 
   visits ServiceVisit[]
   review ServiceReview? @relation("ComplaintReview")
@@ -2718,7 +2728,7 @@ model Complaint {
 model Defect {
   id                 String    @id @default(uuid())
   title              String
-  description        String?   
+  description        String?   @db.NVarChar(Max)
   categoryId         String
   defectTypeId       String
   priorityId         String
@@ -2741,8 +2751,13 @@ model Defect {
   assignedTeam     ServiceTeam?     @relation(fields: [assignedTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   deletedAt        DateTime?
+
+
   deletedById      String?
+
+
 
   visits ServiceVisit[]
   review ServiceReview? @relation("DefectReview")
@@ -2751,7 +2766,7 @@ model Defect {
 model Installation {
   id                 String    @id @default(uuid())
   title              String
-  description        String?   
+  description        String?   @db.NVarChar(Max)
   categoryId         String
   priorityId         String
   statusId           String
@@ -2772,8 +2787,13 @@ model Installation {
   assignedTeam     ServiceTeam?     @relation(fields: [assignedTeamId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
   deletedAt        DateTime?
+
+
   deletedById      String?
+
+
 
   visits ServiceVisit[]
   review ServiceReview? @relation("InstallationReview")
@@ -2782,12 +2802,12 @@ model Installation {
 model WarrantyClaim {
   id              String   @id @default(uuid())
   title           String
-  description     String?  
+  description     String?  @db.NVarChar(Max)
   customerId      String
   customerAssetId String
   statusId        String
   claimDate       DateTime @default(now())
-  resolution      String?  
+  resolution      String?  @db.NVarChar(Max)
   createdById     String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -2811,7 +2831,7 @@ model AMCContract {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  // â”€â”€ Entitlement plan fields (Feature 4) â”€â”€
+  // ── Entitlement plan fields (Feature 4) ──
   planTier                 String?  // e.g. "Basic", "Standard", "Premium"
   preventiveVisitsIncluded Int      @default(0)
   preventiveVisitsUsed     Int      @default(0)
@@ -2829,17 +2849,17 @@ model AMCContract {
 model ServiceVisit {
   id            String    @id @default(uuid())
   title         String
-  notes         String?   
+  notes         String?   @db.NVarChar(Max)
   statusId      String
   engineerId    String
   scheduledDate DateTime?
   checkInTime   DateTime?
   checkOutTime  DateTime?
-  outcomeNotes  String?   
+  outcomeNotes  String?   @db.NVarChar(Max)
   completedAt   DateTime?
 
-  // â”€â”€ Proof-of-work capture (Feature 3) â”€â”€
-  signatureUrl  String?   
+  // ── Proof-of-work capture (Feature 3) ──
+  signatureUrl  String?   @db.NVarChar(Max)
 
   // Direct customer/asset link (for standalone visits not tied to a source record)
   customerId      String?
@@ -2867,7 +2887,9 @@ model ServiceVisit {
   project      Project?        @relation("ProjectVisits", fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy    User            @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   deletedAt    DateTime?
+
   deletedById  String?
+
   review       ServiceReview?  @relation("VisitReview")
   partsUsed    ServicePartUsed[]
   photos       ServiceVisitPhoto[]
@@ -2918,7 +2940,7 @@ model ActivityEvent {
   toStatus     String?
   roundNumber  Int?
   actorId      String?
-  metadata     String?  
+  metadata     String?  @db.NVarChar(Max)
   createdAt    DateTime @default(now())
 
   @@index([entityType, entityId, createdAt])
@@ -2929,7 +2951,7 @@ model ActivityEvent {
 model ServiceReview {
   id                 String    @id @default(uuid())
   rating             Int?
-  comment            String?   
+  comment            String?   @db.NVarChar(Max)
   status             String    @default("Pending") // Pending | Submitted
   isEscalation       Boolean   @default(false)
   escalationResolved Boolean   @default(false)
@@ -2975,7 +2997,7 @@ model Project {
   status      String    @default("Active") // Active | Completed | On Hold | Cancelled
   startDate   DateTime?
   endDate     DateTime?
-  notes       String?   
+  notes       String?   @db.NVarChar(Max)
   createdById String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -3048,7 +3070,7 @@ model ServicePartUsed {
 model ServiceVisitPhoto {
   id             String   @id @default(uuid())
   serviceVisitId String
-  photoUrl       String   
+  photoUrl       String   @db.NVarChar(Max)
   caption        String?
   createdAt      DateTime @default(now())
 
@@ -3059,7 +3081,7 @@ model ServiceVisitPhoto {
 
 // ==========================================
 // PART MOVEMENT LEDGER (Spare Parts Inventory v1)
-// Append-only ledger â€” never edit past rows, only add new ones.
+// Append-only ledger — never edit past rows, only add new ones.
 // ==========================================
 
 model PartMovement {
