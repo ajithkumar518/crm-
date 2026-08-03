@@ -46,6 +46,7 @@ export default function ServiceComplaintsPage() {
     engineer: { user: { name: item.assignedEngineer?.user?.name || "Unassigned" } },
     status: item.status?.name || "Unknown",
     priority: { name: item.priority?.name || "Unknown" },
+    priorityId: item.priority?.name || "Unknown",
     complaintType: { name: item.complaintType?.name || "Unknown" },
     complaintTypeId: item.complaintType?.name || "Unknown",
     details: item.description || "", // fix details binding
@@ -290,16 +291,17 @@ export default function ServiceComplaintsPage() {
           statusId: formData.statusId || defaultStatusObj?.value,
           customerId: derivedCustomerId,
           customerAssetId: formData.assetId,
-          assignedTeamId: formData.assignedTeamId,
-          assignedEngineerId: formData.assignedEngineerId,
+          assignedTeamId: formData.teamId,
+          assignedEngineerId: formData.engineerId,
           createdById,
         }),
       });
  
-      if (res.ok) {
-        await fetchData();
-        setIsFormOpen(false);
-      } else {
+        if (res.ok) {
+          await fetchData();
+          setIsFormOpen(false);
+          toast.success("Complaint created successfully");
+        } else {
         const err = await res.json();
         toast.error(`Failed to create: ${err.error || "Unknown error"}`);
       }

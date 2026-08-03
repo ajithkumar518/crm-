@@ -205,12 +205,15 @@ export default function ServiceVisitsPage() {
   const handleCreateNew = async (formData: any) => {
     try {
       const createdById = user?.id || "user-1";
+      const inProgressStatus = refData.ServiceStatus?.find((s: any) => s.name === "In Progress")?.value;
+      const isWalkIn = formData.statusId === inProgressStatus;
+
       const body: any = {
         title: formData.title || "Service Visit",
         notes: formData.notes,
         statusId: formData.statusId || refData.ServiceStatus?.[0]?.value,
         engineerId: formData.engineerId || refData.ServiceEngineer?.[0]?.value,
-        scheduledDate: formData.visitDate || new Date().toISOString(),
+        scheduledDate: isWalkIn ? new Date().toISOString() : (formData.visitDate || new Date().toISOString()),
         customerId: formData.customerId,
         customerAssetId: formData.assetId,
         createdById,
@@ -231,12 +234,14 @@ export default function ServiceVisitsPage() {
         await fetchData();
         await fetchStats();
         setIsFormOpen(false);
+        toast.success("Service visit created successfully");
         if (sourceType) router.replace("/service/visits");
       } else {
         const err = await res.json();
         toast.error(`Failed to create: ${err.error || "Unknown error"}`);
       }
     } catch (e) {
+      toast.error("An unexpected error occurred");
       console.error(e);
     }
   };
@@ -440,7 +445,11 @@ export default function ServiceVisitsPage() {
       accessorKey: "visitDate",
       cell: (row) => (
         <span className="text-xs text-[var(--text-secondary)] whitespace-nowrap">
-          {row.visitDate ? new Date(row.visitDate).toLocaleDateString() + " " + new Date(row.visitDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "-"}
+          {row.visitDate ? (
+            String(row.visitDate).endsWith("T00:00:00.000Z")
+              ? new Date(row.visitDate).toLocaleDateString()
+              : new Date(row.visitDate).toLocaleDateString() + " " + new Date(row.visitDate).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+          ) : "-"}
         </span>
       ),
     },
@@ -993,7 +1002,11 @@ export default function ServiceVisitsPage() {
               <div className="space-y-1">
                 <span className="text-[var(--text-secondary)] block font-semibold">Visit Date</span>
                 <span className="text-[var(--text-primary)] block font-medium">
-                  {selectedRow.scheduledDate ? new Date(selectedRow.scheduledDate).toLocaleString() : "-"}
+                  {selectedRow.scheduledDate ? (
+                    String(selectedRow.scheduledDate).endsWith("T00:00:00.000Z")
+                      ? new Date(selectedRow.scheduledDate).toLocaleDateString()
+                      : new Date(selectedRow.scheduledDate).toLocaleString()
+                  ) : "-"}
                 </span>
               </div>
               <div className="space-y-1">

@@ -498,7 +498,8 @@ model FollowUp {
   updatedAt         DateTime           @updatedAt
   visitId           String?
   visitType         String?
-  completedAt       DateTime?
+  completedAt   DateTime?
+    isEmergency   Boolean   @default(false)
   notes             String?            @db.NVarChar(Max)
   dueDate           DateTime?
   reminderAt        DateTime?
@@ -692,7 +693,8 @@ model OpportunityDetail {
   technicalConstraints    String?   @db.NVarChar(Max)
   urgencyPriority         String?
   userRolesPermissions    String?   @db.NVarChar(Max)
-  requirementCompletedAt  DateTime?
+  requirementcompletedAt   DateTime?
+    isEmergency   Boolean   @default(false)
   sampleRequested         Boolean   @default(false)
   sampleApproved          Boolean   @default(false)
   sampleApprovedDate      DateTime?
@@ -1183,7 +1185,8 @@ model Task {
   dealId             String?
   assignedBy         String?
   cancellationReason String?       @db.NVarChar(Max)
-  completedAt        DateTime?
+  completedAt   DateTime?
+    isEmergency   Boolean   @default(false)
   AssignedBy         User?         @relation("TaskAssignedBy", fields: [assignedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   User               User          @relation(fields: [assignedTo], references: [id], onUpdate: NoAction)
   Contact            Contact?      @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -2698,6 +2701,7 @@ model Complaint {
   assignedEngineerId String?
   createdById        String
   closedAt           DateTime?
+  isEscalated        Boolean   @default(false)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -2720,6 +2724,7 @@ model Complaint {
 
 
   visits ServiceVisit[]
+  defects Defect[] @relation("ComplaintDefects")
   review ServiceReview? @relation("ComplaintReview")
 
   @@index([projectId])
@@ -2739,6 +2744,7 @@ model Defect {
   assignedEngineerId String?
   createdById        String
   closedAt           DateTime?
+  sourceComplaintId  String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -2760,6 +2766,7 @@ model Defect {
 
 
   visits ServiceVisit[]
+  sourceComplaint Complaint? @relation("ComplaintDefects", fields: [sourceComplaintId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   review ServiceReview? @relation("DefectReview")
 }
 
@@ -2857,6 +2864,7 @@ model ServiceVisit {
   checkOutTime  DateTime?
   outcomeNotes  String?   @db.NVarChar(Max)
   completedAt   DateTime?
+    isEmergency   Boolean   @default(false)
 
   // ── Proof-of-work capture (Feature 3) ──
   signatureUrl  String?   @db.NVarChar(Max)

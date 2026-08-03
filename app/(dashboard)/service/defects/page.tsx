@@ -96,7 +96,7 @@ export default function ServiceDefectsPage() {
     if (selectedRow) {
       const newStatusObj = refData.ServiceStatus?.find((s: any) => s.label === newStatusName);
       if (!newStatusObj) return;
- 
+
       try {
         const res = await fetch(`/api/service/defects/${selectedRow.id}`, {
           method: 'PATCH',
@@ -104,17 +104,21 @@ export default function ServiceDefectsPage() {
           body: JSON.stringify({ statusId: newStatusObj.value }),
         });
         if (res.ok) {
+          toast.success("Status updated successfully");
           await fetchData();
+        } else {
+          toast.error("Failed to update status");
         }
       } catch (e) {
         console.error(e);
+        toast.error("An error occurred");
       }
     }
   };
  
   const handleTriggerAction = async (actionId: string) => {
     if (!selectedRow) return;
- 
+
     if (actionId === "investigate") {
       const statusObj = refData.ServiceStatus?.find((s: any) => s.label === "Under Investigation");
       if (!statusObj) return;
@@ -124,9 +128,15 @@ export default function ServiceDefectsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ statusId: statusObj.value }),
         });
-        if (res.ok) await fetchData();
+        if (res.ok) {
+          toast.success("Defect is now under investigation");
+          await fetchData();
+        } else {
+          toast.error("Failed to update status");
+        }
       } catch (e) {
         console.error(e);
+        toast.error("An error occurred");
       }
     } else if (actionId === "corrective") {
       setCorrectiveAction("");
@@ -158,11 +168,15 @@ export default function ServiceDefectsPage() {
         }),
       });
       if (res.ok) {
+        toast.success("Corrective action logged successfully");
         setIsCorrectiveOpen(false);
         await fetchData();
+      } else {
+        toast.error("Failed to log corrective action");
       }
     } catch (e) {
       console.error(e);
+      toast.error("An error occurred");
     }
   };
  
@@ -185,11 +199,15 @@ export default function ServiceDefectsPage() {
         }),
       });
       if (res.ok) {
+        toast.success("Defect closed successfully");
         setIsCloseOpen(false);
         await fetchData();
+      } else {
+        toast.error("Failed to close defect");
       }
     } catch (e) {
       console.error(e);
+      toast.error("An error occurred");
     }
   };
  
@@ -211,11 +229,15 @@ export default function ServiceDefectsPage() {
         }),
       });
       if (res.ok) {
+        toast.success("Defect reopened successfully");
         setIsReopenOpen(false);
         await fetchData();
+      } else {
+        toast.error("Failed to reopen defect");
       }
     } catch (e) {
       console.error(e);
+      toast.error("An error occurred");
     }
   };
  
@@ -278,6 +300,7 @@ export default function ServiceDefectsPage() {
       if (res.ok) {
         await fetchData();
         setIsFormOpen(false);
+        toast.success("Defect created successfully");
       } else {
         const err = await res.json();
         toast.error(`Failed to create: ${err.error || "Unknown error"}`);

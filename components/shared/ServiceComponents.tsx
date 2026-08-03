@@ -384,7 +384,7 @@ export function LinkedVisitsPanel({ visits }: LinkedVisitsPanelProps) {
               </span>
             </div>
             <div className="text-[11px] text-[var(--text-secondary)] flex flex-col gap-1">
-              <span>Date: {visit.scheduledDate ? new Date(visit.scheduledDate).toLocaleString() : "Not scheduled"}</span>
+              <span>Date: {visit.scheduledDate ? (String(visit.scheduledDate).endsWith("T00:00:00.000Z") ? new Date(visit.scheduledDate).toLocaleDateString() : new Date(visit.scheduledDate).toLocaleString()) : "Not scheduled"}</span>
               <span>Engineer: {visit.engineer?.user?.name || "Unassigned"}</span>
             </div>
           </div>

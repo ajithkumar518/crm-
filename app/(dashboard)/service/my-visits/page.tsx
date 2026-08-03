@@ -283,7 +283,11 @@ export default function MyVisitsPage() {
                       <span className="text-[var(--text-secondary)] block">Schedule Time</span>
                       <span className="text-[var(--text-primary)] font-bold flex items-center gap-1">
                         <Calendar size={11} className="text-slate-400" />
-                        {visit.scheduledDate ? new Date(visit.scheduledDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "Not Set"}
+                        {visit.scheduledDate ? (
+                          String(visit.scheduledDate).endsWith("T00:00:00.000Z")
+                            ? new Date(visit.scheduledDate).toLocaleDateString([], { dateStyle: 'short' })
+                            : new Date(visit.scheduledDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+                        ) : "Not Set"}
                       </span>
                     </div>
                     <div className="space-y-0.5">

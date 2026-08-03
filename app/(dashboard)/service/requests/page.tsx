@@ -238,8 +238,8 @@ export default function ServiceRequestsPage() {
           statusId: formData.statusId || defaultStatusObj?.value,
           customerId: derivedCustomerId,
           customerAssetId: formData.assetId,
-          assignedTeamId: formData.assignedTeamId,
-          assignedEngineerId: formData.assignedEngineerId,
+          assignedTeamId: formData.teamId,
+          assignedEngineerId: formData.engineerId,
           createdById,
         }),
       });
@@ -247,6 +247,7 @@ export default function ServiceRequestsPage() {
       if (res.ok) {
         await fetchData();
         setIsFormOpen(false);
+        toast.success("Service request created successfully");
       } else {
         const err = await res.json();
         toast.error(`Failed to create: ${err.error || "Unknown error"}`);

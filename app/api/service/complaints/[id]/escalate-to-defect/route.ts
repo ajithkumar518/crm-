@@ -73,6 +73,7 @@ export async function POST(request: Request, { params }: { params: any }) {
           assignedTeamId: complaint.assignedTeamId || null,
           assignedEngineerId: complaint.assignedEngineerId || null,
           createdById: user.id,
+          sourceComplaintId: id,
         },
         include: {
           customer: true,
@@ -91,6 +92,7 @@ export async function POST(request: Request, { params }: { params: any }) {
           where: { id },
           data: {
             statusId: escalatedStatus.id,
+            isEscalated: true,
             description: `${complaint.description || ""}\n\n[Escalated to Defect: DEF-${newDefect.id.substring(0, 8).toUpperCase()}]`,
           },
         });

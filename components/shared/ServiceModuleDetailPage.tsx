@@ -71,7 +71,7 @@ export default function ServiceModuleDetailPage({
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono tracking-wider text-[var(--text-muted)] block">
-                {data.requestCode || data.complaintCode || data.id}
+                {data.requestCode || data.complaintCode || data.installationCode || data.defectCode || data.id}
               </span>
               {data.dueDate && (
                 <SLACountdownBadge dueDate={data.dueDate} status={currentStatus} />
@@ -185,7 +185,9 @@ export default function ServiceModuleDetailPage({
                     else if (fid === "teamId") displayVal = data.team?.name;
                     else if (fid === "engineerId") displayVal = data.engineer?.user?.name;
                     else if (fid === "categoryId") displayVal = data.category?.name;
-                    else if (fid === "priorityId") displayVal = data.priority?.name;
+                    else if (fid === "priorityId") displayVal = typeof data.priority === 'string' ? data.priority : data.priority?.name;
+                    else if (fid === "defectTypeId") displayVal = data.defectType?.name;
+                    else if (fid === "complaintTypeId") displayVal = data.complaintType?.name || (typeof data.complaintTypeId === 'string' && !data.complaintTypeId.includes('-') ? data.complaintTypeId : null);
                   }
 
                   if (fid === "createdAt" || fid === "updatedAt") {
