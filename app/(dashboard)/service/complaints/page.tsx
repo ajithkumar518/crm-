@@ -45,8 +45,9 @@ export default function ServiceComplaintsPage() {
     team: { name: item.assignedTeam?.name || "Unassigned" },
     engineer: { user: { name: item.assignedEngineer?.user?.name || "Unassigned" } },
     status: item.status?.name || "Unknown",
-    priority: item.priority?.name || "Unknown",
+    priority: { name: item.priority?.name || "Unknown" },
     complaintType: { name: item.complaintType?.name || "Unknown" },
+    complaintTypeId: item.complaintType?.name || "Unknown",
     details: item.description || "", // fix details binding
   });
  

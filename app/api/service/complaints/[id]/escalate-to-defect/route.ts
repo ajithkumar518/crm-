@@ -34,15 +34,10 @@ export async function POST(request: Request, { params }: { params: any }) {
       return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
     }
 
-    // Find or create "Escalated to Defect" status for complaints
+    // Mark complaint as "Closed" when escalated to a defect
     let escalatedStatus = await prisma.serviceStatus.findFirst({
-      where: { name: "Escalated to Defect", module: "complaint" },
+      where: { name: "Closed", module: "complaint" },
     });
-    if (!escalatedStatus) {
-      escalatedStatus = await prisma.serviceStatus.findFirst({
-        where: { name: "Escalated", module: "complaint" },
-      });
-    }
 
     // Find "New" status for defects
     const defectNewStatus = await prisma.serviceStatus.findFirst({
