@@ -401,7 +401,7 @@ export default function WarrantyAMCPage() {
 
         <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 backdrop-blur-md space-y-2">
           <span className="text-[10px] font-mono tracking-wider text-[var(--text-muted)]">
-            {isAMC ? data.contractNumber : data.id}
+            {isAMC ? data.contractNumber : `CLM-${data.id.substring(0, 8).toUpperCase()}`}
           </span>
           <h2 className="text-xl font-black text-[var(--text-primary)]">
             {isAMC ? `AMC: ${data.customerAsset?.productName}` : data.title}
