@@ -44,7 +44,7 @@ export default function ServiceRequestsPage() {
     return {
       ...item,
       requestCode: `REQ-${item.id.substring(0, 8).toUpperCase()}`,
-      customer: { name: item.customer?.name || "Unknown" },
+      customer: item.customer ? { ...item.customer, name: item.customer.name || "Unknown" } : { name: "Unknown" },
       asset: item.customerAsset ? {
         productName: item.customerAsset.productName || "Unknown",
         purchaseDate: item.customerAsset.purchaseDate,
@@ -172,12 +172,14 @@ export default function ServiceRequestsPage() {
       if (res.ok) {
         setIsAssignOpen(false);
         await fetchData();
+        toast.success("Request assigned successfully");
       } else {
         const err = await res.json();
         toast.error(`Failed to assign: ${err.error || "Unknown error"}`);
       }
     } catch (e) {
       console.error(e);
+      toast.error("Error assigning request");
     }
   };
  
@@ -210,12 +212,14 @@ export default function ServiceRequestsPage() {
       if (res.ok) {
         setIsCloseOpen(false);
         await fetchData();
+        toast.success("Request closed successfully");
       } else {
         const err = await res.json();
         toast.error(`Failed to close: ${err.error || "Unknown error"}`);
       }
     } catch (e) {
       console.error(e);
+      toast.error("Error closing request");
     }
   };
  

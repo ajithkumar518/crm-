@@ -85,9 +85,14 @@ export default function ServiceReviewsPage() {
         });
         if (res.ok) {
           await fetchData();
+          toast.success("Escalation resolved successfully");
+        } else {
+          const err = await res.json();
+          toast.error(`Failed to resolve escalation: ${err.error || "Unknown error"}`);
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        toast.error(`Error resolving escalation: ${e.message}`);
       }
     }
   };

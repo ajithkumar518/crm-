@@ -33,6 +33,7 @@ export default function WarrantyAMCPage() {
 
   // AMC Create/Edit modal state
   const [showAmcModal, setShowAmcModal] = useState(false);
+  const [isPreparingModal, setIsPreparingModal] = useState(false);
   const [editingAmc, setEditingAmc] = useState<any>(null);
   const [customers, setCustomers] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
@@ -93,6 +94,7 @@ export default function WarrantyAMCPage() {
   }, [fetchData]);
 
   const openCreateAmcModal = useCallback(async () => {
+    setIsPreparingModal(true);
     setEditingAmc(null);
     setAmcForm({
       contractNumber: `AMC-${Date.now().toString().substring(0, 8)}`,
@@ -112,16 +114,17 @@ export default function WarrantyAMCPage() {
       const [custRes, assetRes, refRes] = await Promise.all([
         fetch("/api/customer-master?pageSize=500"),
         fetch("/api/service/assets"),
-        fetch("/api/service/reference-data"),
+        fetch("/api/service/reference-data?module=contract"),
       ]);
       if (custRes.ok) { const j = await custRes.json(); setCustomers(j.data || j || []); }
       if (assetRes.ok) { const j = await assetRes.json(); setAssets(j.data || []); }
       if (refRes.ok) { const j = await refRes.json(); setStatuses(j.ServiceStatus || []); }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); } finally { setIsPreparingModal(false); }
     setShowAmcModal(true);
   }, []);
 
   const openEditAmcModal = useCallback(async (contract: any) => {
+    setIsPreparingModal(true);
     setEditingAmc(contract);
     setAmcForm({
       contractNumber: contract.contractNumber,
@@ -141,12 +144,12 @@ export default function WarrantyAMCPage() {
       const [custRes, assetRes, refRes] = await Promise.all([
         fetch("/api/customer-master?pageSize=500"),
         fetch("/api/service/assets"),
-        fetch("/api/service/reference-data"),
+        fetch("/api/service/reference-data?module=contract"),
       ]);
       if (custRes.ok) { const j = await custRes.json(); setCustomers(j.data || j || []); }
       if (assetRes.ok) { const j = await assetRes.json(); setAssets(j.data || []); }
       if (refRes.ok) { const j = await refRes.json(); setStatuses(j.ServiceStatus || []); }
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error(e); } finally { setIsPreparingModal(false); }
     setShowAmcModal(true);
   }, []);
 
@@ -187,9 +190,16 @@ export default function WarrantyAMCPage() {
         });
       }
       if (res.ok) {
+        const updated = await res.json();
         toast.success(editingAmc ? "AMC contract updated" : "AMC contract created");
         setShowAmcModal(false);
         fetchData();
+        setSelectedRecord((prev: any) => {
+          if (prev?.type === "AMC" && prev?.data?.id === updated.id) {
+            return { ...prev, data: updated };
+          }
+          return prev;
+        });
       } else {
         const err = await res.json();
         toast.error(err.error || "Failed to save AMC contract");
@@ -207,7 +217,7 @@ export default function WarrantyAMCPage() {
       const [custRes, assetRes, refRes] = await Promise.all([
         fetch("/api/customer-master?pageSize=500"),
         fetch("/api/service/assets"),
-        fetch("/api/service/reference-data"),
+        fetch("/api/service/reference-data?module=warranty"),
       ]);
       if (custRes.ok) { const j = await custRes.json(); setCustomers(j.data || j || []); }
       if (assetRes.ok) { const j = await assetRes.json(); setAssets(j.data || []); }
@@ -360,11 +370,12 @@ export default function WarrantyAMCPage() {
     }
   ];
 
-  if (selectedRecord) {
-    const isAMC = selectedRecord.type === "AMC";
-    const data = selectedRecord.data;
+  const renderMainContent = () => {
+    if (selectedRecord) {
+      const isAMC = selectedRecord.type === "AMC";
+      const data = selectedRecord.data;
 
-    return (
+      return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <button 
@@ -376,9 +387,14 @@ export default function WarrantyAMCPage() {
           {isAMC && (
             <button
               onClick={() => openEditAmcModal(data)}
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border)] bg-[var(--surface-2)] rounded-lg text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--surface-3)] transition-all"
+              disabled={isPreparingModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-[var(--border)] bg-[var(--surface-2)] rounded-lg text-xs font-bold text-[var(--text-primary)] hover:bg-[var(--surface-3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Pencil size={14} /> Edit Entitlements
+              {isPreparingModal ? (
+                <>Loading...</>
+              ) : (
+                <><Pencil size={14} /> Edit Entitlements</>
+              )}
             </button>
           )}
         </div>
@@ -421,9 +437,14 @@ export default function WarrantyAMCPage() {
         {(activeTab === "AMC" || activeTab === "AMCRenewals") && (
           <button
             onClick={openCreateAmcModal}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-bold transition-colors"
+            disabled={isPreparingModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Plus size={14} /> New AMC Contract
+            {isPreparingModal ? (
+              <>Loading...</>
+            ) : (
+              <><Plus size={14} /> New AMC Contract</>
+            )}
           </button>
         )}
         {(activeTab === "Warranty" || activeTab === "ActiveWarranty") && (
@@ -504,9 +525,16 @@ export default function WarrantyAMCPage() {
           />
         )}
       </div>
+    </div>
+  );
+};
 
-      {/* AMC Create/Edit Modal */}
-      {showAmcModal && (
+return (
+  <>
+    {renderMainContent()}
+
+    {/* AMC Create/Edit Modal */}
+    {showAmcModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
@@ -784,6 +812,6 @@ export default function WarrantyAMCPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

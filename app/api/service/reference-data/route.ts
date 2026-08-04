@@ -20,18 +20,10 @@ export async function GET(request: Request) {
       (async () => {
         const statusSelect = { id: true, name: true, color: true } as const;
         let statuses = await prisma.serviceStatus.findMany({
-          where: moduleName ? { module: moduleName, isActive: true } : { isActive: true },
+          where: moduleName ? { module: moduleName.toLowerCase(), isActive: true } : { isActive: true },
           select: statusSelect,
           orderBy: { order: "asc" }
         });
-        // Fallback: if no module-specific statuses, return all active statuses
-        if (statuses.length === 0) {
-          statuses = await prisma.serviceStatus.findMany({
-            where: { isActive: true },
-            select: statusSelect,
-            orderBy: { order: "asc" }
-          });
-        }
         return statuses;
       })(),
       prisma.serviceTeam.findMany({ select: { id: true, name: true } }),

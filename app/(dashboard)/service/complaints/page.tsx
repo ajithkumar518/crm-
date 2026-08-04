@@ -208,9 +208,14 @@ export default function ServiceComplaintsPage() {
       if (res.ok) {
         setIsResolveOpen(false);
         await fetchData();
+        toast.success("Complaint resolved successfully");
+      } else {
+        const err = await res.json();
+        toast.error(`Failed to resolve complaint: ${err.error || "Unknown error"}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(`Error resolving complaint: ${e.message}`);
     }
   };
  
@@ -234,9 +239,14 @@ export default function ServiceComplaintsPage() {
       if (res.ok) {
         setIsReopenOpen(false);
         await fetchData();
+        toast.success("Complaint reopened successfully");
+      } else {
+        const err = await res.json();
+        toast.error(`Failed to reopen complaint: ${err.error || "Unknown error"}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(`Error reopening complaint: ${e.message}`);
     }
   };
  

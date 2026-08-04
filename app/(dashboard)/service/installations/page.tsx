@@ -42,7 +42,7 @@ export default function ServiceInstallationsPage() {
   const mapInstallation = (item: any) => ({
     ...item,
     installationCode: `INST-${item.id.substring(0, 8).toUpperCase()}`,
-    customer: { name: item.customer?.name || "Unknown" },
+    customer: item.customer ? { ...item.customer, name: item.customer.name || "Unknown" } : { name: "Unknown" },
     asset: item.customerAsset ? {
       productName: item.customerAsset.productName || "Unknown",
       purchaseDate: item.customerAsset.purchaseDate,
@@ -155,9 +155,14 @@ export default function ServiceInstallationsPage() {
       if (res.ok) {
         setIsStartOpen(false);
         await fetchData();
+        toast.success("Installation started successfully");
+      } else {
+        const err = await res.json();
+        toast.error(`Failed to start installation: ${err.error || "Unknown error"}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(`Error starting installation: ${e.message}`);
     }
   };
  
@@ -182,9 +187,14 @@ export default function ServiceInstallationsPage() {
       if (res.ok) {
         setIsCompleteOpen(false);
         await fetchData();
+        toast.success("Installation completed successfully");
+      } else {
+        const err = await res.json();
+        toast.error(`Failed to complete installation: ${err.error || "Unknown error"}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(`Error completing installation: ${e.message}`);
     }
   };
  
@@ -205,9 +215,14 @@ export default function ServiceInstallationsPage() {
       if (res.ok) {
         setIsRescheduleOpen(false);
         await fetchData();
+        toast.success("Installation rescheduled successfully");
+      } else {
+        const err = await res.json();
+        toast.error(`Failed to reschedule installation: ${err.error || "Unknown error"}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(`Error rescheduling installation: ${e.message}`);
     }
   };
  
@@ -231,9 +246,14 @@ export default function ServiceInstallationsPage() {
       if (res.ok) {
         setIsFailOpen(false);
         await fetchData();
+        toast.success("Installation marked as failed");
+      } else {
+        const err = await res.json();
+        toast.error(`Failed to mark installation as failed: ${err.error || "Unknown error"}`);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      toast.error(`Error marking installation as failed: ${e.message}`);
     }
   };
  

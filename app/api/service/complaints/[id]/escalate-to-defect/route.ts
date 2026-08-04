@@ -49,7 +49,24 @@ export async function POST(request: Request, { params }: { params: any }) {
     }
 
     // Resolve fields: use provided values, or fall back to complaint's values
-    const finalDefectTypeId = defectTypeId || complaint.complaintTypeId;
+    let finalDefectTypeId = defectTypeId;
+    
+    if (!finalDefectTypeId && complaint.complaintType?.name) {
+      // Try to find a DefectType that matches the ComplaintType name
+      const matchingType = await prisma.defectType.findFirst({
+        where: { name: complaint.complaintType.name, isActive: true },
+      });
+      if (matchingType) finalDefectTypeId = matchingType.id;
+    }
+
+    if (!finalDefectTypeId) {
+      // Fallback to the first active DefectType
+      const fallbackType = await prisma.defectType.findFirst({
+        where: { isActive: true },
+      });
+      if (fallbackType) finalDefectTypeId = fallbackType.id;
+    }
+
     const finalCategoryId = categoryId || complaint.categoryId;
     const finalPriorityId = priorityId || complaint.priorityId;
 
