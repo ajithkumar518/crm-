@@ -47,6 +47,7 @@ export default function ServiceComplaintsPage() {
     status: item.status?.name || "Unknown",
     priority: { name: item.priority?.name || "Unknown" },
     priorityId: item.priority?.name || "Unknown",
+    severity: item.priority?.name || "Unknown",
     complaintType: { name: item.complaintType?.name || "Unknown" },
     complaintTypeId: item.complaintType?.name || "Unknown",
     details: item.description || "", // fix details binding

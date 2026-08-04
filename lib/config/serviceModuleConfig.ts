@@ -164,6 +164,12 @@ export const serviceModulesConfig: Record<string, ServiceModuleConfig> = {
       { id: "createdAt", label: "Created At", type: "date" },
     ],
     filterDefinitions: [
+      { id: "severity", label: "Severity", type: "select", options: [
+        { value: "Low", label: "Low" },
+        { value: "Medium", label: "Medium" },
+        { value: "High", label: "High" },
+        { value: "Critical", label: "Critical" }
+      ]},
       { id: "status", label: "Status", type: "select", options: [
         { value: "New", label: "New" },
         { value: "Investigating", label: "Investigating" },
