@@ -499,6 +499,7 @@ model FollowUp {
   visitId           String?
   visitType         String?
   completedAt   DateTime?
+  isEmergency   Boolean   @default(false)
   notes             String?            @db.NVarChar(Max)
   dueDate           DateTime?
   reminderAt        DateTime?
@@ -693,6 +694,7 @@ model OpportunityDetail {
   urgencyPriority         String?
   userRolesPermissions    String?   @db.NVarChar(Max)
   requirementcompletedAt   DateTime?
+  isEmergency   Boolean   @default(false)
   sampleRequested         Boolean   @default(false)
   sampleApproved          Boolean   @default(false)
   sampleApprovedDate      DateTime?
@@ -1184,6 +1186,7 @@ model Task {
   assignedBy         String?
   cancellationReason String?       @db.NVarChar(Max)
   completedAt   DateTime?
+  isEmergency   Boolean   @default(false)
   AssignedBy         User?         @relation("TaskAssignedBy", fields: [assignedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   User               User          @relation(fields: [assignedTo], references: [id], onUpdate: NoAction)
   Contact            Contact?      @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -2861,6 +2864,7 @@ model ServiceVisit {
   checkOutTime  DateTime?
   outcomeNotes  String?   @db.NVarChar(Max)
   completedAt   DateTime?
+  isEmergency   Boolean   @default(false)
 
   // ── Proof-of-work capture (Feature 3) ──
   signatureUrl  String?   @db.NVarChar(Max)
