@@ -35,6 +35,7 @@ model User {
   activationToken             String?                     @db.NVarChar(Max)
   activationTokenExpiry       DateTime?
   passwordSetAt               DateTime?
+  variantLocked               Boolean                     @default(false)
   createdAt                   DateTime                    @default(now())
   updatedAt                   DateTime                    @updatedAt
   companyId                   String?
@@ -863,6 +864,7 @@ model Lead {
   callLogs               CallLog[]
   communicationLogs      CommunicationLog[]
   followUps              FollowUp[]
+  inboundEmailLogs       InboundEmailLog[]
   assignedUser           User?                   @relation(fields: [assignedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   company                Company?                @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   ownerHistory           LeadOwnerHistory[]
@@ -878,6 +880,23 @@ model Lead {
   @@index([leadScore])
   @@index([isDuplicateOf])
   @@index([assignedUserId, status, createdAt])
+}
+
+model InboundEmailLog {
+  id            String    @id @default(uuid())
+  messageId     String    @unique @db.NVarChar(450)
+  fromEmail     String    @db.NVarChar(254)
+  subject       String?   @db.NVarChar(Max)
+  status        String    @default("Pending") @db.NVarChar(20)
+  extractedJson String?   @db.NVarChar(Max)
+  leadId        String?
+  rejectReason  String?   @db.NVarChar(Max)
+  receivedAt    DateTime  @default(now())
+  processedAt   DateTime?
+  lead          Lead?     @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([status])
+  @@index([receivedAt])
 }
 
 model LeadOwnerHistory {

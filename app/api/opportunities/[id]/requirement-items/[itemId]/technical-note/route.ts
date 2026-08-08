@@ -31,7 +31,7 @@ export async function PUT(
   const reqItem = await prisma.opportunityRequirementItem.findFirst({ where: { id: itemId, dealId: id } });
   if (!reqItem) return NextResponse.json({ success: false, message: "Requirement item not found" }, { status: 404 });
 
-  const body = await request.json();
+  const body = await request.json().catch(() => ({} as Record<string, any>));
   const { feasibility, confirmedSpec, toolingRequired, engineerId } = body;
 
   if (!feasibility || !FEASIBILITY_VALUES.includes(feasibility as any)) {
@@ -41,34 +41,51 @@ export async function PUT(
     );
   }
 
-  const resolvedEngineerId = engineerId || user.id;
-
-  const note = await prisma.opportunityTechnicalNote.upsert({
-    where: { requirementItemId: itemId },
-    create: {
-      requirementItemId: itemId,
-      feasibility,
-      confirmedSpec: confirmedSpec?.trim() || null,
-      toolingRequired: toolingRequired?.trim() || null,
-      engineerId: resolvedEngineerId,
-      reviewedAt: new Date(),
-    },
-    update: {
-      feasibility,
-      confirmedSpec: confirmedSpec?.trim() || null,
-      toolingRequired: toolingRequired?.trim() || null,
-      engineerId: resolvedEngineerId,
-      reviewedAt: new Date(),
-    },
-    include: { engineer: { select: { id: true, name: true } } },
+  // Resolve engineerId to a real user. Prefer client-provided id, fall back to the authenticated user.
+  let resolvedEngineerId = engineerId && String(engineerId).trim() ? String(engineerId).trim() : user.id;
+  const targetEngineer = await prisma.user.findFirst({
+    where: { id: resolvedEngineerId, companyId: user.companyId, isActive: true },
+    select: { id: true },
   });
+  if (!targetEngineer) {
+    // Client-provided or auth id isn't valid for this company; fall back to the authenticated user
+    resolvedEngineerId = user.id;
+  }
 
-  await logAudit(user.id, "Opportunity", "TechnicalNote.Upsert",
-    `Set feasibility=${feasibility} for product ${reqItem.productName} on opportunity ${id}`,
-    { resourceId: id, newState: { feasibility, itemId }, severity: "INFO" }
-  );
+  try {
+    const note = await prisma.opportunityTechnicalNote.upsert({
+      where: { requirementItemId: itemId },
+      create: {
+        requirementItemId: itemId,
+        feasibility,
+        confirmedSpec: confirmedSpec?.trim() || null,
+        toolingRequired: toolingRequired?.trim() || null,
+        engineerId: resolvedEngineerId,
+        reviewedAt: new Date(),
+      },
+      update: {
+        feasibility,
+        confirmedSpec: confirmedSpec?.trim() || null,
+        toolingRequired: toolingRequired?.trim() || null,
+        engineerId: resolvedEngineerId,
+        reviewedAt: new Date(),
+      },
+      include: { engineer: { select: { id: true, name: true } } },
+    });
 
-  return NextResponse.json({ success: true, data: note });
+    await logAudit(user.id, "Opportunity", "TechnicalNote.Upsert",
+      `Set feasibility=${feasibility} for product ${reqItem.productName} on opportunity ${id}`,
+      { resourceId: id, newState: { feasibility, itemId }, severity: "INFO" }
+    );
+
+    return NextResponse.json({ success: true, data: note });
+  } catch (err: any) {
+    console.error("[TechnicalNote.Upsert] error:", err);
+    return NextResponse.json(
+      { success: false, message: err.message || "Failed to save technical feasibility" },
+      { status: 500 }
+    );
+  }
 }
 
 // DELETE /api/opportunities/[id]/requirement-items/[itemId]/technical-note

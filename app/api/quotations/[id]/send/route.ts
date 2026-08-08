@@ -6,6 +6,8 @@ import { dispatchNotification } from "@/lib/notifications";
 import { logEvent, logEventAsync } from "@/lib/activity-event";
 import { hasModule } from "@/lib/modules";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
+import { sendEmail } from "@/lib/email";
+import { generateQuotationPdf } from "@/lib/generateQuotationPdf";
 
 export async function POST(
   request: NextRequest,
@@ -21,7 +23,11 @@ export async function POST(
     where: { id, deletedAt: null, companyId: user.companyId },
     include: {
       items: true,
-      customer: { select: { id: true, name: true } },
+      customer: { select: { id: true, name: true, email: true } },
+      contact: { select: { id: true, name: true, email: true } },
+      deal: { select: { id: true, dealName: true, opportunityCode: true } },
+      company: { select: { id: true, name: true } },
+      createdBy: { select: { id: true, name: true } },
       quotationApprovals: { orderBy: { createdAt: "desc" } },
     },
   });
@@ -264,7 +270,133 @@ export async function POST(
       }).catch(() => undefined);
     }
 
-    return NextResponse.json({ success: true, data: quotation });
+    // ── Email PDF to customer (after transaction commits) ──
+    let emailSent = false;
+    let emailedTo: string | null = null;
+    let emailWarning: string | null = null;
+
+    // Resolve recipient email with fallback chain: Contact → Customer
+    const recipientEmail =
+      existing.contact?.email ||
+      existing.customer?.email ||
+      null;
+
+    if (!recipientEmail) {
+      emailWarning = "No recipient email found (contact or customer). Quotation status updated but email not sent.";
+    } else {
+      try {
+        // Fetch company info for PDF header
+        const [addrConfig, gstinConfig, phoneConfig, emailConfig] = await Promise.all([
+          prisma.systemConfig.findUnique({ where: { key: "company_address" } }),
+          prisma.systemConfig.findUnique({ where: { key: "company_gstin" } }),
+          prisma.systemConfig.findUnique({ where: { key: "company_phone" } }),
+          prisma.systemConfig.findUnique({ where: { key: "company_email" } }),
+        ]);
+
+        const generatedByName = (await prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }))?.name || user.email;
+
+        const doc = generateQuotationPdf({
+          quotationCode: quotation.quotationCode,
+          revisionNumber: quotation.revisionNumber,
+          status: quotation.status,
+          validUntil: quotation.validUntil,
+          createdAt: quotation.createdAt,
+          subtotal: quotation.subtotal || quotation.totalAmount,
+          discountPercent: quotation.discountPercent || 0,
+          taxAmount: quotation.taxAmount || 0,
+          finalAmount: quotation.finalAmount,
+          totalAmount: quotation.totalAmount,
+          termsAndConditions: quotation.termsAndConditions,
+          paymentTerms: quotation.paymentTerms,
+          deliveryTerms: quotation.deliveryTerms,
+          freightTerms: quotation.freightTerms,
+          leadTimeDays: quotation.leadTimeDays,
+          customer: existing.customer as any,
+          contact: existing.contact as any,
+          deal: existing.deal as any,
+          company: existing.company as any,
+          items: existing.items as any,
+          createdBy: existing.createdBy as any,
+          companyAddress: addrConfig?.value || "",
+          companyGstin: gstinConfig?.value || "",
+          companyPhone: phoneConfig?.value || "",
+          companyEmail: emailConfig?.value || "",
+          generatedByName,
+        });
+
+        const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
+        const fileName = `${quotation.quotationCode}-R${quotation.revisionNumber}.pdf`;
+
+        // Build branded HTML email body
+        const htmlBody = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
+            <div style="background-color:#0D2137;padding:20px;text-align:center;">
+              <h2 style="color:#ffffff;margin:0;"> SUKI  Marketing CRM</h2>
+            </div>
+            <div style="padding:24px;">
+              <p>Dear <strong>${existing.contact?.name || existing.customer?.name || "Customer"}</strong>,</p>
+              <p>Please find attached the quotation <strong>${quotation.quotationCode}</strong> from <strong>${existing.company?.name || "SUKI Software"}</strong>.</p>
+              <table style="width:100%;border-collapse:collapse;margin-top:15px;font-size:14px;">
+                <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Quotation Code</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;">${quotation.quotationCode}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Final Amount</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;font-weight:bold;">₹${quotation.finalAmount.toFixed(2)}</td></tr>
+                <tr><td style="padding:8px;border-bottom:1px solid #e2e8f0;color:#64748b;">Valid Until</td><td style="padding:8px;border-bottom:1px solid #e2e8f0;">${new Date(quotation.validUntil).toLocaleDateString()}</td></tr>
+              </table>
+              <p style="margin-top:24px;color:#475569;font-size:14px;">Please review the attached PDF for full details. If you have any questions, feel free to reach out.</p>
+              <p style="margin-top:24px;color:#475569;font-size:13px;">Regards,<br/>${generatedByName}<br/>${existing.company?.name || "SUKI Software"}</p>
+            </div>
+          </div>
+        `;
+
+        await sendEmail({
+          to: recipientEmail,
+          subject: `Quotation ${quotation.quotationCode} from ${existing.company?.name || "SUKI Software"}`,
+          html: htmlBody,
+          attachments: [{ filename: fileName, content: pdfBuffer, contentType: "application/pdf" }],
+        });
+
+        emailSent = true;
+        emailedTo = recipientEmail;
+
+        // Log communication attempt (success)
+        await prisma.communicationLog.create({
+          data: {
+            channel: "Email",
+            direction: "Outbound",
+            status: "Sent",
+            content: `Quotation ${quotation.quotationCode} emailed to ${recipientEmail}`,
+            customerId: existing.customerId || null,
+            dealId: existing.dealId || null,
+            sentByUserId: user.id,
+            sentAt: new Date(),
+            companyId: user.companyId ?? null,
+          },
+        }).catch(() => {});
+      } catch (emailErr: any) {
+        emailWarning = `Failed to email quotation PDF: ${emailErr.message}`;
+        // Log communication attempt (failure) — do NOT roll back quotation status
+        await prisma.communicationLog.create({
+          data: {
+            channel: "Email",
+            direction: "Outbound",
+            status: "Failed",
+            content: `Failed to email quotation ${quotation.quotationCode} to ${recipientEmail}: ${emailErr.message}`,
+            customerId: existing.customerId || null,
+            dealId: existing.dealId || null,
+            sentByUserId: user.id,
+            sentAt: new Date(),
+            companyId: user.companyId ?? null,
+          },
+        }).catch(() => {});
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: quotation,
+      emailSent,
+      ...(emailedTo ? { emailedTo } : {}),
+      ...(emailWarning ? { emailWarning } : {}),
+    });
   } catch (error: any) {
     return NextResponse.json(
       { success: false, message: `Failed to send quotation: ${error.message}` },

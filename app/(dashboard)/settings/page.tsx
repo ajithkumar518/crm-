@@ -465,7 +465,8 @@ export default function SettingsPage() {
     user?.role === "Admin" || user?.role === "SuperAdmin";
   const isPlanLocked = user?.company?.planLocked ?? true;
   const isInternalCompany = user?.isInternalCompany ?? false;
-  const canEditVariant = isInternalCompany && (user?.role === "SuperAdmin" || user?.role === "Admin");
+  const isVariantLocked = user?.variantLocked ?? false;
+  const canEditVariant = isInternalCompany && !isPlanLocked && !isVariantLocked && (user?.role === "SuperAdmin" || user?.role === "Admin");
 
   useEffect(() => {
     if (!authLoading && !canAccessSettings) {

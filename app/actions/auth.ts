@@ -719,6 +719,7 @@ export async function getMeAction() {
         theme: true,
         themeMode: true,
         companyId: true,
+        variantLocked: true,
         company: {
           select: {
             id: true,
@@ -752,6 +753,7 @@ export async function getMeAction() {
         enabledModules: user.company?.enabledModules || "[]",
         planLocked: user.company?.planLocked ?? true,
         serviceCrmEnabled: user.company?.serviceCrmEnabled ?? false,
+        variantLocked: user.variantLocked ?? false,
         isInternalCompany:
           !!user.company?.id &&
           !!process.env.INTERNAL_COMPANY_ID &&

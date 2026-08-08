@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { extractAuditContext } from "@/lib/audit";
-import { createLeadWithWorkflow } from "@/lib/leadWorkflow";
+import { checkLeadDuplicate, createLeadWithWorkflow, LeadDuplicateError } from "@/lib/leadWorkflow";
+
+async function resolveDefaultCompanyId(): Promise<string | null> {
+  const envId = process.env.INTERNAL_COMPANY_ID?.trim();
+  if (envId) return envId;
+
+  const first = await prisma.company.findFirst({
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  return first?.id ?? null;
+}
 
 export async function POST(request: Request) {
   try {
@@ -42,39 +53,24 @@ export async function POST(request: Request) {
     const normalizedCity = city?.trim() || null;
     const source = leadSource?.trim() || "Website";
 
-    // 3. Duplicate detection
-    if (normalizedEmail) {
-      const existingEmail = await prisma.lead.findUnique({
-        where: { email: normalizedEmail },
-      });
-      if (existingEmail) {
+    // 3. Duplicate detection (preserves exact legacy messages)
+    const duplicate = await checkLeadDuplicate(normalizedEmail, normalizedPhone);
+    if (duplicate) {
+      if (normalizedEmail && duplicate.email === normalizedEmail) {
         return NextResponse.json(
-          {
-            success: false,
-            message: "Validation error: Email address is already registered",
-          },
+          { success: false, message: "Validation error: Email address is already registered" },
           { status: 400 }
         );
       }
-    }
-
-    if (normalizedPhone) {
-      const existingPhone = await prisma.lead.findFirst({
-        where: { phone: normalizedPhone },
-      });
-      if (existingPhone) {
-        return NextResponse.json(
-          {
-            success: false,
-            message: "Validation error: Phone number is already registered",
-          },
-          { status: 400 }
-        );
-      }
+      return NextResponse.json(
+        { success: false, message: "Validation error: Phone number is already registered" },
+        { status: 400 }
+      );
     }
 
     // Extract request context for audit trail
     const auditCtx = extractAuditContext(request);
+    const companyId = await resolveDefaultCompanyId();
 
     // 4. Invoke reusable Lead Creation Workflow
     const { lead, assignedUser, slaDeadline } = await createLeadWithWorkflow({
@@ -84,20 +80,10 @@ export async function POST(request: Request) {
       city: normalizedCity,
       leadSource: source,
       notes: message || null,
+      companyId,
+      createdById: null,
       auditContext: auditCtx,
     });
-
-    // Optional call log for message
-    if (message && assignedUser) {
-      await prisma.callLog.create({
-        data: {
-          leadId: lead.id,
-          notes: `Inbound website enquiry message: "${message.trim()}"`,
-          duration: 0,
-          userId: assignedUser.id,
-        },
-      }).catch((e) => console.error("CallLog creation error", e));
-    }
 
     return NextResponse.json(
       {
@@ -116,6 +102,13 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error: unknown) {
+    if (error instanceof LeadDuplicateError) {
+      return NextResponse.json(
+        { success: false, message: "Validation error: Lead already exists" },
+        { status: 400 }
+      );
+    }
+
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error("Error in POST /api/leads:", errorMsg);
     return NextResponse.json(

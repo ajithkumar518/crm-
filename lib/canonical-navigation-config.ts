@@ -63,6 +63,7 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'accounts-active', label: 'Active Accounts', href: '/customer-master?status=ActiveCustomer', iconEmoji: '🏢', keywords: ['active', 'customer'], type: 'submodule', parentLabel: 'Accounts', parentKey: 'accounts' },
   { key: 'contacts-all', label: 'Overview', href: '/contacts', iconEmoji: '📋', keywords: ['all contacts', 'contacts list'], type: 'submodule', parentLabel: 'Contacts', parentKey: 'contacts' },
   // Activities sub-modules
+  { key: 'activities-overview', label: 'Overview', href: '/activities', iconEmoji: '📞', keywords: ['all activities', 'overview'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities' },
   { key: 'activities-calls', label: 'Calls', href: '/activities?type=Call', iconEmoji: '📞', keywords: ['call', 'phone'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities' },
   { key: 'activities-meetings', label: 'Meetings', href: '/activities?type=Meeting', iconEmoji: '📞', keywords: ['meeting', 'schedule'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities' },
   { key: 'activities-emails', label: 'Emails', href: '/activities?type=Email', iconEmoji: '📞', keywords: ['email', 'mail'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities' },
@@ -126,6 +127,7 @@ export const V2_EXTRAS: NavItem[] = [
   { key: 'activities-whatsapp', label: 'WhatsApp', href: '/activities?type=WhatsApp', iconEmoji: '📞', keywords: ['whatsapp', 'wa'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities', variantMin: 2 },
   { key: 'timeline', label: 'Timeline', href: '/timeline', iconEmoji: '🕐', keywords: ['timeline', 'history', 'chronological'], type: 'submodule', parentLabel: 'Activities', parentKey: 'activities', variantMin: 2 },
   // V2 visits sub-modules
+  { key: 'visits-overview', label: 'Overview', href: '/visits', iconEmoji: '🚗', keywords: ['all visits', 'overview', 'customer visits'], type: 'submodule', parentLabel: 'Customer Visits', parentKey: 'visits' , variantMin: 2 },
   { key: 'visits-planned', label: 'Planned Visits', href: '/visits?status=PLANNED', iconEmoji: '🚗', keywords: ['planned', 'scheduled'], type: 'submodule', parentLabel: 'Customer Visits', parentKey: 'visits' , variantMin: 2 },
   { key: 'visits-completed', label: 'Completed Visits', href: '/visits?status=COMPLETED', iconEmoji: '🚗', keywords: ['completed', 'done'], type: 'submodule', parentLabel: 'Customer Visits', parentKey: 'visits' , variantMin: 2 },
   { key: 'visits-missed', label: 'Missed Visits', href: '/visits?status=MISSED', iconEmoji: '🚗', keywords: ['missed', 'no-show'], type: 'submodule', parentLabel: 'Customer Visits', parentKey: 'visits' , variantMin: 2 },

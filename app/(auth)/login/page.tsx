@@ -336,16 +336,22 @@ function LoginContent() {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const res = await checkLoginType(email.trim());
-    setLoading(false);
-    if (!res.success) {
-      setError(res.message ?? "Something went wrong.");
-      return;
-    }
-    if (res.data?.isFirstLogin) {
-      await handleSendOtp();
-    } else {
-      setStage("password");
+    try {
+      const res = await checkLoginType(email.trim());
+      setLoading(false);
+      if (!res.success) {
+        setError(res.message ?? "Something went wrong.");
+        return;
+      }
+      if (res.data?.isFirstLogin) {
+        await handleSendOtp();
+      } else {
+        setStage("password");
+      }
+    } catch (err) {
+      console.error("[LOGIN] handleEmailSubmit error:", err);
+      setLoading(false);
+      setError("An unexpected error occurred. Please try again.");
     }
   }
 
@@ -628,6 +634,7 @@ function LoginContent() {
                 <ErrorBox />
                 <form
                   onSubmit={handleEmailSubmit}
+                  method="post"
                   className="space-y-4"
                   noValidate
                 >
