@@ -22,6 +22,7 @@ export default function ServiceRequestsPage() {
   const [selectedRow, setSelectedRow] = useState<any>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [refData, setRefData] = useState<any>({});
   const [kpiFilter, setKpiFilter] = useState("");
 
@@ -158,6 +159,7 @@ export default function ServiceRequestsPage() {
       return;
     }
  
+    setIsSubmitting(true);
     try {
       const res = await fetch(`/api/service/requests/${selectedRow.id}`, {
         method: 'PATCH',
@@ -180,6 +182,8 @@ export default function ServiceRequestsPage() {
     } catch (e) {
       console.error(e);
       toast.error("Error assigning request");
+    } finally {
+      setIsSubmitting(false);
     }
   };
  
@@ -198,6 +202,7 @@ export default function ServiceRequestsPage() {
     const existingDesc = selectedRow.description || "";
     const updatedDescription = `${existingDesc}\n\n[Resolution Outcome]\n${resolutionNotes}`;
  
+    setIsSubmitting(true);
     try {
       const res = await fetch(`/api/service/requests/${selectedRow.id}`, {
         method: 'PATCH',
@@ -220,6 +225,8 @@ export default function ServiceRequestsPage() {
     } catch (e) {
       console.error(e);
       toast.error("Error closing request");
+    } finally {
+      setIsSubmitting(false);
     }
   };
  
@@ -433,10 +440,10 @@ export default function ServiceRequestsPage() {
               </button>
               <button
                 onClick={handleConfirmAssign}
-                disabled={!assignTeamId || !assignEngineerId}
+                disabled={isSubmitting || !assignTeamId || !assignEngineerId}
                 className="px-4 py-1.5 rounded-lg text-xs font-bold bg-brand hover:bg-brand-hover text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Confirm Assignment
+                {isSubmitting ? "Assigning..." : "Confirm Assignment"}
               </button>
             </div>
           </div>
@@ -473,10 +480,10 @@ export default function ServiceRequestsPage() {
               </button>
               <button
                 onClick={handleConfirmClose}
-                disabled={!resolutionNotes.trim()}
+                disabled={isSubmitting || !resolutionNotes.trim()}
                 className="px-4 py-1.5 rounded-lg text-xs font-bold bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Close Request
+                {isSubmitting ? "Closing..." : "Close Request"}
               </button>
             </div>
           </div>

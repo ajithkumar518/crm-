@@ -137,6 +137,7 @@ export const V2_EXTRAS: NavItem[] = [
   { key: 'catalogue-datasheets', label: 'Datasheets', href: '/catalogue/datasheets', iconEmoji: '📦', keywords: ['datasheet', 'technical'], type: 'submodule', parentLabel: 'Product Catalogue', parentKey: 'catalogue' , variantMin: 2 },
   { key: 'catalogue-brochures', label: 'Brochures', href: '/catalogue/brochures', iconEmoji: '📦', keywords: ['brochure', 'marketing'], type: 'submodule', parentLabel: 'Product Catalogue', parentKey: 'catalogue' , variantMin: 2 },
   // V2 RFQ sub-modules
+  { key: 'rfq-overview', label: 'Overview', href: '/rfq', iconEmoji: '📄', keywords: ['all rfq', 'rfq list', 'overview'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },
   { key: 'rfq-new', label: 'New RFQ', href: '/rfq?status=New', iconEmoji: '📄', keywords: ['new', 'request'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },
   { key: 'rfq-review', label: 'Under Review', href: '/rfq?status=UnderReview', iconEmoji: '📄', keywords: ['review', 'pending'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },
   { key: 'rfq-costing', label: 'Costing Pending', href: '/rfq?status=CostingPending', iconEmoji: '📄', keywords: ['costing', 'price'], type: 'submodule', parentLabel: 'RFQ', parentKey: 'rfq' , variantMin: 2 },

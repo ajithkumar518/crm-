@@ -9,8 +9,10 @@ import { ServiceKPICard, ServiceKPIGrid } from "@/components/shared/ServiceKPICa
 import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
 import { Star, Inbox, ShieldAlert, Award, ArrowUpDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/ui-utils";
+import { useToast } from "@/components/ToastProvider";
 
 export default function ServiceReviewsPage() {
+  const toast = useToast();
   const config = serviceModulesConfig.reviews;
   const router = useRouter();
   const searchParams = useSearchParams();

@@ -40,9 +40,16 @@ export default function ServiceModuleForm({
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -148,9 +155,10 @@ export default function ServiceModuleForm({
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-bold transition-colors"
+            disabled={isSubmitting}
+            className="px-4 py-2 bg-brand hover:bg-brand-hover text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Save {config.entityLabel}
+            {isSubmitting ? "Saving..." : `Save ${config.entityLabel}`}
           </button>
         </div>
       </form>

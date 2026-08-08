@@ -107,6 +107,26 @@ export async function PATCH(request: Request, { params }: { params: any }) {
       }
     });
 
+    // Auto-create ServiceReview if marked as Completed or Resolved
+    if (updatedRequest.status?.name === "Completed" || updatedRequest.status?.name === "Resolved") {
+      if (updatedRequest.assignedEngineerId && updatedRequest.customerId) {
+        const existingReview = await prisma.serviceReview.findFirst({
+          where: { serviceRequestId: updatedRequest.id }
+        });
+        
+        if (!existingReview) {
+          await prisma.serviceReview.create({
+            data: {
+              customerId: updatedRequest.customerId,
+              engineerId: updatedRequest.assignedEngineerId,
+              serviceRequestId: updatedRequest.id,
+              status: "Pending"
+            }
+          });
+        }
+      }
+    }
+
     return NextResponse.json(updatedRequest);
   } catch (error: any) {
     console.error("Error updating service request:", error);
