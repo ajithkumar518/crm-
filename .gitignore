@@ -176,5 +176,6 @@ backup/
 *.sqlite.prisma
 check_company.js
 
-# GitNexus index files
-.gitnexus/
+# Credential-bearing seed scripts (environment-local, never commit)
+prisma/seeds/deploySeed.ts
+prisma/seeds/superAdminSeed.ts
