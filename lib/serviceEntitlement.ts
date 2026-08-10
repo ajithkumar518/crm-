@@ -5,6 +5,7 @@ export interface ServiceEntitlementSubject {
   id?: string;
   companyId?: string | null;
   serviceCrmEnabled?: boolean;
+  disableServiceCrm?: boolean;
   company?: {
     serviceCrmEnabled?: boolean;
   } | null;
@@ -20,6 +21,14 @@ export async function enforceServiceEntitlement(
   if (!subject) {
     return NextResponse.json(
       { success: false, error: "Unauthorized or unentitled access to Service CRM." },
+      { status: 403 }
+    );
+  }
+
+  // 0. Per-user kill switch — takes precedence over any company-level entitlement.
+  if (subject.disableServiceCrm === true) {
+    return NextResponse.json(
+      { success: false, error: "Service CRM module is not enabled for your account." },
       { status: 403 }
     );
   }

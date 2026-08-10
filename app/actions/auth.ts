@@ -63,6 +63,7 @@ async function issueAuthCookie(
     variant?: number | null;
     enabledModules?: string | null;
     serviceCrmEnabled?: boolean | null;
+    disableServiceCrm?: boolean | null;
   },
   rememberMe = false,
 ) {
@@ -79,6 +80,7 @@ async function issueAuthCookie(
       variant: user.variant || 1,
       enabledModules: user.enabledModules ?? undefined,
       serviceCrmEnabled: user.serviceCrmEnabled ?? false,
+      disableServiceCrm: user.disableServiceCrm ?? false,
     },
     JWT_SECRET,
     { expiresIn },
@@ -720,6 +722,7 @@ export async function getMeAction() {
         themeMode: true,
         companyId: true,
         variantLocked: true,
+        disableServiceCrm: true,
         company: {
           select: {
             id: true,
@@ -753,6 +756,7 @@ export async function getMeAction() {
         enabledModules: user.company?.enabledModules || "[]",
         planLocked: user.company?.planLocked ?? true,
         serviceCrmEnabled: user.company?.serviceCrmEnabled ?? false,
+        disableServiceCrm: user.disableServiceCrm ?? false,
         variantLocked: user.variantLocked ?? false,
         isInternalCompany:
           !!user.company?.id &&

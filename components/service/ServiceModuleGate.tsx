@@ -97,7 +97,7 @@ export function ServiceModuleGate({
 
   // If auth is not yet loaded, or if user is entitled (serviceCrmEnabled === true), allow rendering children.
   // Fail-closed enforcement: if forceLocked is true or if user is loaded and serviceCrmEnabled is not true, show lock screen.
-  const isEntitled = !forceLocked && (!user || user.serviceCrmEnabled === true || user.company?.serviceCrmEnabled === true);
+  const isEntitled = !forceLocked && (!user || (user.serviceCrmEnabled === true || user.company?.serviceCrmEnabled === true) && user.disableServiceCrm !== true);
 
   if (isEntitled) {
     return <>{children}</>;
@@ -143,5 +143,5 @@ export function ServiceModuleGate({
 export function useServiceEntitled(): boolean {
   const { user } = useAuth();
   if (!user) return true; // Fail open while loading auth
-  return user.serviceCrmEnabled === true || user.company?.serviceCrmEnabled === true;
+  return (user.serviceCrmEnabled === true || user.company?.serviceCrmEnabled === true) && user.disableServiceCrm !== true;
 }

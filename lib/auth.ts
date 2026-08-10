@@ -21,6 +21,7 @@ export interface TokenPayload {
   variant?: number;
   enabledModules?: string;
   serviceCrmEnabled?: boolean;
+  disableServiceCrm?: boolean;
   supportMode?: boolean;
   iat: number;
   exp: number;

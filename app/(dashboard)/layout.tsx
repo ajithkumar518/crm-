@@ -1093,6 +1093,8 @@ export function CrmToggle({ className }: { className?: string }) {
     user.serviceCrmEnabled === true ||
     user.company?.serviceCrmEnabled === true;
 
+  if (user?.disableServiceCrm === true) return null;
+
   return (
     <div
       className={cn(
