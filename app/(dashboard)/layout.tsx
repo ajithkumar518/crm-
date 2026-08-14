@@ -2159,6 +2159,8 @@ const PATH_MODULE_MAP: Record<string, string> = {
   "/rfq": "RFQ",
   "/competitors": "Competitors",
   "/quotations": "Quotations",
+  "/proforma-invoices": "Quotations",
+  "/sales-orders": "Quotations",
   "/negotiations": "Negotiations",
   "/purchase-orders": "Purchase Orders",
   "/deals": "Deals",

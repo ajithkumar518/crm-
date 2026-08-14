@@ -161,14 +161,18 @@ export const DEALS_STATUS: StatusOption[] = [
 // API: /api/quotations?status={value}
 export const QUOTES_STATUS: StatusOption[] = [
   { label: "Draft", value: "Draft" },
-  { label: "Pending Approval", value: "PendingApproval" },
-  { label: "Approved", value: "Approved" },
-  { label: "Sent", value: "Sent" },
-  { label: "Under Review", value: "UnderReview" },
+  { label: "Quotation Sent", value: "Quotation Sent" },
+  { label: "Follow-up", value: "Follow-up" },
+  { label: "Revised Rate", value: "Revised Rate" },
   { label: "Accepted", value: "Accepted" },
   { label: "Rejected", value: "Rejected" },
-  { label: "Expired", value: "Expired" },
-  { label: "On Hold", value: "OnHold" },
+  { label: "MOQ", value: "MOQ" },
+  { label: "Material Not Available", value: "Material Not Available" },
+  { label: "No Stock", value: "No Stock" },
+  { label: "Price Pending", value: "Price Pending" },
+  { label: "Supplier Rate Checking", value: "Supplier Rate Checking" },
+  { label: "Converted to Customer", value: "Converted to Customer" },
+  { label: "Others", value: "Others" },
 ];
 
 // ─── 4. Orders (Purchase Orders) ──────────────────────────────────────────────

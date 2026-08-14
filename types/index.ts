@@ -20,6 +20,7 @@ export interface Customer {
   email: string | null;
   phone: string | null;
   city: string | null;
+  state?: string | null;
   status: "Prospect" | "ActiveCustomer" | "Renewed" | "Churned";
   assignedUserId: string | null;
   assignedUser?: Partial<User>;
@@ -28,6 +29,14 @@ export interface Customer {
   subscriptions?: any[];
   hasActivatedPortal?: boolean;
   leadSource?: string | null;
+  gstNumber?: string | null;
+  billingAddress?: string | null;
+  shippingAddress?: string | null;
+  paymentTerms?: string | null;
+  creditTermsDays?: number | null;
+  customerCategory?: string | null;
+  industryType?: string | null;
+  contacts?: any[];
 }
 
 export interface Lead {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
-import { generateQuotationPdf } from "@/lib/generateQuotationPdf";
+import { generateSukiQuotationPdf } from "@/lib/generateSukiQuotationPdf";
 
 export async function GET(
   request: NextRequest,
@@ -18,7 +18,7 @@ export async function GET(
   const dbQuotation = await prisma.quotation.findFirst({
     where: { id, deletedAt: null, companyId: user.companyId },
     include: {
-      customer: { select: { id: true, name: true, customerCode: true, billingAddress: true, city: true, gstNumber: true, phone: true, email: true } },
+      customer: { select: { id: true, name: true, customerCode: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true, email: true } },
       contact: { select: { id: true, name: true, email: true, phone: true } },
       deal: { select: { id: true, dealName: true, opportunityCode: true } },
       items: { include: { product: { select: { id: true, name: true, productCode: true } } } },
@@ -93,17 +93,12 @@ export async function GET(
 
   const generatedByName = (await prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }))?.name || user.email;
 
-  const doc = generateQuotationPdf({
+  const doc = generateSukiQuotationPdf({
     quotationCode: quotation.quotationCode,
     revisionNumber: quotation.revisionNumber,
     status: quotation.status,
     validUntil: quotation.validUntil,
     createdAt: quotation.createdAt,
-    subtotal: quotation.subtotal || quotation.totalAmount,
-    discountPercent: quotation.discountPercent || 0,
-    taxAmount: quotation.taxAmount || 0,
-    finalAmount: quotation.finalAmount,
-    totalAmount: quotation.totalAmount,
     termsAndConditions: quotation.termsAndConditions,
     paymentTerms: quotation.paymentTerms,
     deliveryTerms: quotation.deliveryTerms,
@@ -111,10 +106,8 @@ export async function GET(
     leadTimeDays: quotation.leadTimeDays,
     customer: quotation.customer,
     contact: quotation.contact,
-    deal: quotation.deal,
     company: quotation.company,
     items: quotation.items,
-    createdBy: quotation.createdBy,
     companyAddress: addrConfig?.value || "",
     companyGstin: gstinConfig?.value || "",
     companyPhone: phoneConfig?.value || "",

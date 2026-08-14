@@ -15,15 +15,17 @@ export default function DashboardRouter() {
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [salesData, setSalesData] = useState<any>(null);
+  const [sukiData, setSukiData] = useState<any>(null);
   const [dateRange, setDateRange] = useState("alltime");
 
   const loadData = async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [dashRes, salesRes] = await Promise.all([
+      const [dashRes, salesRes, sukiRes] = await Promise.all([
         getDashboardDataAction(),
-        getSalesAnalyticsAction(dateRange === "alltime" ? undefined : dateRange)
+        getSalesAnalyticsAction(dateRange === "alltime" ? undefined : dateRange),
+        fetch("/api/dashboard/suki").then(r => r.json())
       ]);
 
       if (dashRes.success && dashRes.data) {
@@ -31,6 +33,9 @@ export default function DashboardRouter() {
       }
       if (salesRes.success && salesRes.data) {
         setSalesData(salesRes.data);
+      }
+      if (sukiRes.success && sukiRes.data) {
+        setSukiData(sukiRes.data);
       }
     } catch (err) {
       console.error("Failed to load unified dashboard data", err);
@@ -56,6 +61,7 @@ export default function DashboardRouter() {
   const commonProps = {
     dashboardData,
     salesData,
+    sukiData,
     user,
     loadData,
     dateRange,

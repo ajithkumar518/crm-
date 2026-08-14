@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
     const unitPrice = parseFloat(item.unitPrice) || 0;
     const lineDiscount = parseFloat(item.discountPercent) || 0;
     const taxPercent = parseFloat(item.taxPercent) || 18;
+    const cuttingCharge = parseFloat(item.cuttingCharge) || 0;
 
     const lineTotal = qty * unitPrice * (1 - lineDiscount / 100);
     const lineTax = lineTotal * (taxPercent / 100);
@@ -168,6 +169,7 @@ export async function POST(request: NextRequest) {
       discountPercent: lineDiscount,
       taxPercent,
       lineTotal,
+      cuttingCharge,
       hsn: item.hsn || null,
       unit: item.unit || null,
       notes: item.notes || null,
@@ -175,11 +177,21 @@ export async function POST(request: NextRequest) {
       marginPercent,
       priceSource,
       quantityBreakId: item.quantityBreakId || null,
+      // SUKI steel-specific fields
+      productType: item.productType || null,
+      materialGrade: item.materialGrade || null,
+      materialSize: item.materialSize || null,
+      length: item.length != null ? parseFloat(item.length) : null,
+      numberOfPieces: item.numberOfPieces != null ? parseInt(item.numberOfPieces) : null,
+      rmMake: item.rmMake || null,
+      deliveryDays: item.deliveryDays != null ? parseInt(item.deliveryDays) : null,
+      remarks: item.remarks || null,
     };
   });
 
+  const totalCutting = computedItems.reduce((sum: number, it: any) => sum + (it.cuttingCharge || 0), 0);
   const discountAmount = subtotal * (discountPercent / 100);
-  const grandTotal = subtotal - discountAmount + taxAmount;
+  const grandTotal = subtotal - discountAmount + taxAmount + totalCutting;
 
   // Generate quotation code: QT-YYYY-NNNNN
   const year = new Date().getFullYear();
@@ -224,7 +236,7 @@ export async function POST(request: NextRequest) {
       // Recalculate grand total with resolved tax
       taxAmount = totalTax;
       const discountAmount = subtotal * (discountPercent / 100);
-      const grandTotal = subtotal - discountAmount + taxAmount;
+      const grandTotal = subtotal - discountAmount + taxAmount + totalCutting;
 
       // 1. Create quotation
       const q = await tx.quotation.create({

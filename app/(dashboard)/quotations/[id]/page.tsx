@@ -95,6 +95,8 @@ export default function QuotationDetailPage() {
   });
   const [negotiating, setNegotiating] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [generatingProforma, setGeneratingProforma] = useState(false);
+  const [proforma, setProforma] = useState<any>(null);
   const [docReloadKey, setDocReloadKey] = useState(0);
   const searchParams = useSearchParams();
   if (searchParams.get("v2") === "1") return <QuotationDetailPageV2 />;
@@ -125,6 +127,14 @@ export default function QuotationDetailPage() {
 
   useEffect(() => {
     loadQuotation();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/proforma-invoices?quotationId=${id}`)
+      .then((res) => res.json())
+      .then((data) => { if (data.success && data.data?.length > 0) setProforma(data.data[0]); })
+      .catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -423,6 +433,24 @@ export default function QuotationDetailPage() {
     window.open(`/api/quotations/${id}/pdf`, "_blank");
   };
 
+  const handleGenerateProforma = async () => {
+    setGeneratingProforma(true);
+    try {
+      const res = await fetch(`/api/quotations/${id}/proforma`, { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || `Proforma ${data.data?.proformaNumber ?? ""} created`);
+        router.push("/proforma-invoices");
+      } else {
+        toast.error(data.message || "Failed to generate proforma invoice");
+      }
+    } catch {
+      toast.error("Failed to generate proforma invoice");
+    } finally {
+      setGeneratingProforma(false);
+    }
+  };
+
 
   const handleDelete = () => {
     setConfirmState({
@@ -531,6 +559,7 @@ export default function QuotationDetailPage() {
   const canNegotiate = ["Sent", "UnderReview"].includes(quotation.status);
   const canAcceptReject = ["Sent", "UnderReview"].includes(quotation.status);
   const canCreatePo = quotation.status === "Accepted";
+  const canGenerateProforma = ["Accepted", "Converted to Customer"].includes(quotation.status);
   const hasChild = quotation.childRevisions && quotation.childRevisions.length > 0;
   const isNegotiationPriceRevision = quotation.negotiation && quotation.negotiation.status === "PriceRevision";
   const canClone = !hasChild && (["Rejected", "Expired"].includes(quotation.status) || isNegotiationPriceRevision);
@@ -666,6 +695,14 @@ export default function QuotationDetailPage() {
               <button onClick={handleReject} disabled={!["Sent", "UnderReview"].includes(quotation.status)} title={!["Sent", "UnderReview"].includes(quotation.status) ? "Quotation must be Sent or Under Review" : "Mark quotation as rejected by customer"} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${["Sent", "UnderReview"].includes(quotation.status) ? "text-white bg-[var(--status-danger)] hover:opacity-90" : "text-[var(--text-muted)] bg-[var(--surface-2)]"}`}><XCircle size={15} /> Reject</button>
               {/* PDF — always available */}
               <button onClick={handleDownloadPdf} title="Open printable quotation view" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-2)] hover:bg-[var(--border)] cursor-pointer"><Download size={15} /> PDF</button>
+              {/* Generate Proforma Invoice — only once the customer has accepted */}
+              {canGenerateProforma && (
+                proforma ? (
+                  <button onClick={() => router.push(`/proforma-invoices/${proforma.id}`)} className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[var(--status-success)] hover:opacity-90 cursor-pointer"><FileText size={15} /> View Proforma</button>
+                ) : (
+                  <button onClick={handleGenerateProforma} disabled={generatingProforma} title="Create a Proforma Invoice from this accepted quotation" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-[var(--status-success)] hover:opacity-90 cursor-pointer disabled:opacity-60"><FileText size={15} /> {generatingProforma ? "Generating..." : "Generate Proforma"}</button>
+                )
+              )}
             </>
           )}
         </div>

@@ -7,6 +7,7 @@ import { PageShell } from "@/components/ui/PageShell";
 import {
   Users, TrendingUp, IndianRupee, Clock, CalendarCheck,
   ArrowUpRight, ArrowDownRight, Activity,
+  FileText, CheckCircle, XCircle, Truck, AlertTriangle, PackageX, Target,
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -19,7 +20,7 @@ import { Line, Doughnut, Bar } from "react-chartjs-2";
 import InboundCheckInModal from "@/components/InboundCheckInModal";
 import OutboundCheckInModal from "@/components/OutboundCheckInModal";
 import CheckOutModal from "@/components/CheckOutModal";
-import { SalesFunnelChart, RecentLeadsTableWidget, AgentLeaderboard, CrossModuleBentoGrid, OverallCRMHealthScore, RecentActivityFeed, LeadSourceDoughnut, WinLossSummaryWidget, ForecastVsTargetWidget, FollowUpTrendWidget } from "./SalesWidgets";
+import { SalesFunnelChart, RecentLeadsTableWidget, AgentLeaderboard, CrossModuleBentoGrid, OverallCRMHealthScore, RecentActivityFeed, WinLossSummaryWidget, ForecastVsTargetWidget, FollowUpTrendWidget } from "./SalesWidgets";
 import { CountUp } from "@/components/ui/CountUp";
 
 ChartJS.register(
@@ -27,73 +28,26 @@ ChartJS.register(
   BarElement, ArcElement, Tooltip, Legend, Filler
 );
 
-// ─── Mini KPI Strip ─────────────────────────────────────────────────────────
-function KpiStrip({ dashboardData, salesData, formatCurrency }: any) {
+// ─── Overall KPI Strip (SUKI CRM metrics) ────────────────────────────────────
+function KpiStrip({ sukiData }: any) {
+  const data = sukiData || {};
+  const accentColor = "var(--accent)";
+
   const kpis = [
-    {
-      label: "Total Pipeline",
-      value: salesData?.kpis?.pipelineRevenue ?? 0,
-      display: salesData?.kpis?.pipelineRevenue ? <CountUp end={salesData.kpis.pipelineRevenue} prefix="₹" /> : "₹0",
-      trend: "Revenue at stake",
-      up: true,
-      icon: <IndianRupee size={20} />,
-      color: "var(--accent)",
-      bg: "var(--accent-soft)",
-    },
-    {
-      label: "Total Leads",
-      value: salesData?.kpis?.totalLeads ?? 0,
-      display: <CountUp end={salesData?.kpis?.totalLeads ?? 0} />,
-      trend: `${salesData?.kpis?.conversionRate ?? 0}% converted`,
-      up: true,
-      icon: <Users size={20} />,
-      color: "var(--accent)",
-      bg: "var(--accent-soft)",
-    },
-    {
-      label: "Open Deals",
-      value: salesData?.kpis?.openDeals ?? 0,
-      display: <CountUp end={salesData?.kpis?.openDeals ?? 0} />,
-      trend: "Active in pipeline",
-      up: true,
-      icon: <TrendingUp size={20} />,
-      color: "#f59e0b",
-      bg: "rgba(245, 158, 11, 0.12)",
-    },
-    {
-      label: "Total Accounts",
-      value: salesData?.crossModule?.accounts?.total ?? 0,
-      display: <CountUp end={salesData?.crossModule?.accounts?.total ?? 0} />,
-      trend: "Active customers",
-      up: true,
-      icon: <Activity size={20} />,
-      color: "var(--accent)",
-      bg: "var(--accent-soft)",
-    },
-    {
-      label: "Overdue Actions",
-      value: dashboardData?.stats?.followUpMetrics?.pending ?? 0,
-      display: <CountUp end={dashboardData?.stats?.followUpMetrics?.pending ?? 0} />,
-      trend: "Needs attention",
-      up: false,
-      icon: <Clock size={20} />,
-      color: "#ef4444",
-      bg: "rgba(239, 68, 68, 0.12)",
-    },
-    {
-      label: "Pending Samples",
-      value: salesData?.crossModule?.samples?.pending ?? 0,
-      display: <CountUp end={salesData?.crossModule?.samples?.pending ?? 0} />,
-      trend: "Awaiting review",
-      up: false,
-      icon: <CalendarCheck size={20} />,
-      color: "#8b5cf6",
-      bg: "rgba(139, 92, 246, 0.12)",
-    },
+    { label: "Total Leads", value: data.totalLeadsReceived ?? 0, trend: "All time", up: data.totalLeadsReceived > 0, icon: <Users size={20} />, color: accentColor, bg: "var(--accent-soft)" },
+    { label: "New Leads", value: data.newLeads ?? 0, trend: "This month", up: data.newLeads > 0, icon: <TrendingUp size={20} />, color: "#10b981", bg: "rgba(16,185,129,0.12)" },
+    { label: "Quotations Sent", value: data.quotationsSent ?? 0, trend: "Awaiting response", up: data.quotationsSent > 0, icon: <FileText size={20} />, color: "#8b5cf6", bg: "rgba(139,92,246,0.12)" },
+    { label: "Follow-up Pending", value: data.followUpPending ?? 0, trend: "Needs attention", up: data.followUpPending === 0, icon: <Clock size={20} />, color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+    { label: "Accepted", value: data.acceptedQuotations ?? 0, trend: "Won quotes", up: data.acceptedQuotations > 0, icon: <CheckCircle size={20} />, color: "#10b981", bg: "rgba(16,185,129,0.12)" },
+    { label: "Rejected", value: data.rejectedQuotations ?? 0, trend: "Lost quotes", up: data.rejectedQuotations === 0, icon: <XCircle size={20} />, color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
+    { label: "Converted Customers", value: data.convertedCustomers ?? 0, trend: "Order processing", up: data.convertedCustomers > 0, icon: <Target size={20} />, color: "#10b981", bg: "rgba(16,185,129,0.12)" },
+    { label: "Supplier Rate Checking", value: data.pendingSupplierRateChecking ?? 0, trend: "Pending rates", up: data.pendingSupplierRateChecking === 0, icon: <Truck size={20} />, color: "#8b5cf6", bg: "rgba(139,92,246,0.12)" },
+    { label: "Material Not Available", value: data.materialNotAvailable ?? 0, trend: "Unavailable", up: data.materialNotAvailable === 0, icon: <AlertTriangle size={20} />, color: "#ec4899", bg: "rgba(236,72,153,0.12)" },
+    { label: "No Stock", value: data.noStock ?? 0, trend: "Out of stock", up: data.noStock === 0, icon: <PackageX size={20} />, color: "#6366f1", bg: "rgba(99,102,241,0.12)" },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
       {kpis.map((k) => (
         <div key={k.label} className="bg-[var(--surface)] border border-[var(--border-subtle)] p-5 rounded-[24px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all duration-300 flex flex-col gap-3 group cursor-default">
           <div className="flex items-center justify-between">
@@ -102,7 +56,7 @@ function KpiStrip({ dashboardData, salesData, formatCurrency }: any) {
               {k.icon}
             </span>
           </div>
-          <p className="text-[22px] sm:text-2xl font-black text-[var(--text-primary)] m-0 tracking-tight">{k.display}</p>
+          <p className="text-[22px] sm:text-2xl font-black text-[var(--text-primary)] m-0 tracking-tight"><CountUp end={k.value} /></p>
           <div className="flex items-center gap-1.5 mt-auto pt-1">
             <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ color: k.up ? "#10b981" : "#ef4444", background: k.up ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)" }}>
               {k.up ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
@@ -116,52 +70,193 @@ function KpiStrip({ dashboardData, salesData, formatCurrency }: any) {
   );
 }
 
-// ─── Sales Line Chart Card ───────────────────────────────────────────────────
-function SalesLineCard({ salesData, formatCurrency }: { salesData: any, formatCurrency: (v: number) => string }) {
-  const [accentColor, setAccentColor] = useState('rgba(37, 99, 235, 1)');
-  const [accentBg, setAccentBg] = useState('rgba(37, 99, 235, 0.15)');
-  const [isDark, setIsDark] = useState(false);
+// ─── SUKI CRM Dashboard Section (mirrors /dashboard/crm) ─────────────────────
+function SukiDashCard({ title, className, children }: { title: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={"bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-[24px] flex flex-col hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] transition-all duration-300 " + (className || "")}>
+      <h3 className="text-sm font-bold text-[var(--text-primary)] mb-4 shrink-0">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+
+function SukiCrmSection({ data }: { data: any }) {
+  const [accentColor, setAccentColor] = useState("#2563EB");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const getRgba = (colorStr: string, opacity: number) => {
-        const color = colorStr.trim();
-        if (color.startsWith('#')) {
-          const hex = color.replace('#', '');
-          if (hex.length === 3) {
-            const r = parseInt(hex[0] + hex[0], 16);
-            const g = parseInt(hex[1] + hex[1], 16);
-            const b = parseInt(hex[2] + hex[2], 16);
-            return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-          } else if (hex.length === 6) {
-            const r = parseInt(hex.substring(0, 2), 16);
-            const g = parseInt(hex.substring(2, 4), 16);
-            const b = parseInt(hex.substring(4, 6), 16);
-            return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-          }
-        } else if (color.startsWith('rgb')) {
-          const match = color.match(/\d+/g);
-          if (match && match.length >= 3) {
-            return `rgba(${match[0]}, ${match[1]}, ${match[2]}, ${opacity})`;
-          }
-        }
-        return `rgba(37, 99, 235, ${opacity})`;
-      };
+    if (typeof window === "undefined") return;
+    const updateColors = () => {
+      const style = window.getComputedStyle(document.documentElement);
+      const acc = style.getPropertyValue("--accent").trim();
+      if (acc) setAccentColor(acc);
+    };
+    updateColors();
+    const observer = new MutationObserver(updateColors);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style", "data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
-      const updateColors = () => {
-        const style = window.getComputedStyle(document.documentElement);
-        const acc = style.getPropertyValue('--accent').trim();
-        if (acc) {
-          setAccentColor(acc);
-          setAccentBg(getRgba(acc, 0.15));
-        }
-        setIsDark(document.documentElement.classList.contains('dark'));
-      };
-      updateColors();
-      const observer = new MutationObserver(updateColors);
-      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class"] });
-      return () => observer.disconnect();
-    }
+  if (!data) return null;
+
+  const palette = [accentColor, accentColor + "CC", accentColor + "99", accentColor + "66", accentColor + "44", accentColor + "33", accentColor + "22", accentColor + "11"];
+
+  const execData = data.executivePerformance || [];
+  const sourceData = data.leadSourcePerformance || [];
+  const totalSourceLeads = sourceData.reduce((s: number, x: any) => s + (x.count || 0), 0);
+
+  const execChart = {
+    labels: execData.map((e: any) => e.name),
+    datasets: [{ label: "Customers", data: execData.map((e: any) => e.count), backgroundColor: accentColor, borderRadius: 6, barThickness: 28, maxBarThickness: 40 }],
+  };
+
+  const execOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: { beginAtZero: true, grid: { color: "rgba(148,163,184,0.12)" }, ticks: { precision: 0, font: { size: 10 } } },
+    },
+  };
+
+  const sourceChart = {
+    labels: sourceData.map((s: any) => s.name),
+    datasets: [{ data: sourceData.map((s: any) => s.count), backgroundColor: palette.slice(0, Math.max(sourceData.length, 1)), borderWidth: 0, hoverOffset: 4, cutout: "72%" }],
+  };
+
+  const sourceOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: any) => {
+            const val = ctx.raw;
+            const pct = totalSourceLeads > 0 ? Math.round((val / totalSourceLeads) * 100) : 0;
+            return ` ${ctx.label}: ${val} (${pct}%)`;
+          },
+        },
+      },
+    },
+  };
+
+  const conversionPct = parseFloat(data.conversionRatio) || 0;
+
+  return (
+    <section className="space-y-6 mb-10">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <SukiDashCard title="Marketing Executive-wise Performance" className="xl:col-span-2 h-[360px]">
+          {execData.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center"><p className="text-xs text-[var(--text-muted)] italic">No executive data available</p></div>
+          ) : (
+            <div className="flex-1 min-h-0"><Bar data={execChart} options={execOptions} /></div>
+          )}
+        </SukiDashCard>
+
+        <SukiDashCard title="Lead Source-wise Performance" className="h-[360px] justify-between">
+          {totalSourceLeads === 0 ? (
+            <div className="flex-1 flex items-center justify-center"><p className="text-xs text-[var(--text-muted)] italic">No lead source data available</p></div>
+          ) : (
+            <>
+              <div className="relative w-full h-[150px] flex items-center justify-center shrink-0">
+                <Doughnut data={sourceChart} options={sourceOptions} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mb-0.5">Leads</span>
+                  <span className="text-2xl font-black text-[var(--text-primary)] tracking-tight leading-none">{totalSourceLeads}</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] font-bold text-[var(--text-muted)]">
+                {sourceData.slice(0, 6).map((s: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-1.5 last:border-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: palette[idx % palette.length] }} />
+                      <span className="truncate">{s.name}</span>
+                    </div>
+                    <span className="text-[var(--text-primary)] pl-1 shrink-0">{s.count} ({totalSourceLeads > 0 ? Math.round((s.count / totalSourceLeads) * 100) : 0}%)</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </SukiDashCard>
+      </div>
+
+    </section>
+  );
+}
+
+// ─── SUKI Side Cards (Conversion + Quotation status) ──────────────────────────
+function SukiSideCards({ data }: { data: any }) {
+  const [accentColor, setAccentColor] = useState("#2563EB");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const updateColors = () => {
+      const style = window.getComputedStyle(document.documentElement);
+      const acc = style.getPropertyValue("--accent").trim();
+      if (acc) setAccentColor(acc);
+    };
+    updateColors();
+    const observer = new MutationObserver(updateColors);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style", "data-theme"] });
+    return () => observer.disconnect();
+  }, []);
+
+  if (!data) return null;
+  const palette = [accentColor, accentColor + "CC", accentColor + "99", accentColor + "66", accentColor + "44", accentColor + "33", accentColor + "22", accentColor + "11"];
+  const conversionPct = parseFloat(data.conversionRatio) || 0;
+
+  return (
+    <div className="flex flex-col gap-6 h-full">
+      <SukiDashCard title="Monthly Lead Conversion Ratio" className="h-[180px] justify-between">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <p className="text-[32px] font-black tracking-tight leading-none" style={{ color: accentColor }}>{conversionPct.toFixed(2)}%</p>
+          <p className="text-[11px] text-[var(--text-muted)] mt-2 text-center">Converted vs total leads this month</p>
+        </div>
+        <div className="w-full h-2 rounded-full bg-[var(--surface-2)] overflow-hidden shrink-0">
+          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(conversionPct, 100)}%`, backgroundColor: accentColor }} />
+        </div>
+      </SukiDashCard>
+
+      <SukiDashCard title="Quotation Status Breakdown" className="flex-1 h-[340px]">
+        <div className="flex-1 overflow-y-auto pr-1 min-h-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {(data.quotationStatusCounts || []).map((s: any, idx: number) => (
+              <div key={s.name} className="flex items-center justify-between p-3 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: palette[idx % palette.length] }} />
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider truncate">{s.name}</span>
+                </div>
+                <span className="text-base font-black text-[var(--text-primary)] shrink-0 pl-2">{s.count}</span>
+              </div>
+            ))}
+            {(!data.quotationStatusCounts || data.quotationStatusCounts.length === 0) && (
+              <p className="text-xs text-[var(--text-muted)] italic col-span-full">No quotations yet</p>
+            )}
+          </div>
+        </div>
+      </SukiDashCard>
+    </div>
+  );
+}
+
+// ─── Sales Bar Chart Card (like Executive Performance) ────────────────────────
+function SalesBarCard({ salesData }: { salesData: any }) {
+  const [accentColor, setAccentColor] = useState("#2563EB");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const updateColors = () => {
+      const style = window.getComputedStyle(document.documentElement);
+      const acc = style.getPropertyValue("--accent").trim();
+      if (acc) setAccentColor(acc);
+    };
+    updateColors();
+    const observer = new MutationObserver(updateColors);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style", "data-theme"] });
+    return () => observer.disconnect();
   }, []);
 
   const trend = salesData?.revenueTrend || [];
@@ -169,91 +264,40 @@ function SalesLineCard({ salesData, formatCurrency }: { salesData: any, formatCu
   const revenuePoints = trend.length ? trend.map((t: any) => t.revenue) : [0];
 
   const data = {
-    labels: labels,
-    datasets: [
-      {
-        label: "Revenue",
-        data: revenuePoints,
-        borderColor: accentColor, 
-        backgroundColor: (context: any) => {
-          const chart = context.chart;
-          const { ctx, chartArea } = chart;
-          if (!chartArea) return accentBg;
-          const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          
-          let r = 37, g = 99, b = 235; // Default blue
-          if (accentColor.startsWith('#')) {
-            const hex = accentColor.replace('#', '');
-            if (hex.length === 6) {
-              r = parseInt(hex.substring(0, 2), 16);
-              g = parseInt(hex.substring(2, 4), 16);
-              b = parseInt(hex.substring(4, 6), 16);
-            }
-          } else if (accentColor.startsWith('rgb')) {
-            const match = accentColor.match(/\d+/g);
-            if (match && match.length >= 3) {
-              r = parseInt(match[0], 10);
-              g = parseInt(match[1], 10);
-              b = parseInt(match[2], 10);
-            }
-          }
-          gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.4)`);
-          gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.0)`);
-          return gradient;
-        },
-        fill: true,
-        tension: 0.4, // Smooth curve as in the image
-        borderWidth: 3,
-        pointRadius: 0, // Hidden until hover
-        pointBackgroundColor: accentColor,
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        pointHoverRadius: 6,
-        pointHoverBackgroundColor: accentColor,
-        pointHoverBorderColor: '#ffffff',
-        pointHoverBorderWidth: 2,
-      },
-    ],
+    labels,
+    datasets: [{
+      label: "Revenue",
+      data: revenuePoints,
+      backgroundColor: accentColor,
+      borderRadius: 6,
+      barThickness: 28,
+      maxBarThickness: 40,
+    }],
   };
 
   const options: any = {
+    responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { mode: "index", intersect: false } },
+    plugins: { legend: { display: false } },
     scales: {
-      x: { 
-        grid: { display: true, color: 'rgba(148,163,184,0.1)' }, 
-        ticks: { font: { size: 11 }, color: isDark ? '#94a3b8' : '#64748b' }, 
-        border: { display: false } 
-      },
-      y: { 
-        type: 'linear', 
-        display: true, 
-        position: 'left', 
-        grid: { display: false }, 
-        border: { display: false }, 
-        ticks: { font: { size: 11 }, color: isDark ? '#94a3b8' : '#64748b', callback: (v: number) => (v / 1000) + 'k' } 
-      },
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: { beginAtZero: true, grid: { color: "rgba(148,163,184,0.12)" }, ticks: { precision: 0, font: { size: 10 } } },
     },
   };
 
   return (
-    <div className="bg-[var(--surface)] border border-[var(--border-subtle)] p-6 rounded-[24px] h-full flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <p className="text-lg font-bold text-[var(--text-primary)] m-0">Sales Analytics</p>
-        <select className="text-[11px] font-bold text-[var(--text-muted)] bg-[var(--surface-2)] border border-[var(--border-subtle)] px-3 py-1.5 rounded-lg outline-none cursor-pointer">
-          <option>This Week</option>
-          <option>Last Week</option>
-        </select>
-      </div>
-      <div className="flex-1 relative min-h-[240px]">
-        <Line data={data} options={options} />
-      </div>
-    </div>
+    <SukiDashCard title="Sales Analytics" className="h-full">
+      {trend.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center"><p className="text-xs text-[var(--text-muted)] italic">No sales data available</p></div>
+      ) : (
+        <div className="flex-1 min-h-0"><Bar data={data} options={options} /></div>
+      )}
+    </SukiDashCard>
   );
 }
 
 // ─── Main AdminDashboard ─────────────────────────────────────────────────────
-export default function AdminDashboard({ dashboardData, salesData, user, loadData, dateRange, setDateRange }: any) {
+export default function AdminDashboard({ dashboardData, salesData, sukiData, user, loadData, dateRange, setDateRange }: any) {
   const loading = !dashboardData;
   const { formatCurrency } = useCurrency();
 
@@ -291,16 +335,19 @@ export default function AdminDashboard({ dashboardData, salesData, user, loadDat
         </div>
       }
     >
-      {/* ── 1. KPI Strip ── */}
-      <KpiStrip dashboardData={dashboardData} salesData={salesData} formatCurrency={formatCurrency} />
+      {/* ── 1. Overall CRM KPI Strip ── */}
+      <KpiStrip sukiData={sukiData} />
 
-      {/* ── 2. Main Analytics Row (Revenue Trend & Lead Sources) ── */}
+      {/* ── SUKI CRM Analytics (charts) ── */}
+      <SukiCrmSection data={sukiData} />
+
+      {/* ── 2. Main Analytics Row (Sales Analytics + Side Cards) ── */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6">
         <div className="xl:col-span-3 h-[360px]">
-          <SalesLineCard salesData={salesData} formatCurrency={formatCurrency} />
+          <SalesBarCard salesData={salesData} />
         </div>
         <div className="xl:col-span-1 h-[360px]">
-          <LeadSourceDoughnut leadSources={salesData?.leadSources || []} />
+          <SukiSideCards data={sukiData} />
         </div>
       </div>
 

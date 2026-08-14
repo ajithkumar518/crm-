@@ -96,6 +96,8 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'quotations-sent', label: 'Sent', href: '/quotations?status=Sent', iconEmoji: '💰', keywords: ['sent', 'delivered'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-accepted', label: 'Accepted', href: '/quotations?status=Accepted', iconEmoji: '💰', keywords: ['accepted', 'won'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-rejected', label: 'Rejected', href: '/quotations?status=Rejected', iconEmoji: '💰', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
+  { key: 'quotations-proforma', label: 'Proforma Invoices', href: '/proforma-invoices', iconEmoji: '💰', keywords: ['proforma', 'invoice', 'pi'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
+  { key: 'quotations-sales-orders', label: 'Sales Orders', href: '/sales-orders', iconEmoji: '💰', keywords: ['sales order', 'so'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   // Reports sub-modules
   { key: 'reports-leads', label: 'Lead Report', href: '/reports/leads', iconEmoji: '📑', keywords: ['lead', 'prospect'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' },
   { key: 'reports-followups', label: 'Follow-Up Report', href: '/reports/followups', iconEmoji: '📑', keywords: ['followup', 'follow-up'], type: 'submodule', parentLabel: 'Reports', parentKey: 'reports' },
@@ -117,6 +119,11 @@ export const V2_EXTRAS: NavItem[] = [
   // V2 leads extras
   { key: 'leads-overdue', label: 'Overdue Leads', href: '/leads?status=Overdue', iconEmoji: '👤', keywords: ['overdue', 'late', 'stale'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads', variantMin: 2 },
   { key: 'leads-duplicate', label: 'Duplicate Leads', href: '/leads?status=Duplicate', iconEmoji: '👤', keywords: ['duplicate', 'copy'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads', variantMin: 2 },
+  { key: 'leads-capture', label: 'Lead Capture', href: '/leads/capture', iconEmoji: '🎣', keywords: ['lead capture', 'register', 'capture'], type: 'submodule', parentLabel: 'Leads', parentKey: 'leads', variantMin: 2 },
+  { key: 'emails', label: 'Emails', href: '/emails', iconEmoji: '✉️', keywords: ['email', 'mail', 'classification'], type: 'module', variantMin: 2 },
+  { key: 'emails-inbox', label: 'Inbox', href: '/emails', iconEmoji: '✉️', keywords: ['inbox', 'email classification'], type: 'submodule', parentLabel: 'Emails', parentKey: 'emails', variantMin: 2 },
+  { key: 'erp', label: 'ERP', href: '/erp', iconEmoji: '🔌', keywords: ['erp', 'integration'], type: 'module', variantMin: 2 },
+  { key: 'erp-integration', label: 'Integration', href: '/erp', iconEmoji: '🔌', keywords: ['erp integration', 'config'], type: 'submodule', parentLabel: 'ERP', parentKey: 'erp', variantMin: 2 },
   // V2 accounts extras
   { key: 'accounts-prospect', label: 'Prospect Accounts', href: '/customer-master?status=Prospect', iconEmoji: '🏢', keywords: ['prospect', 'potential'], type: 'submodule', parentLabel: 'Accounts', parentKey: 'accounts', variantMin: 2 },
   { key: 'accounts-inactive', label: 'Inactive Accounts', href: '/customer-master?status=Inactive', iconEmoji: '🏢', keywords: ['inactive', 'churned'], type: 'submodule', parentLabel: 'Accounts', parentKey: 'accounts', variantMin: 2 },

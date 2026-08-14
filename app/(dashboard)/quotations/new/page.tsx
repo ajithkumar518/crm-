@@ -60,7 +60,11 @@ export default function NewQuotationPage() {
     assignedUserId: "",
   });
 
-  const [items, setItems] = useState<any[]>([{ productId: "", description: "", quantity: "1", unitPrice: "0", hsn: "", unit: "Nos", discountPercent: "0", taxPercent: "18" }]);
+  const [items, setItems] = useState<any[]>([{
+    productId: "", description: "", quantity: "1", unitPrice: "0", hsn: "", unit: "kgs", discountPercent: "0", taxPercent: "18",
+    productType: "", materialGrade: "", materialSize: "", length: "", numberOfPieces: "", rmMake: "", deliveryDays: "", cuttingCharge: "", remarks: "",
+  }]);
+
   const [paymentTerms, setPaymentTerms] = useState("");
   const [deliveryTerms, setDeliveryTerms] = useState("");
   const [freightTerms, setFreightTerms] = useState("");
@@ -159,6 +163,17 @@ export default function NewQuotationPage() {
     }
   }, [form.customerId]);
 
+  useEffect(() => {
+    fetch("/api/terms-and-conditions/default")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.data?.content) {
+          setForm(prev => ({ ...prev, termsAndConditions: data.data.content }));
+        }
+      })
+      .catch(err => console.error("Failed to load default T&C:", err));
+  }, []);
+
   const subtotal = items.reduce((sum, item) => {
     const qty = parseFloat(item.quantity) || 0;
     const price = parseFloat(item.unitPrice) || 0;
@@ -176,7 +191,10 @@ export default function NewQuotationPage() {
   const discountAmount = subtotal * (discountPercent / 100);
   const finalAmount = subtotal - discountAmount + taxAmount;
 
-  const addItem = () => setItems([...items, { productId: "", description: "", quantity: "1", unitPrice: "0", hsn: "", unit: "Nos", discountPercent: "0", taxPercent: "18" }]);
+  const addItem = () => setItems([...items, {
+    productId: "", description: "", quantity: "1", unitPrice: "0", hsn: "", unit: "kgs", discountPercent: "0", taxPercent: "18",
+    productType: "", materialGrade: "", materialSize: "", length: "", numberOfPieces: "", rmMake: "", deliveryDays: "", cuttingCharge: "", remarks: "",
+  }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
   const updateItem = (idx: number, field: string, value: string) => {
     setItems(items.map((item, i) => (i === idx ? { ...item, [field]: value } : item)));
@@ -191,7 +209,11 @@ export default function NewQuotationPage() {
         description: product.name,
         unitPrice: String(product.basePrice || 0),
         hsn: product.hsnCode || product.productCode || item.hsn,
-        unit: product.unit || item.unit || "Nos",
+        unit: product.unit || item.unit || "kgs",
+        productType: product.productType || item.productType || "",
+        materialGrade: product.materialGrade || item.materialGrade || "",
+        materialSize: product.materialSize || item.materialSize || "",
+        rmMake: product.rmMake || item.rmMake || "",
       } : item)));
     } else {
       updateItem(idx, "productId", productId);
@@ -377,7 +399,7 @@ export default function NewQuotationPage() {
                     <Input type="text" placeholder="HSN" value={item.hsn} onChange={(e) => updateItem(idx, "hsn", e.target.value)} className="text-xs py-1.5" />
                   </div>
                   <div className="col-span-1">
-                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Qty</label>
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Qty (kgs)</label>
                     <Input type="number" step="0.01" min="1" placeholder="Qty" value={item.quantity} onChange={(e) => updateItem(idx, "quantity", e.target.value)} className={cn("text-xs py-1.5", item.quantity && validatePositiveNumeric(item.quantity, "Quantity") && "border-rose-500")} />
                     {item.quantity && validatePositiveNumeric(item.quantity, "Quantity") && <p className="text-[9px] text-rose-500 mt-0.5">{validatePositiveNumeric(item.quantity, "Quantity")}</p>}
                   </div>
@@ -403,6 +425,49 @@ export default function NewQuotationPage() {
                   <div className="col-span-0 flex flex-col items-start justify-end pb-1">
                     <span className="text-xs font-medium text-[var(--text-primary)]">{((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0) * (1 - (parseFloat(item.discountPercent) || 0) / 100)).toFixed(2)}</span>
                     {items.length > 1 && <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer mt-1"><Ico d={icons.x} size={12} /></button>}
+                  </div>
+                </div>
+                {/* SUKI Steel Details */}
+                <div className="grid grid-cols-12 gap-2 items-start mt-2 pt-2 border-t border-[var(--border-subtle)]">
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Product Type</label>
+                    <Select value={item.productType} onChange={(e) => updateItem(idx, "productType", e.target.value)} className="text-xs py-1.5">
+                      <option value="">--</option>
+                      <option value="Black Bar">Black Bar</option>
+                      <option value="Bright Bar">Bright Bar</option>
+                    </Select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Material Grade</label>
+                    <Input type="text" placeholder="Grade" value={item.materialGrade} onChange={(e) => updateItem(idx, "materialGrade", e.target.value)} className="text-xs py-1.5" />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Size</label>
+                    <Input type="text" placeholder="Size" value={item.materialSize} onChange={(e) => updateItem(idx, "materialSize", e.target.value)} className="text-xs py-1.5" />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">RM Make</label>
+                    <Input type="text" placeholder="Make" value={item.rmMake} onChange={(e) => updateItem(idx, "rmMake", e.target.value)} className="text-xs py-1.5" />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Length (mm)</label>
+                    <Input type="number" step="0.01" min="0" placeholder="mm" value={item.length} onChange={(e) => updateItem(idx, "length", e.target.value)} className="text-xs py-1.5" />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Pcs</label>
+                    <Input type="number" min="0" placeholder="Pcs" value={item.numberOfPieces} onChange={(e) => updateItem(idx, "numberOfPieces", e.target.value)} className="text-xs py-1.5" />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Delivery (days)</label>
+                    <Input type="number" min="0" placeholder="Days" value={item.deliveryDays} onChange={(e) => updateItem(idx, "deliveryDays", e.target.value)} className="text-xs py-1.5" />
+                  </div>
+                  <div className="col-span-1">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Cutting Chg</label>
+                    <Input type="number" step="0.01" min="0" placeholder="0" value={item.cuttingCharge} onChange={(e) => updateItem(idx, "cuttingCharge", e.target.value)} className="text-xs py-1.5" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Remarks</label>
+                    <Input type="text" placeholder="Remarks" value={item.remarks} onChange={(e) => updateItem(idx, "remarks", e.target.value)} className="text-xs py-1.5" />
                   </div>
                 </div>
               </div>

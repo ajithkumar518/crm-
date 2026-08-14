@@ -10,119 +10,119 @@ datasource db {
 }
 
 model User {
-  id                          String                      @id @default(uuid())
-  email                       String                      @unique
-  name                        String
-  passwordHash                String
-  role                        String                      @default("SalesExecutive")
-  userType                    String                      @default("internal")
-  phone                       String?
-  profilePhoto                String?                     @db.NVarChar(Max)
-  isActive                    Boolean                     @default(true)
-  isFirstLogin                Boolean                     @default(true)
-  otpCode                     String?
-  otpExpiry                   DateTime?
-  otpAttempts                 Int                         @default(0)
-  resetToken                  String?                     @db.NVarChar(Max)
-  resetTokenExpiry            DateTime?
-  loginAttempts               Int                         @default(0)
-  lockedUntil                 DateTime?
-  lastLoginAt                 DateTime?
-  invitedBy                   String?
-  invitedAt                   DateTime?
-  rememberMe                  Boolean                     @default(false)
-  lastActivityAt              DateTime?
-  activationToken             String?                     @db.NVarChar(Max)
-  activationTokenExpiry       DateTime?
-  passwordSetAt               DateTime?
-  variantLocked               Boolean                     @default(false)
-  disableServiceCrm           Boolean                     @default(false)
-  createdAt                   DateTime                    @default(now())
-  updatedAt                   DateTime                    @updatedAt
-  companyId                   String?
-  deletedAt                   DateTime?
-  deletedById                 String?
-  theme                       String                      @default("ocean")
-  themeMode                   String                      @default("light")
-  preferredCurrency           String                      @default("INR")
-  department                  String?
-  activityAttendees           ActivityAttendee[]
-  requestedApprovals          ApprovalHistory[]           @relation("RequestedApprovals")
-  resolvedApprovals           ApprovalHistory[]           @relation("ResolvedApprovals")
-  approvalRequests            ApprovalRequest[]           @relation("ApprovalRequestRequestedBy")
-  approvalResolvedBy          ApprovalRequest[]           @relation("ApprovalRequestResolvedBy")
-  auditLogs                   AuditLog[]
-  callLogs                    CallLog[]
-  communicationLogs           CommunicationLog[]
-  Contact                     Contact[]
-  documentDeletedBy           CRMDocument[]               @relation("DocumentDeletedBy")
-  documents                   CRMDocument[]               @relation("UploadedDocuments")
-  assignedCustomers           Customer[]                  @relation("AssignedCustomers")
-  onboardedCustomers          Customer[]                  @relation("OnboardedCustomers")
-  customerVisits              CustomerVisit[]
-  assignedDeals               Deal[]
-  approvedDiscounts           Deal[]                      @relation("ApprovedDiscounts")
-  dealStageHistories          DealStageHistory[]
-  assignedFollowUps           FollowUp[]                  @relation("AssignedFollowUps")
-  completedFollowUps          FollowUp[]                  @relation("CompletedFollowUps")
-  forecastEntries             ForecastEntry[]
-  keyAccountsManaged          KeyAccount[]                @relation("ManagedKeyAccounts")
-  leads                       Lead[]
-  leadOwnerHistoryChangedBy   LeadOwnerHistory[]          @relation("OwnerHistoryChangedBy")
-  leadOwnerHistoryFrom        LeadOwnerHistory[]          @relation("OwnerHistoryFrom")
-  leadOwnerHistoryTo          LeadOwnerHistory[]          @relation("OwnerHistoryTo")
-  lostDealAnalysesRecorded    LostDealAnalysis[]          @relation("RecordedLostDealAnalyses")
-  approvedVisits              MarketingVisit[]            @relation("ApprovedVisits")
-  marketingVisits             MarketingVisit[]            @relation("ExecutiveVisits")
-  approvedNegotiations        Negotiation[]               @relation("ApprovedNegotiations")
-  visitStatusChanges          CustomerVisitStatusLog[]
-  assignedVisits              CustomerVisit[]             @relation("AssignedVisits")
-  visitHosts                  VisitHost[]                 @relation("VisitHosts")
-  assignedNegotiations        Negotiation[]               @relation("AssignedNegotiations")
-  negotiationDeletedBy        Negotiation[]               @relation("NegotiationDeletedBy")
-  negotiationRevisions        NegotiationRevision[]       @relation("NegotiationRevisions")
-  approvedNegotiationRevisions NegotiationRevision[]      @relation("ApprovedNegotiationRevisions")
-  createdNotes                Note[]                      @relation("CreatedNotes")
-  notifications               Notification[]
-  notificationPrefs           NotificationPreference?
-  passwordResetTokens         PasswordResetToken[]
-  proposalVersions            ProposalVersion[]
-  approvedPurchaseOrders      PurchaseOrder[]             @relation("ApprovedPurchaseOrders")
-  assignedPurchaseOrders      PurchaseOrder[]             @relation("AssignedPurchaseOrders")
-  purchaseOrderDeletedBy      PurchaseOrder[]             @relation("PurchaseOrderDeletedBy")
-  assignedQuotations          Quotation[]                 @relation("AssignedQuotations")
-  createdQuotations           Quotation[]                 @relation("CreatedQuotations")
-  quotationApprover           QuotationApproval[]         @relation("QuotationApprover")
-  requestedQuotationApprovals QuotationApproval[]         @relation("RequestedQuotationApprovals")
-  quotationRevisionAuthors    QuotationApproval[]         @relation("QuotationRevisionAuthors")
-  createdRevisionSnapshots    QuotationRevisionSnapshot[] @relation("CreatedRevisionSnapshots")
-  quotationDocuments         QuotationDocument[]         @relation("QuotationDocumentsGenerated")
-  changedQuotationStatuses    QuotationStatusHistory[]    @relation("ChangedQuotationStatus")
-  exportedReports             ReportExportLog[]           @relation("ExportedReports")
-  createdReportSchedules      ReportSchedule[]            @relation("CreatedReportSchedules")
-  rfqs                        RFQ[]                       @relation("AssignedRFQs")
-  costingRFQs                 RFQ[]                       @relation("CostingOwnerRFQs")
-  revisedRFQs                 RFQ[]                       @relation("RevisedRFQs")
-  submittedCostingSheets      RFQCostingSheet[]           @relation("SubmittedCostingSheets")
-  changedRFQStatuses          RFQStatusHistory[]          @relation("ChangedRFQStatus")
-  salesTargets                SalesTarget[]               @relation("AssignedSalesTargets")
-  approvedSamples             SampleRequest[]             @relation("ApprovedSamples")
-  assignedSamples             SampleRequest[]             @relation("AssignedSamples")
-  sampleDeletedBy             SampleRequest[]             @relation("SampleDeletedBy")
-  rejectedSamples             SampleRequest[]             @relation("RejectedSamples")
-  assignedTickets             SupportTicket[]
-  tasksAssignedBy             Task[]                      @relation("TaskAssignedBy")
-  Task                        Task[]
-  taskComments                TaskComment[]
-  territoriesOwned            Territory[]                 @relation("AssignedTerritories")
-  company                     Company?                    @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  hostedVisitors              Visitor[]
-  ciCreated                   CompetitorInvolvement[]     @relation("CompetitorInvolvementCreator")
-  ciUpdated                   CompetitorInvolvement[]     @relation("CompetitorInvolvementUpdater")
-  ciDiscountApproved          CompetitorInvolvement[]     @relation("CompetitorInvolvementDiscountApprover")
-  managedTeams                ServiceTeam[]               @relation("TeamManager")
-  serviceEngineers            ServiceEngineer[]           @relation("UserEngineer")
-  technicalNotes              OpportunityTechnicalNote[]  @relation("EngineerTechnicalNotes")
+  id                           String                      @id @default(uuid())
+  email                        String                      @unique
+  name                         String
+  passwordHash                 String
+  role                         String                      @default("SalesExecutive")
+  userType                     String                      @default("internal")
+  phone                        String?
+  profilePhoto                 String?                     @db.NVarChar(Max)
+  isActive                     Boolean                     @default(true)
+  isFirstLogin                 Boolean                     @default(true)
+  otpCode                      String?
+  otpExpiry                    DateTime?
+  otpAttempts                  Int                         @default(0)
+  resetToken                   String?                     @db.NVarChar(Max)
+  resetTokenExpiry             DateTime?
+  loginAttempts                Int                         @default(0)
+  lockedUntil                  DateTime?
+  lastLoginAt                  DateTime?
+  invitedBy                    String?
+  invitedAt                    DateTime?
+  rememberMe                   Boolean                     @default(false)
+  lastActivityAt               DateTime?
+  activationToken              String?                     @db.NVarChar(Max)
+  activationTokenExpiry        DateTime?
+  passwordSetAt                DateTime?
+  variantLocked                Boolean                     @default(false)
+  disableServiceCrm            Boolean                     @default(false)
+  createdAt                    DateTime                    @default(now())
+  updatedAt                    DateTime                    @updatedAt
+  companyId                    String?
+  deletedAt                    DateTime?
+  deletedById                  String?
+  theme                        String                      @default("ocean")
+  themeMode                    String                      @default("light")
+  preferredCurrency            String                      @default("INR")
+  department                   String?
+  activityAttendees            ActivityAttendee[]
+  requestedApprovals           ApprovalHistory[]           @relation("RequestedApprovals")
+  resolvedApprovals            ApprovalHistory[]           @relation("ResolvedApprovals")
+  approvalRequests             ApprovalRequest[]           @relation("ApprovalRequestRequestedBy")
+  approvalResolvedBy           ApprovalRequest[]           @relation("ApprovalRequestResolvedBy")
+  auditLogs                    AuditLog[]
+  callLogs                     CallLog[]
+  communicationLogs            CommunicationLog[]
+  Contact                      Contact[]
+  documentDeletedBy            CRMDocument[]               @relation("DocumentDeletedBy")
+  documents                    CRMDocument[]               @relation("UploadedDocuments")
+  assignedCustomers            Customer[]                  @relation("AssignedCustomers")
+  onboardedCustomers           Customer[]                  @relation("OnboardedCustomers")
+  customerVisits               CustomerVisit[]
+  assignedDeals                Deal[]
+  approvedDiscounts            Deal[]                      @relation("ApprovedDiscounts")
+  dealStageHistories           DealStageHistory[]
+  assignedFollowUps            FollowUp[]                  @relation("AssignedFollowUps")
+  completedFollowUps           FollowUp[]                  @relation("CompletedFollowUps")
+  forecastEntries              ForecastEntry[]
+  keyAccountsManaged           KeyAccount[]                @relation("ManagedKeyAccounts")
+  leads                        Lead[]
+  leadOwnerHistoryChangedBy    LeadOwnerHistory[]          @relation("OwnerHistoryChangedBy")
+  leadOwnerHistoryFrom         LeadOwnerHistory[]          @relation("OwnerHistoryFrom")
+  leadOwnerHistoryTo           LeadOwnerHistory[]          @relation("OwnerHistoryTo")
+  lostDealAnalysesRecorded     LostDealAnalysis[]          @relation("RecordedLostDealAnalyses")
+  approvedVisits               MarketingVisit[]            @relation("ApprovedVisits")
+  marketingVisits              MarketingVisit[]            @relation("ExecutiveVisits")
+  approvedNegotiations         Negotiation[]               @relation("ApprovedNegotiations")
+  visitStatusChanges           CustomerVisitStatusLog[]
+  assignedVisits               CustomerVisit[]             @relation("AssignedVisits")
+  visitHosts                   VisitHost[]                 @relation("VisitHosts")
+  assignedNegotiations         Negotiation[]               @relation("AssignedNegotiations")
+  negotiationDeletedBy         Negotiation[]               @relation("NegotiationDeletedBy")
+  negotiationRevisions         NegotiationRevision[]       @relation("NegotiationRevisions")
+  approvedNegotiationRevisions NegotiationRevision[]       @relation("ApprovedNegotiationRevisions")
+  createdNotes                 Note[]                      @relation("CreatedNotes")
+  notifications                Notification[]
+  notificationPrefs            NotificationPreference?
+  passwordResetTokens          PasswordResetToken[]
+  proposalVersions             ProposalVersion[]
+  approvedPurchaseOrders       PurchaseOrder[]             @relation("ApprovedPurchaseOrders")
+  assignedPurchaseOrders       PurchaseOrder[]             @relation("AssignedPurchaseOrders")
+  purchaseOrderDeletedBy       PurchaseOrder[]             @relation("PurchaseOrderDeletedBy")
+  assignedQuotations           Quotation[]                 @relation("AssignedQuotations")
+  createdQuotations            Quotation[]                 @relation("CreatedQuotations")
+  quotationApprover            QuotationApproval[]         @relation("QuotationApprover")
+  requestedQuotationApprovals  QuotationApproval[]         @relation("RequestedQuotationApprovals")
+  quotationRevisionAuthors     QuotationApproval[]         @relation("QuotationRevisionAuthors")
+  createdRevisionSnapshots     QuotationRevisionSnapshot[] @relation("CreatedRevisionSnapshots")
+  quotationDocuments           QuotationDocument[]         @relation("QuotationDocumentsGenerated")
+  changedQuotationStatuses     QuotationStatusHistory[]    @relation("ChangedQuotationStatus")
+  exportedReports              ReportExportLog[]           @relation("ExportedReports")
+  createdReportSchedules       ReportSchedule[]            @relation("CreatedReportSchedules")
+  rfqs                         RFQ[]                       @relation("AssignedRFQs")
+  costingRFQs                  RFQ[]                       @relation("CostingOwnerRFQs")
+  revisedRFQs                  RFQ[]                       @relation("RevisedRFQs")
+  submittedCostingSheets       RFQCostingSheet[]           @relation("SubmittedCostingSheets")
+  changedRFQStatuses           RFQStatusHistory[]          @relation("ChangedRFQStatus")
+  salesTargets                 SalesTarget[]               @relation("AssignedSalesTargets")
+  approvedSamples              SampleRequest[]             @relation("ApprovedSamples")
+  assignedSamples              SampleRequest[]             @relation("AssignedSamples")
+  sampleDeletedBy              SampleRequest[]             @relation("SampleDeletedBy")
+  rejectedSamples              SampleRequest[]             @relation("RejectedSamples")
+  assignedTickets              SupportTicket[]
+  tasksAssignedBy              Task[]                      @relation("TaskAssignedBy")
+  Task                         Task[]
+  taskComments                 TaskComment[]
+  territoriesOwned             Territory[]                 @relation("AssignedTerritories")
+  company                      Company?                    @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  hostedVisitors               Visitor[]
+  ciCreated                    CompetitorInvolvement[]     @relation("CompetitorInvolvementCreator")
+  ciUpdated                    CompetitorInvolvement[]     @relation("CompetitorInvolvementUpdater")
+  ciDiscountApproved           CompetitorInvolvement[]     @relation("CompetitorInvolvementDiscountApprover")
+  managedTeams                 ServiceTeam[]               @relation("TeamManager")
+  serviceEngineers             ServiceEngineer[]           @relation("UserEngineer")
+  technicalNotes               OpportunityTechnicalNote[]  @relation("EngineerTechnicalNotes")
 
   serviceRequests           ServiceRequest[]
   complaints                Complaint[]
@@ -131,9 +131,11 @@ model User {
   warrantyClaims            WarrantyClaim[]
   amcContracts              AMCContract[]
   serviceVisits             ServiceVisit[]
-  escalationRulesNotifyUser EscalationRule[] @relation("EscalationRuleNotifyUser")
+  escalationRulesNotifyUser EscalationRule[]  @relation("EscalationRuleNotifyUser")
   projectsCreated           Project[]         @relation("ProjectCreatedBy")
   partMovementsCreated      PartMovement[]
+  ProformaInvoice           ProformaInvoice[]
+  SalesOrder                SalesOrder[]
 
   @@index([role])
   @@index([isActive])
@@ -160,7 +162,7 @@ model Customer {
   installations          Installation[]
   warrantyClaims         WarrantyClaim[]
   amcContracts           AMCContract[]
-  serviceVisits           ServiceVisit[]
+  serviceVisits          ServiceVisit[]
   convertedFromLead      String?
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
@@ -173,6 +175,9 @@ model Customer {
   creditLimit            Float                   @default(0)
   creditTermsDays        Int                     @default(30)
   gstNumber              String?
+  customerCategory       String? // 80-20 | NON-80-20
+  state                  String?
+  paymentTerms           String?                 @db.NVarChar(Max)
   industryType           String?
   isKeyAccountV2         Boolean                 @default(false)
   lastActivityDate       DateTime?
@@ -206,6 +211,8 @@ model Customer {
   assets                 CustomerAsset[]         @relation("CustomerAssets")
   serviceReviews         ServiceReview[]         @relation("CustomerReviews")
   projects               Project[]
+  ProformaInvoice        ProformaInvoice[]
+  SalesOrder             SalesOrder[]
 
   @@index([customerCode])
   @@index([status])
@@ -500,8 +507,8 @@ model FollowUp {
   updatedAt         DateTime           @updatedAt
   visitId           String?
   visitType         String?
-  completedAt   DateTime?
-  isEmergency   Boolean   @default(false)
+  completedAt       DateTime?
+  isEmergency       Boolean            @default(false)
   notes             String?            @db.NVarChar(Max)
   dueDate           DateTime?
   reminderAt        DateTime?
@@ -620,7 +627,7 @@ model Deal {
   rfqs                   RFQ[]                        @relation("OpportunityRFQs")
   tasks                  Task[]
   competitorInvolvements CompetitorInvolvement[]      @relation("CompetitorInvolvementDeal")
-  customerAssets         CustomerAsset[]               @relation("CustomerAssetDeal")
+  customerAssets         CustomerAsset[]              @relation("CustomerAssetDeal")
   followUps              FollowUp[]
   projects               Project[]
 
@@ -634,28 +641,27 @@ model Deal {
 }
 
 model OpportunityDetail {
-  id                      String    @id @default(uuid())
-  dealId                  String    @unique
-  currentChallenges       String?   @db.NVarChar(Max)
-  painPoints              String?   @db.NVarChar(Max)
-  painPointsList          String?   @db.NVarChar(Max)
-  requiredFeatures        String?   @db.NVarChar(Max)
-  modulesRequired         String?   @db.NVarChar(Max)
-  deploymentType          String?
-  integrationsRequired    String?   @db.NVarChar(Max)
-  userCountSales          Int?
-  userCountManagers       Int?
-  userCountAdmins         Int?
-  budgetRange             String?
-  timeline                String?
-  procurementProcess      String?
-  decisionMaker           String?
-  influencer              String?
-  budgetOwner             String?
-  expectedGoLive          DateTime?
-  currentVendor           String?
-  competitorsEvaluated    String?   @db.NVarChar(Max)
-
+  id                   String    @id @default(uuid())
+  dealId               String    @unique
+  currentChallenges    String?   @db.NVarChar(Max)
+  painPoints           String?   @db.NVarChar(Max)
+  painPointsList       String?   @db.NVarChar(Max)
+  requiredFeatures     String?   @db.NVarChar(Max)
+  modulesRequired      String?   @db.NVarChar(Max)
+  deploymentType       String?
+  integrationsRequired String?   @db.NVarChar(Max)
+  userCountSales       Int?
+  userCountManagers    Int?
+  userCountAdmins      Int?
+  budgetRange          String?
+  timeline             String?
+  procurementProcess   String?
+  decisionMaker        String?
+  influencer           String?
+  budgetOwner          String?
+  expectedGoLive       DateTime?
+  currentVendor        String?
+  competitorsEvaluated String?   @db.NVarChar(Max)
 
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -695,8 +701,8 @@ model OpportunityDetail {
   technicalConstraints    String?   @db.NVarChar(Max)
   urgencyPriority         String?
   userRolesPermissions    String?   @db.NVarChar(Max)
-  requirementcompletedAt   DateTime?
-  isEmergency   Boolean   @default(false)
+  requirementcompletedAt  DateTime?
+  isEmergency             Boolean   @default(false)
   sampleRequested         Boolean   @default(false)
   sampleApproved          Boolean   @default(false)
   sampleApprovedDate      DateTime?
@@ -736,7 +742,7 @@ model MeetingLog {
   participants    String?   @db.NVarChar(Max)
   agenda          String?   @db.NVarChar(Max)
   conductedAt     DateTime?
-  outcome         String?   // "Accepted", "Rejected", "Follow-up needed"
+  outcome         String? // "Accepted", "Rejected", "Follow-up needed"
   notes           String?   @db.NVarChar(Max) // Demo feedback or meeting outcome notes
   rejectionReason String?
   createdAt       DateTime  @default(now())
@@ -762,6 +768,12 @@ model OpportunityRequirementItem {
   specNotes         String?                   @db.NVarChar(Max)
   attachmentUrl     String?                   @db.NVarChar(Max)
   displayOrder      Int                       @default(0)
+  len               Float?
+  materialGrade     String?
+  pcs               Int?
+  productType       String?
+  rmMake            String?
+  size              String?
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
   technicalNote     OpportunityTechnicalNote?
@@ -1113,6 +1125,9 @@ model Company {
   users                  User[]
   whatsappTemplates      WhatsAppTemplate[]
   competitorInvolvements CompetitorInvolvement[] @relation("CompetitorInvolvementCompany")
+  TermsAndConditions     TermsAndConditions[]
+  ProformaInvoice        ProformaInvoice[]
+  SalesOrder             SalesOrder[]
 }
 
 model LeadSource {
@@ -1179,6 +1194,8 @@ model Contact {
   samples                SampleRequest[]
   Task                   Task[]
   competitorInvolvements CompetitorInvolvement[] @relation("CompetitorInvolvementContact")
+  ProformaInvoice        ProformaInvoice[]
+  SalesOrder             SalesOrder[]
 
   @@index([ownerId])
   @@index([status])
@@ -1205,8 +1222,8 @@ model Task {
   dealId             String?
   assignedBy         String?
   cancellationReason String?       @db.NVarChar(Max)
-  completedAt   DateTime?
-  isEmergency   Boolean   @default(false)
+  completedAt        DateTime?
+  isEmergency        Boolean       @default(false)
   AssignedBy         User?         @relation("TaskAssignedBy", fields: [assignedBy], references: [id], onDelete: NoAction, onUpdate: NoAction)
   User               User          @relation(fields: [assignedTo], references: [id], onUpdate: NoAction)
   Contact            Contact?      @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -1243,36 +1260,42 @@ model ProductCategory {
 }
 
 model Product {
-  id                 String                 @id @default(uuid())
-  productCode        String
-  name               String
-  categoryId         String?
-  description        String?                @db.NVarChar(Max)
-  unit               String?
-  basePrice          Float?
-  isActive           Boolean                @default(true)
-  companyId          String?
-  hsnCode            String?
-  deletedAt          DateTime?
-  deletedById        String?
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
-  minOrderQuantity   Float?
-  productType        String?
-  productImageUrl    String?                @db.NVarChar(Max)
-  category           ProductCategory?       @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  company            Company?               @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  specifications     ProductSpecification[]
-  datasheets         ProductDatasheet[]
-  brochures          ProductBrochure[]
-  purchaseOrderItems PurchaseOrderItem[]
-  quotationItems     QuotationItem[]
-  rfqs               RFQ[]
-  rfqLineItems       RFQLineItem[]
-  samples            SampleRequest[]
-  bomItems           BOMItem[]
-  routingOperations  RoutingOperation[]
-  customerAssets     CustomerAsset[]       @relation("CustomerAssetProduct")
+  id                  String                 @id @default(uuid())
+  productCode         String
+  name                String
+  categoryId          String?
+  description         String?                @db.NVarChar(Max)
+  unit                String?
+  basePrice           Float?
+  isActive            Boolean                @default(true)
+  companyId           String?
+  hsnCode             String?
+  deletedAt           DateTime?
+  deletedById         String?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  minOrderQuantity    Float?
+  materialGrade       String?
+  materialSize        String?
+  partNumber          String?
+  rmMake              String? // raw material make
+  productType         String? // Black Bar | Bright Bar
+  productImageUrl     String?                @db.NVarChar(Max)
+  category            ProductCategory?       @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  company             Company?               @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  specifications      ProductSpecification[]
+  datasheets          ProductDatasheet[]
+  brochures           ProductBrochure[]
+  purchaseOrderItems  PurchaseOrderItem[]
+  quotationItems      QuotationItem[]
+  rfqs                RFQ[]
+  rfqLineItems        RFQLineItem[]
+  samples             SampleRequest[]
+  bomItems            BOMItem[]
+  routingOperations   RoutingOperation[]
+  customerAssets      CustomerAsset[]        @relation("CustomerAssetProduct")
+  ProformaInvoiceItem ProformaInvoiceItem[]
+  SalesOrderItem      SalesOrderItem[]
 
   @@unique([companyId, productCode])
   @@index([companyId])
@@ -1444,6 +1467,8 @@ model Quotation {
   quotationStatusHistories QuotationStatusHistory[]
   competitorInvolvements   CompetitorInvolvement[]     @relation("CompetitorInvolvementQuotation")
   documents                QuotationDocument[]
+  ProformaInvoice          ProformaInvoice?
+  SalesOrder               SalesOrder[]
 
   @@index([customerId])
   @@index([status])
@@ -1474,6 +1499,15 @@ model QuotationItem {
   costBasisUnitPrice Decimal?                  @db.Decimal(12, 2)
   marginPercent      Decimal?                  @db.Decimal(8, 2)
   priceSource        String                    @default("RFQCosting")
+  productType        String? // Black Bar | Bright Bar
+  materialGrade      String?
+  materialSize       String?
+  lengthMm           Float?
+  numberOfPieces     Float?
+  rmMake             String?
+  deliveryDays       Int?
+  cuttingCharge      Float?
+  remarks            String?                   @db.NVarChar(Max)
   quantityBreakId    String?
   product            Product?                  @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   quotation          Quotation                 @relation(fields: [quotationId], references: [id], onDelete: Cascade)
@@ -1656,59 +1690,59 @@ model NegotiationRevision {
 }
 
 model PurchaseOrder {
-  id                  String              @id @default(uuid())
-  poCode              String              @unique
-  customerId          String
-  contactId           String?
-  negotiationId       String?
-  quotationId         String?
-  dealId              String?
-  status              String              @default("New")
-  poNumber            String?
-  poDate              DateTime?
-  expectedDelivery    DateTime?
-  actualDelivery      DateTime?
-  totalAmount         Float               @default(0)
-  discountPercent     Float               @default(0)
-  finalAmount         Float               @default(0)
-  taxAmount           Float               @default(0)
-  paymentTerms        String?
-  deliveryTerms       String?
-  shippingAddress     String?             @db.NVarChar(Max)
-  billingAddress      String?             @db.NVarChar(Max)
-  notes               String?             @db.NVarChar(Max)
-  assignedUserId      String?
-  companyId           String?
-  deletedAt           DateTime?
-  deletedById         String?
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  erpPayload          String?             @db.NVarChar(Max)
-  erpReferenceNumber  String?
-  erpResponse         String?             @db.NVarChar(Max)
-  erpSyncStatus       String?
-  erpSyncedAt         DateTime?
-  poDocumentUrl       String?             @db.NVarChar(Max)
-  specialInstructions String?             @db.NVarChar(Max)
-  validationChecklist String?             @db.NVarChar(Max)
-  quotationFinalAmount Float?             @default(0)
-  amountReconciled    Boolean             @default(false)
-  approvedAt          DateTime?
-  approvedById        String?
-  rejectionReason     String?             @db.NVarChar(Max)
-  onHoldAt            DateTime?
-  onHoldReason        String?             @db.NVarChar(Max)
-  approvedBy          User?               @relation("ApprovedPurchaseOrders", fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  assignedUser        User?               @relation("AssignedPurchaseOrders", fields: [assignedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  company             Company?            @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  contact             Contact?            @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer            Customer            @relation(fields: [customerId], references: [id], onUpdate: NoAction)
-  deal                Deal?               @relation(fields: [dealId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  deletedBy           User?               @relation("PurchaseOrderDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  negotiation         Negotiation?        @relation(fields: [negotiationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  quotation           Quotation?          @relation(fields: [quotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  items               PurchaseOrderItem[]
-  customerAssets      CustomerAsset[]   @relation("CustomerAssetPO")
+  id                   String              @id @default(uuid())
+  poCode               String              @unique
+  customerId           String
+  contactId            String?
+  negotiationId        String?
+  quotationId          String?
+  dealId               String?
+  status               String              @default("New")
+  poNumber             String?
+  poDate               DateTime?
+  expectedDelivery     DateTime?
+  actualDelivery       DateTime?
+  totalAmount          Float               @default(0)
+  discountPercent      Float               @default(0)
+  finalAmount          Float               @default(0)
+  taxAmount            Float               @default(0)
+  paymentTerms         String?
+  deliveryTerms        String?
+  shippingAddress      String?             @db.NVarChar(Max)
+  billingAddress       String?             @db.NVarChar(Max)
+  notes                String?             @db.NVarChar(Max)
+  assignedUserId       String?
+  companyId            String?
+  deletedAt            DateTime?
+  deletedById          String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  erpPayload           String?             @db.NVarChar(Max)
+  erpReferenceNumber   String?
+  erpResponse          String?             @db.NVarChar(Max)
+  erpSyncStatus        String?
+  erpSyncedAt          DateTime?
+  poDocumentUrl        String?             @db.NVarChar(Max)
+  specialInstructions  String?             @db.NVarChar(Max)
+  validationChecklist  String?             @db.NVarChar(Max)
+  quotationFinalAmount Float?              @default(0)
+  amountReconciled     Boolean             @default(false)
+  approvedAt           DateTime?
+  approvedById         String?
+  rejectionReason      String?             @db.NVarChar(Max)
+  onHoldAt             DateTime?
+  onHoldReason         String?             @db.NVarChar(Max)
+  approvedBy           User?               @relation("ApprovedPurchaseOrders", fields: [approvedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assignedUser         User?               @relation("AssignedPurchaseOrders", fields: [assignedUserId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  company              Company?            @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contact              Contact?            @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer             Customer            @relation(fields: [customerId], references: [id], onUpdate: NoAction)
+  deal                 Deal?               @relation(fields: [dealId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  deletedBy            User?               @relation("PurchaseOrderDeletedBy", fields: [deletedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  negotiation          Negotiation?        @relation(fields: [negotiationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quotation            Quotation?          @relation(fields: [quotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  items                PurchaseOrderItem[]
+  customerAssets       CustomerAsset[]     @relation("CustomerAssetPO")
 
   @@index([customerId])
   @@index([negotiationId])
@@ -1720,21 +1754,21 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id                  String        @id @default(uuid())
-  purchaseOrderId     String
-  productId           String?
-  description         String
-  quantity            Float
-  unitPrice           Float
-  totalPrice          Float
-  discountPercent     Float         @default(0)
-  taxPercent          Float         @default(18)
-  lineTotal           Float         @default(0)
-  costBasisUnitPrice  Float?
-  marginPercent       Float?
-  notes               String?
-  product             Product?      @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  purchaseOrder       PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  id                 String        @id @default(uuid())
+  purchaseOrderId    String
+  productId          String?
+  description        String
+  quantity           Float
+  unitPrice          Float
+  totalPrice         Float
+  discountPercent    Float         @default(0)
+  taxPercent         Float         @default(18)
+  lineTotal          Float         @default(0)
+  costBasisUnitPrice Float?
+  marginPercent      Float?
+  notes              String?
+  product            Product?      @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  purchaseOrder      PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@index([purchaseOrderId])
 }
@@ -2076,27 +2110,27 @@ model PlantLocation {
 }
 
 model RFQLineItem {
-  id                    String                     @id @default(uuid())
-  rfqId                 String
-  itemDescription       String                     @db.NVarChar(Max)
-  productId             String?
-  quantity              Float                      @default(1)
-  unit                  String?
-  targetPrice           Float?
-  requestedDeliveryDate DateTime?
-  specifications        String?                    @db.NVarChar(Max)
-  notes                 String?                    @db.NVarChar(Max)
-  displayOrder          Int                        @default(0)
-  costingStatus         String                     @default("Pending")
-  needsFeasibilityReview Boolean                   @default(false)
-  createdAt             DateTime                   @default(now())
-  updatedAt             DateTime                   @updatedAt
+  id                      String                      @id @default(uuid())
+  rfqId                   String
+  itemDescription         String                      @db.NVarChar(Max)
+  productId               String?
+  quantity                Float                       @default(1)
+  unit                    String?
+  targetPrice             Float?
+  requestedDeliveryDate   DateTime?
+  specifications          String?                     @db.NVarChar(Max)
+  notes                   String?                     @db.NVarChar(Max)
+  displayOrder            Int                         @default(0)
+  costingStatus           String                      @default("Pending")
+  needsFeasibilityReview  Boolean                     @default(false)
+  createdAt               DateTime                    @default(now())
+  updatedAt               DateTime                    @updatedAt
   sourceRequirementItemId String?
-  sourceRequirementItem OpportunityRequirementItem?  @relation(fields: [sourceRequirementItemId], references: [id], onDelete: SetNull)
-  product               Product?                   @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  rfq                   RFQ                        @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  costingSheets         RFQCostingSheet[]
-  quantityBreaks        RFQLineItemQuantityBreak[]
+  sourceRequirementItem   OpportunityRequirementItem? @relation(fields: [sourceRequirementItemId], references: [id], onDelete: SetNull)
+  product                 Product?                    @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rfq                     RFQ                         @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  costingSheets           RFQCostingSheet[]
+  quantityBreaks          RFQLineItemQuantityBreak[]
 
   @@index([rfqId])
   @@index([productId])
@@ -2224,8 +2258,8 @@ model QuotationDocument {
   generatedAt    DateTime @default(now())
   createdAt      DateTime @default(now())
 
-  quotation      Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  generatedBy    User      @relation("QuotationDocumentsGenerated", fields: [generatedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  generatedBy User      @relation("QuotationDocumentsGenerated", fields: [generatedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([quotationId])
   @@index([revisionNumber])
@@ -2459,16 +2493,16 @@ model ServiceCategory {
 }
 
 model ComplaintType {
-  id          String      @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
-  description String?     @db.NVarChar(Max)
+  description String?  @db.NVarChar(Max)
   categoryId  String?
-  isActive    Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Complaint   Complaint[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category  ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Complaint Complaint[]
 }
 
 model DefectType {
@@ -2479,9 +2513,9 @@ model DefectType {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  Defect      Defect[]
+
+  category ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  Defect   Defect[]
 }
 
 model PriorityLevel {
@@ -2693,12 +2727,9 @@ model ServiceRequest {
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  deletedAt        DateTime?
+  deletedAt DateTime?
 
-
-  deletedById      String?
-
-
+  deletedById String?
 
   visits ServiceVisit[]
   review ServiceReview? @relation("RequestReview")
@@ -2736,16 +2767,13 @@ model Complaint {
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  deletedAt        DateTime?
+  deletedAt DateTime?
 
+  deletedById String?
 
-  deletedById      String?
-
-
-
-  visits ServiceVisit[]
-  defects Defect[] @relation("ComplaintDefects")
-  review ServiceReview? @relation("ComplaintReview")
+  visits  ServiceVisit[]
+  defects Defect[]       @relation("ComplaintDefects")
+  review  ServiceReview? @relation("ComplaintReview")
 
   @@index([projectId])
 }
@@ -2778,16 +2806,13 @@ model Defect {
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  deletedAt        DateTime?
+  deletedAt DateTime?
 
+  deletedById String?
 
-  deletedById      String?
-
-
-
-  visits ServiceVisit[]
-  sourceComplaint Complaint? @relation("ComplaintDefects", fields: [sourceComplaintId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  review ServiceReview? @relation("DefectReview")
+  visits          ServiceVisit[]
+  sourceComplaint Complaint?     @relation("ComplaintDefects", fields: [sourceComplaintId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  review          ServiceReview? @relation("DefectReview")
 }
 
 model Installation {
@@ -2815,12 +2840,9 @@ model Installation {
   assignedEngineer ServiceEngineer? @relation(fields: [assignedEngineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   createdBy        User             @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  deletedAt        DateTime?
+  deletedAt DateTime?
 
-
-  deletedById      String?
-
-
+  deletedById String?
 
   visits ServiceVisit[]
   review ServiceReview? @relation("InstallationReview")
@@ -2859,13 +2881,13 @@ model AMCContract {
   updatedAt       DateTime @updatedAt
 
   // ── Entitlement plan fields (Feature 4) ──
-  planTier                 String?  // e.g. "Basic", "Standard", "Premium"
-  preventiveVisitsIncluded Int      @default(0)
-  preventiveVisitsUsed     Int      @default(0)
-  breakdownCallsUnlimited  Boolean  @default(false)
-  breakdownCallsIncluded   Int      @default(0)
-  breakdownCallsUsed       Int      @default(0)
-  sparesCoverage           String?  // e.g. "Full", "Partial", "None"
+  planTier                 String? // e.g. "Basic", "Standard", "Premium"
+  preventiveVisitsIncluded Int     @default(0)
+  preventiveVisitsUsed     Int     @default(0)
+  breakdownCallsUnlimited  Boolean @default(false)
+  breakdownCallsIncluded   Int     @default(0)
+  breakdownCallsUsed       Int     @default(0)
+  sparesCoverage           String? // e.g. "Full", "Partial", "None"
 
   customer      Customer      @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   customerAsset CustomerAsset @relation(fields: [customerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -2887,7 +2909,7 @@ model ServiceVisit {
   isEmergency   Boolean   @default(false)
 
   // ── Proof-of-work capture (Feature 3) ──
-  signatureUrl  String?   @db.NVarChar(Max)
+  signatureUrl String? @db.NVarChar(Max)
 
   // Direct customer/asset link (for standalone visits not tied to a source record)
   customerId      String?
@@ -2904,23 +2926,23 @@ model ServiceVisit {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  status       ServiceStatus   @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  engineer     ServiceEngineer @relation(fields: [engineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer     Customer?       @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customerAsset CustomerAsset? @relation(fields: [customerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  request      ServiceRequest? @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  complaint    Complaint?      @relation(fields: [complaintId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  defect       Defect?         @relation(fields: [defectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  installation Installation?   @relation(fields: [installationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  project      Project?        @relation("ProjectVisits", fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdBy    User            @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  deletedAt    DateTime?
+  status        ServiceStatus   @relation(fields: [statusId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  engineer      ServiceEngineer @relation(fields: [engineerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer      Customer?       @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customerAsset CustomerAsset?  @relation(fields: [customerAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  request       ServiceRequest? @relation(fields: [requestId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  complaint     Complaint?      @relation(fields: [complaintId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  defect        Defect?         @relation(fields: [defectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  installation  Installation?   @relation(fields: [installationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  project       Project?        @relation("ProjectVisits", fields: [projectId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy     User            @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  deletedAt     DateTime?
 
-  deletedById  String?
+  deletedById String?
 
-  review       ServiceReview?  @relation("VisitReview")
-  partsUsed    ServicePartUsed[]
-  photos       ServiceVisitPhoto[]
+  review        ServiceReview?      @relation("VisitReview")
+  partsUsed     ServicePartUsed[]
+  photos        ServiceVisitPhoto[]
   partMovements PartMovement[]
 
   @@index([projectId])
@@ -2948,8 +2970,8 @@ model EscalationRule {
 
 model RolePermission {
   id        String   @id @default(uuid())
-  role      String   // SalesManager | SalesExecutive
-  module    String   // Matches the sidebar keys exactly
+  role      String // SalesManager | SalesExecutive
+  module    String // Matches the sidebar keys exactly
   visible   Boolean  @default(true)
   canDelete Boolean  @default(false)
   createdAt DateTime @default(now())
@@ -2977,35 +2999,35 @@ model ActivityEvent {
 }
 
 model ServiceReview {
-  id                 String    @id @default(uuid())
+  id                 String  @id @default(uuid())
   rating             Int?
-  comment            String?   @db.NVarChar(Max)
-  status             String    @default("Pending") // Pending | Submitted
-  isEscalation       Boolean   @default(false)
-  escalationResolved Boolean   @default(false)
-  
-  customerId         String
-  engineerId         String
-  
+  comment            String? @db.NVarChar(Max)
+  status             String  @default("Pending") // Pending | Submitted
+  isEscalation       Boolean @default(false)
+  escalationResolved Boolean @default(false)
+
+  customerId String
+  engineerId String
+
   // Nullable FKs to source records
-  serviceRequestId   String?   @unique
-  complaintId        String?   @unique
-  defectId           String?   @unique
-  installationId     String?   @unique
-  serviceVisitId     String?   @unique
-  
-  requestedAt        DateTime  @default(now())
-  submittedAt        DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  
-  customer           Customer        @relation("CustomerReviews", fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  engineer           ServiceEngineer @relation("EngineerReviews", fields: [engineerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  serviceRequest     ServiceRequest? @relation("RequestReview", fields: [serviceRequestId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  complaint          Complaint?      @relation("ComplaintReview", fields: [complaintId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  defect             Defect?         @relation("DefectReview", fields: [defectId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  installation       Installation?   @relation("InstallationReview", fields: [installationId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  serviceVisit       ServiceVisit?   @relation("VisitReview", fields: [serviceVisitId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  serviceRequestId String? @unique
+  complaintId      String? @unique
+  defectId         String? @unique
+  installationId   String? @unique
+  serviceVisitId   String? @unique
+
+  requestedAt DateTime  @default(now())
+  submittedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  customer       Customer        @relation("CustomerReviews", fields: [customerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  engineer       ServiceEngineer @relation("EngineerReviews", fields: [engineerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  serviceRequest ServiceRequest? @relation("RequestReview", fields: [serviceRequestId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  complaint      Complaint?      @relation("ComplaintReview", fields: [complaintId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  defect         Defect?         @relation("DefectReview", fields: [defectId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  installation   Installation?   @relation("InstallationReview", fields: [installationId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  serviceVisit   ServiceVisit?   @relation("VisitReview", fields: [serviceVisitId], references: [id], onDelete: SetNull, onUpdate: NoAction)
 
   @@index([customerId])
   @@index([engineerId])
@@ -3030,14 +3052,14 @@ model Project {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  customer   Customer         @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  deal       Deal?            @relation(fields: [dealId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdBy  User             @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  assets     CustomerAsset[]  @relation("ProjectAssets")
-  requests   ServiceRequest[] @relation("ProjectRequests")
-  complaints Complaint[]      @relation("ProjectComplaints")
-  visits     ServiceVisit[]   @relation("ProjectVisits")
-  partMovements PartMovement[] @relation("ProjectPartMovements")
+  customer      Customer         @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  deal          Deal?            @relation(fields: [dealId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy     User             @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assets        CustomerAsset[]  @relation("ProjectAssets")
+  requests      ServiceRequest[] @relation("ProjectRequests")
+  complaints    Complaint[]      @relation("ProjectComplaints")
+  visits        ServiceVisit[]   @relation("ProjectVisits")
+  partMovements PartMovement[]   @relation("ProjectPartMovements")
 
   @@index([customerId])
   @@index([dealId])
@@ -3053,10 +3075,10 @@ model SparePart {
   partCode     String   @unique
   partName     String
   category     String?
-  unit         String?  // e.g. "pcs", "set", "meter"
+  unit         String? // e.g. "pcs", "set", "meter"
   unitCost     Float    @default(0)
   currency     String   @default("INR")
-  currentStock Int      @default(0)  // maintained via PartMovement
+  currentStock Int      @default(0) // maintained via PartMovement
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -3077,7 +3099,7 @@ model ServicePartUsed {
   id             String   @id @default(uuid())
   serviceVisitId String
   sparePartId    String?
-  partName       String   // snapshot of part name at time of use
+  partName       String // snapshot of part name at time of use
   quantity       Int      @default(1)
   unitCost       Float    @default(0)
   totalCost      Float    @default(0)
@@ -3115,7 +3137,7 @@ model ServiceVisitPhoto {
 model PartMovement {
   id              String   @id @default(uuid())
   sparePartId     String
-  type            String   // "Issued" | "Used" | "Returned" | "Damaged" | "Restocked"
+  type            String // "Issued" | "Used" | "Returned" | "Damaged" | "Restocked"
   quantity        Int
   engineerId      String?
   serviceVisitId  String?
@@ -3137,4 +3159,153 @@ model PartMovement {
   @@index([serviceVisitId])
   @@index([projectId])
   @@index([type])
+}
+
+// ==========================================
+// SUKI STEEL CRM — ADDITIONAL MODELS
+// ==========================================
+
+model TermsAndConditions {
+  id        String   @id @default(uuid())
+  name      String
+  content   String   @db.NVarChar(Max)
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  companyId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company? @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([companyId])
+  @@index([isActive])
+}
+
+model ProformaInvoice {
+  id                 String    @id @default(uuid())
+  proformaNumber     String    @unique
+  quotationId        String?   @unique
+  customerId         String
+  contactId          String?
+  status             String    @default("Draft") // Draft | Sent | Approved | PO Received
+  proformaDate       DateTime  @default(now())
+  validityDate       DateTime?
+  paymentTerms       String?   @db.NVarChar(Max)
+  deliveryTerms      String?   @db.NVarChar(Max)
+  subtotal           Float     @default(0)
+  taxAmount          Float     @default(0)
+  discountPercent    Float     @default(0)
+  grandTotal         Float     @default(0)
+  termsAndConditions String?   @db.NVarChar(Max)
+  notes              String?   @db.NVarChar(Max)
+  createdById        String
+  companyId          String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  quotation  Quotation?            @relation(fields: [quotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer   Customer              @relation(fields: [customerId], references: [id], onUpdate: NoAction)
+  contact    Contact?              @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy  User                  @relation(fields: [createdById], references: [id], onUpdate: NoAction)
+  company    Company?              @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  items      ProformaInvoiceItem[]
+  SalesOrder SalesOrder?
+
+  @@index([customerId])
+  @@index([status])
+  @@index([companyId])
+  @@index([quotationId])
+}
+
+model ProformaInvoiceItem {
+  id              String  @id @default(uuid())
+  proformaId      String
+  productId       String?
+  description     String  @db.NVarChar(Max)
+  productType     String? // Black Bar | Bright Bar
+  materialGrade   String?
+  materialSize    String?
+  lengthMm        Float?
+  numberOfPieces  Float?
+  quantity        Float   @default(0) // kgs
+  unit            String?
+  unitPrice       Float   @default(0)
+  discountPercent Float   @default(0)
+  taxPercent      Float   @default(18)
+  lineTotal       Float   @default(0)
+  rmMake          String?
+  deliveryDays    Int?
+  cuttingCharge   Float?
+  remarks         String? @db.NVarChar(Max)
+
+  proforma ProformaInvoice @relation(fields: [proformaId], references: [id], onDelete: Cascade)
+  product  Product?        @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([proformaId])
+  @@index([productId])
+}
+
+model SalesOrder {
+  id                   String    @id @default(uuid())
+  orderNumber          String    @unique
+  proformaId           String?   @unique
+  quotationId          String?
+  customerId           String
+  contactId            String?
+  status               String    @default("Open") // Open | Confirmed | Dispatched | Delivered | Invoiced | Cancelled
+  orderDate            DateTime  @default(now())
+  expectedDeliveryDate DateTime?
+  paymentTerms         String?   @db.NVarChar(Max)
+  deliveryTerms        String?   @db.NVarChar(Max)
+  subtotal             Float     @default(0)
+  taxAmount            Float     @default(0)
+  discountPercent      Float     @default(0)
+  grandTotal           Float     @default(0)
+  notes                String?   @db.NVarChar(Max)
+  erpReference         String? // sync reference from SUKI ERP
+  createdById          String
+  companyId            String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  proforma  ProformaInvoice? @relation(fields: [proformaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quotation Quotation?       @relation(fields: [quotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer  Customer         @relation(fields: [customerId], references: [id], onUpdate: NoAction)
+  contact   Contact?         @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy User             @relation(fields: [createdById], references: [id], onUpdate: NoAction)
+  company   Company?         @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  items     SalesOrderItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([companyId])
+  @@index([proformaId])
+  @@index([quotationId])
+}
+
+model SalesOrderItem {
+  id              String  @id @default(uuid())
+  salesOrderId    String
+  productId       String?
+  description     String  @db.NVarChar(Max)
+  productType     String? // Black Bar | Bright Bar
+  materialGrade   String?
+  materialSize    String?
+  lengthMm        Float?
+  numberOfPieces  Float?
+  quantity        Float   @default(0) // kgs
+  unit            String?
+  unitPrice       Float   @default(0)
+  discountPercent Float   @default(0)
+  taxPercent      Float   @default(18)
+  lineTotal       Float   @default(0)
+  rmMake          String?
+  deliveryDays    Int?
+  remarks         String? @db.NVarChar(Max)
+
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product    Product?   @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([salesOrderId])
+  @@index([productId])
 }

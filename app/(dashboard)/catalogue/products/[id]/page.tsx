@@ -32,6 +32,10 @@ export default function ProductDetailPage() {
     unit: "",
     basePrice: "",
     productType: "",
+    materialGrade: "",
+    materialSize: "",
+    partNumber: "",
+    rmMake: "",
     minOrderQuantity: "",
     isActive: true,
     productImageUrl: "",
@@ -58,6 +62,10 @@ export default function ProductDetailPage() {
           unit: data.data.unit || "",
           basePrice: data.data.basePrice?.toString() || "",
           productType: data.data.productType || "",
+          materialGrade: data.data.materialGrade || "",
+          materialSize: data.data.materialSize || "",
+          partNumber: data.data.partNumber || "",
+          rmMake: data.data.rmMake || "",
           minOrderQuantity: data.data.minOrderQuantity?.toString() || "",
           isActive: data.data.isActive,
           productImageUrl: data.data.productImageUrl || "",
@@ -403,6 +411,44 @@ export default function ProductDetailPage() {
             </FormField>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField label="Material Grade">
+              <Input
+                type="text"
+                value={formData.materialGrade}
+                onChange={(e) => setFormData({ ...formData, materialGrade: e.target.value })}
+                placeholder="e.g. EN19"
+              />
+            </FormField>
+            <FormField label="Material Size">
+              <Input
+                type="text"
+                value={formData.materialSize}
+                onChange={(e) => setFormData({ ...formData, materialSize: e.target.value })}
+                placeholder="e.g. 50mm"
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField label="Part Number">
+              <Input
+                type="text"
+                value={formData.partNumber}
+                onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
+                placeholder="Part number"
+              />
+            </FormField>
+            <FormField label="RM Make">
+              <Input
+                type="text"
+                value={formData.rmMake}
+                onChange={(e) => setFormData({ ...formData, rmMake: e.target.value })}
+                placeholder="e.g. Tata Steel"
+              />
+            </FormField>
+          </div>
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -465,6 +511,22 @@ export default function ProductDetailPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">Min Order Qty</p>
                 <p className="text-sm font-medium text-[var(--text-primary)]">{product.minOrderQuantity || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">Material Grade</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{product.materialGrade || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">Material Size</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{product.materialSize || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">Part Number</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{product.partNumber || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">RM Make</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{product.rmMake || "—"}</p>
               </div>
             </div>
             {product.description && (

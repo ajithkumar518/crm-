@@ -26,6 +26,10 @@ export default function NewProductPage() {
     unit: "",
     basePrice: "",
     productType: "",
+    materialGrade: "",
+    materialSize: "",
+    partNumber: "",
+    rmMake: "",
     minOrderQuantity: "",
     isActive: true,
     datasheetUrl: "",
@@ -240,6 +244,44 @@ export default function NewProductPage() {
                 value={formData.minOrderQuantity}
                 onChange={(e) => setFormData({ ...formData, minOrderQuantity: e.target.value })}
                 placeholder="0"
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField label="Material Grade">
+              <Input
+                type="text"
+                value={formData.materialGrade}
+                onChange={(e) => setFormData({ ...formData, materialGrade: e.target.value })}
+                placeholder="e.g. EN19"
+              />
+            </FormField>
+            <FormField label="Material Size">
+              <Input
+                type="text"
+                value={formData.materialSize}
+                onChange={(e) => setFormData({ ...formData, materialSize: e.target.value })}
+                placeholder="e.g. 50mm"
+              />
+            </FormField>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField label="Part Number">
+              <Input
+                type="text"
+                value={formData.partNumber}
+                onChange={(e) => setFormData({ ...formData, partNumber: e.target.value })}
+                placeholder="Part number"
+              />
+            </FormField>
+            <FormField label="RM Make">
+              <Input
+                type="text"
+                value={formData.rmMake}
+                onChange={(e) => setFormData({ ...formData, rmMake: e.target.value })}
+                placeholder="e.g. Tata Steel"
               />
             </FormField>
           </div>

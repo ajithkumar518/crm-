@@ -241,13 +241,17 @@ export async function createCustomerAction(data: any) {
       return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
     }
 
-    let { customerCode, name, email, phone, city, status, assignedUserId, leadSource, gstNumber, accountType, industryType, billingAddress, shippingAddress, creditLimit, creditTermsDays } = data;
+    let { customerCode, name, email, phone, city, state, status, assignedUserId, leadSource, gstNumber, accountType, industryType, billingAddress, shippingAddress, paymentTerms, creditLimit, creditTermsDays, customerCategory, contactPerson, contactMobile, contactEmail } = data;
 
     // Normalize empty strings to null for unique constraints
     email = email?.trim() || null;
     phone = phone?.trim() || null;
     city = city?.trim() || null;
+    state = state?.trim() || null;
     gstNumber = gstNumber?.trim() || null;
+    paymentTerms = paymentTerms?.trim() || null;
+    customerCategory = customerCategory?.trim() || null;
+    const parsedCreditTerms = creditTermsDays !== undefined && creditTermsDays !== "" ? (parseInt(creditTermsDays, 10) || 30) : 30;
 
     if (!name) {
       return { success: false, message: "Customer Name is required" };
@@ -311,6 +315,7 @@ export async function createCustomerAction(data: any) {
         email,
         phone,
         city,
+        state: state?.trim() || null,
         status: status || "Prospect",
         assignedUserId: finalAssignedUserId,
         leadSource: leadSource,
@@ -321,8 +326,10 @@ export async function createCustomerAction(data: any) {
         industryType,
         billingAddress,
         shippingAddress,
-        creditLimit: creditLimit ?? 0,
-        creditTermsDays: creditTermsDays ?? 30,
+        paymentTerms,
+        creditLimit: typeof creditLimit === "string" && creditLimit !== "" ? parseFloat(creditLimit) : (creditLimit ?? 0),
+        creditTermsDays: parsedCreditTerms ?? 30,
+        customerCategory,
       },
     });
 
@@ -340,6 +347,22 @@ export async function createCustomerAction(data: any) {
     // Portal user creation removed - portal access should only be granted explicitly
     // via "Activate Portal" button or when a deal is marked as Won
     // This prevents automatic portal access with hardcoded passwords
+
+    // Create primary contact if provided
+    if (contactPerson?.trim()) {
+      await prisma.contact.create({
+        data: {
+          name: contactPerson.trim(),
+          email: contactEmail?.trim() || null,
+          phone: contactMobile?.trim() || null,
+          customerId: newCustomer.id,
+          ownerId: userPayload.id,
+          companyId: userPayload.companyId,
+          isPrimary: true,
+          contactType: "Purchase",
+        },
+      });
+    }
 
     await logAudit(
       userPayload.id,
@@ -367,13 +390,17 @@ export async function updateCustomerAction(data: any) {
       return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
     }
 
-    let { id, customerCode, name, email, phone, city, status, assignedUserId, leadSource, gstNumber, accountType, industryType, billingAddress, shippingAddress, creditLimit, creditTermsDays } = data;
+    let { id, customerCode, name, email, phone, city, state, status, assignedUserId, leadSource, gstNumber, accountType, industryType, billingAddress, shippingAddress, paymentTerms, creditLimit, creditTermsDays, customerCategory, contactPerson, contactMobile, contactEmail } = data;
 
     // Normalize empty strings to null for unique constraints
     email = email?.trim() || null;
     phone = phone?.trim() || null;
     city = city?.trim() || null;
+    state = state?.trim() || null;
     gstNumber = gstNumber?.trim() || null;
+    paymentTerms = paymentTerms?.trim() || null;
+    customerCategory = customerCategory?.trim() || null;
+    const parsedCreditTerms = creditTermsDays !== undefined && creditTermsDays !== "" ? (parseInt(creditTermsDays, 10) || 30) : 30;
 
     if (!id || !customerCode || !name) {
       return { success: false, message: "ID, Customer Code and Name are required" };
@@ -408,8 +435,8 @@ export async function updateCustomerAction(data: any) {
     }
 
     // Credit limit change validation (Admin only)
-    const creditLimitChanged = creditLimit !== undefined && creditLimit !== currentCustomer.creditLimit;
-    const creditTermsChanged = creditTermsDays !== undefined && creditTermsDays !== currentCustomer.creditTermsDays;
+    const creditLimitChanged = creditLimit !== undefined && (typeof creditLimit === "string" && creditLimit !== "" ? parseFloat(creditLimit) : creditLimit) !== currentCustomer.creditLimit;
+    const creditTermsChanged = parsedCreditTerms !== null && parsedCreditTerms !== currentCustomer.creditTermsDays;
     if ((creditLimitChanged || creditTermsChanged) && userPayload.role !== "Admin") {
       return { success: false, message: "Only Admin role can modify credit limits" };
     }
@@ -468,6 +495,7 @@ export async function updateCustomerAction(data: any) {
         email,
         phone,
         city,
+        state: state !== undefined ? (state?.trim() || null) : currentCustomer.state,
         status: status !== undefined ? status : currentCustomer.status,
         assignedUserId: finalAssignedUserId,
         leadSource: leadSource !== undefined ? leadSource : currentCustomer.leadSource,
@@ -477,8 +505,10 @@ export async function updateCustomerAction(data: any) {
         ...(industryType !== undefined && { industryType }),
         ...(billingAddress !== undefined && { billingAddress }),
         ...(shippingAddress !== undefined && { shippingAddress }),
-        ...(creditLimit !== undefined && { creditLimit }),
-        ...(creditTermsDays !== undefined && { creditTermsDays }),
+        ...(paymentTerms !== undefined && { paymentTerms }),
+        ...(creditLimit !== undefined && { creditLimit: typeof creditLimit === "string" && creditLimit !== "" ? parseFloat(creditLimit) : creditLimit }),
+        ...(creditTermsDays !== undefined && { creditTermsDays: parsedCreditTerms }),
+        ...(customerCategory !== undefined && { customerCategory }),
       },
     });
 
@@ -518,6 +548,35 @@ export async function updateCustomerAction(data: any) {
         await prisma.user.update({
           where: { id: portalUser.id },
           data: { email },
+        });
+      }
+    }
+
+    // Upsert primary contact
+    if (contactPerson?.trim()) {
+      const existingPrimary = await prisma.contact.findFirst({
+        where: { customerId: id, isPrimary: true, deletedAt: null },
+      });
+      const contactData = {
+        name: contactPerson.trim(),
+        email: contactEmail?.trim() || null,
+        phone: contactMobile?.trim() || null,
+      };
+      if (existingPrimary) {
+        await prisma.contact.update({
+          where: { id: existingPrimary.id },
+          data: contactData,
+        });
+      } else {
+        await prisma.contact.create({
+          data: {
+            ...contactData,
+            customerId: id,
+            ownerId: userPayload.id,
+            companyId: userPayload.companyId,
+            isPrimary: true,
+            contactType: "Purchase",
+          },
         });
       }
     }

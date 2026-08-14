@@ -86,6 +86,10 @@ export async function PUT(
         basePrice: body.basePrice,
         isActive: body.isActive,
         productType: body.productType ?? null,
+        materialGrade: body.materialGrade?.trim() || null,
+        materialSize: body.materialSize?.trim() || null,
+        partNumber: body.partNumber?.trim() || null,
+        rmMake: body.rmMake?.trim() || null,
         minOrderQuantity: body.minOrderQuantity ? parseFloat(body.minOrderQuantity) : null,
       },
     });

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getCustomersAction, createCustomerAction, updateCustomerAction, deleteCustomersAction } from "@/app/actions/customers";
+import { getCustomersAction, getCustomerByIdAction, createCustomerAction, updateCustomerAction, deleteCustomersAction } from "@/app/actions/customers";
 import { getUsersAction } from "@/app/actions/users";
 import { Customer, User } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
@@ -12,6 +12,7 @@ import PageContainer from "@/components/PageContainer";
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 import { SummaryCard } from "@/components/ui/SummaryCard";
 import { validateEmail, validatePhone, validateAlphabetic } from "@/lib/formValidation";
+import CustomerImportModal from "@/components/customers/CustomerImportModal";
 
 const Ico = ({ d, size = 16, className }: { d: string; size?: number; className?: string }) => (
   <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -63,6 +64,7 @@ export default function CustomerMasterPage() {
   const [formLoading, setFormLoading] = useState(false);
   const toast = useToast();
   const [confirmState, setConfirmState] = useState<{isOpen: boolean; title: string; message: string; action: () => void}>({ isOpen: false, title: "", message: "", action: () => {} });
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     id: "",
@@ -71,9 +73,20 @@ export default function CustomerMasterPage() {
     email: "",
     phone: "",
     city: "",
+    state: "",
     status: "Prospect" as any,
     assignedUserId: "",
     leadSource: "",
+    gstNumber: "",
+    billingAddress: "",
+    shippingAddress: "",
+    paymentTerms: "",
+    creditTermsDays: "",
+    customerCategory: "",
+    industryType: "",
+    contactPerson: "",
+    contactMobile: "",
+    contactEmail: "",
   });
 
   const loadCustomers = async () => {
@@ -167,25 +180,50 @@ export default function CustomerMasterPage() {
       email: "",
       phone: "",
       city: "",
+      state: "",
       status: "Prospect",
       assignedUserId: "",
       leadSource: "",
+      gstNumber: "",
+      billingAddress: "",
+      shippingAddress: "",
+      paymentTerms: "",
+      creditTermsDays: "",
+      customerCategory: "",
+      industryType: "",
+      contactPerson: "",
+      contactMobile: "",
+      contactEmail: "",
     });
     setErrorMsg("");
     setIsModalOpen(true);
   };
 
-  const openEditModal = (c: Customer) => {
+  const openEditModal = async (c: Customer) => {
+    const res = await getCustomerByIdAction(c.id);
+    const d = res.success && res.data ? res.data : c;
+    const primary = (d as any).contacts?.find((cn: any) => cn.isPrimary) || (d as any).contacts?.[0];
     setFormData({
-      id: c.id,
-      customerCode: c.customerCode,
-      name: c.name,
-      email: c.email || "",
-      phone: c.phone || "",
-      city: c.city || "",
-      status: c.status,
-      assignedUserId: c.assignedUserId || "",
-      leadSource: c.leadSource || "",
+      id: d.id,
+      customerCode: d.customerCode,
+      name: d.name,
+      email: d.email || "",
+      phone: d.phone || "",
+      city: d.city || "",
+      state: d.state || "",
+      status: d.status,
+      assignedUserId: d.assignedUserId || "",
+      leadSource: d.leadSource || "",
+      gstNumber: d.gstNumber || "",
+      billingAddress: d.billingAddress || "",
+      shippingAddress: d.shippingAddress || "",
+      paymentTerms: d.paymentTerms || "",
+      creditTermsDays: d.creditTermsDays != null ? String(d.creditTermsDays) : "",
+      customerCategory: d.customerCategory || "",
+      industryType: d.industryType || "",
+      contactPerson: primary?.name || "",
+      contactMobile: primary?.phone || "",
+      contactEmail: primary?.email || "",
     });
     setErrorMsg("");
     setIsModalOpen(true);
@@ -308,6 +346,17 @@ export default function CustomerMasterPage() {
             </svg>
             Export CSV
           </button>
+          {(user?.role === "Admin" || user?.role === "SuperAdmin" || user?.role === "SalesManager") && (
+            <button
+              onClick={() => setIsImportOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-md text-[13px] font-bold hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+            >
+              <svg className="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Import Customers
+            </button>
+          )}
           <button 
             onClick={openCreateModal}
             className="flex items-center gap-1.5 px-3 py-2 bg-[var(--primary)] text-white rounded-md text-[13px] font-medium hover:bg-[var(--primary-hover)] transition-colors shadow-sm cursor-pointer"
@@ -630,6 +679,135 @@ export default function CustomerMasterPage() {
                     </div>
                   ) : <div />}
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">GST Number</label>
+                    <input 
+                      type="text" 
+                      value={formData.gstNumber}
+                      onChange={(e) => setFormData({ ...formData, gstNumber: e.target.value })}
+                      placeholder="15-character GSTIN" 
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Customer Category</label>
+                    <select 
+                      value={formData.customerCategory}
+                      onChange={(e) => setFormData({ ...formData, customerCategory: e.target.value })}
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all cursor-pointer"
+                    >
+                      <option value="">Select Category</option>
+                      <option value="80-20">80-20</option>
+                      <option value="NON-80-20">NON-80-20</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">State</label>
+                    <input 
+                      type="text" 
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      placeholder="State" 
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Industry Type</label>
+                    <input 
+                      type="text" 
+                      value={formData.industryType}
+                      onChange={(e) => setFormData({ ...formData, industryType: e.target.value })}
+                      placeholder="e.g. Manufacturing" 
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Payment Terms</label>
+                    <input 
+                      type="text" 
+                      value={formData.paymentTerms}
+                      onChange={(e) => setFormData({ ...formData, paymentTerms: e.target.value })}
+                      placeholder="e.g. Net 30" 
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Credit Days</label>
+                    <input 
+                      type="number" 
+                      value={formData.creditTermsDays}
+                      onChange={(e) => setFormData({ ...formData, creditTermsDays: e.target.value })}
+                      placeholder="30" 
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Billing Address</label>
+                  <textarea 
+                    value={formData.billingAddress}
+                    onChange={(e) => setFormData({ ...formData, billingAddress: e.target.value })}
+                    placeholder="Billing address"
+                    rows={2}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all resize-none" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Shipping Address</label>
+                  <textarea 
+                    value={formData.shippingAddress}
+                    onChange={(e) => setFormData({ ...formData, shippingAddress: e.target.value })}
+                    placeholder="Shipping address (if different)"
+                    rows={2}
+                    className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all resize-none" 
+                  />
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Primary Contact Person</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contact Person</label>
+                      <input 
+                        type="text" 
+                        value={formData.contactPerson}
+                        onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                        placeholder="Name" 
+                        className="w-full px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Mobile</label>
+                      <input 
+                        type="tel" 
+                        value={formData.contactMobile}
+                        onChange={(e) => setFormData({ ...formData, contactMobile: e.target.value })}
+                        placeholder="Mobile number" 
+                        className="w-full px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Contact Email</label>
+                    <input 
+                      type="email" 
+                      value={formData.contactEmail}
+                      onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+                      placeholder="contact@company.com" 
+                      className="w-full px-4 py-2 rounded-xl bg-white border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
@@ -660,6 +838,12 @@ export default function CustomerMasterPage() {
         onConfirm={confirmState.action}
         onCancel={() => setConfirmState(prev => ({ ...prev, isOpen: false }))}
         isDestructive={true}
+      />
+
+      <CustomerImportModal
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImportDone={loadCustomers}
       />
     </PageContainer>
   );

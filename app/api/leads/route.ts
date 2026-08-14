@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { verifyAuth } from "@/lib/auth";
 import { extractAuditContext } from "@/lib/audit";
 import { checkLeadDuplicate, createLeadWithWorkflow, LeadDuplicateError } from "@/lib/leadWorkflow";
 
@@ -119,5 +120,33 @@ export async function POST(request: Request) {
       },
       { status: 500 }
     );
+  }
+}
+
+export async function GET(request: Request) {
+  try {
+    const user = await verifyAuth();
+    if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+
+    const url = new URL(request.url);
+    const source = url.searchParams.get("source") || "";
+    const search = url.searchParams.get("search") || "";
+
+    const where: any = { deletedAt: null };
+    if (user.companyId) where.companyId = user.companyId;
+    if (source) where.leadSource = source;
+    if (search) where.OR = [{ name: { contains: search } }, { email: { contains: search } }];
+
+    const leads = await prisma.lead.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      select: { id: true, leadCode: true, name: true, email: true, phone: true, city: true, leadSource: true, status: true, createdAt: true },
+    });
+
+    return NextResponse.json({ success: true, data: leads });
+  } catch (error: any) {
+    console.error("GET /api/leads error:", error.message);
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }

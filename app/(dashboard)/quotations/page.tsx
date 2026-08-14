@@ -28,13 +28,25 @@ const icons = {
 
 const statusStyles: Record<string, { badge: string; dot: string }> = {
   Draft: { badge: "bg-slate-50 text-slate-600 border-slate-200", dot: "bg-slate-400" },
-  Sent: { badge: "bg-blue-50 text-blue-700 border-blue-200", dot: "bg-blue-500" },
-  UnderReview: { badge: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
+  "Quotation Sent": { badge: "bg-blue-50 text-blue-700 border-blue-200", dot: "bg-blue-500" },
+  "Follow-up": { badge: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
+  "Revised Rate": { badge: "bg-cyan-50 text-cyan-700 border-cyan-200", dot: "bg-cyan-500" },
   Accepted: { badge: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
   Rejected: { badge: "bg-red-50 text-red-700 border-red-200", dot: "bg-red-500" },
+  MOQ: { badge: "bg-purple-50 text-purple-700 border-purple-200", dot: "bg-purple-500" },
+  "Material Not Available": { badge: "bg-rose-50 text-rose-700 border-rose-200", dot: "bg-rose-500" },
+  "No Stock": { badge: "bg-gray-50 text-gray-600 border-gray-200", dot: "bg-gray-500" },
+  "Price Pending": { badge: "bg-orange-50 text-orange-700 border-orange-200", dot: "bg-orange-500" },
+  "Supplier Rate Checking": { badge: "bg-sky-50 text-sky-700 border-sky-200", dot: "bg-sky-500" },
+  "Converted to Customer": { badge: "bg-green-50 text-green-700 border-green-200", dot: "bg-green-600" },
+  Others: { badge: "bg-zinc-50 text-zinc-600 border-zinc-200", dot: "bg-zinc-500" },
+  // legacy styles
+  Sent: { badge: "bg-blue-50 text-blue-700 border-blue-200", dot: "bg-blue-500" },
+  UnderReview: { badge: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
   Expired: { badge: "bg-gray-50 text-gray-500 border-gray-200", dot: "bg-gray-400" },
   PendingApproval: { badge: "bg-orange-50 text-orange-700 border-orange-200", dot: "bg-orange-500" },
   Approved: { badge: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  OnHold: { badge: "bg-zinc-50 text-zinc-600 border-zinc-200", dot: "bg-zinc-500" },
 };
 
 function QuotationListContent() {
