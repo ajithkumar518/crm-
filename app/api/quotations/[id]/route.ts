@@ -35,6 +35,7 @@ export async function GET(
         },
       },
       deal: { select: { id: true, dealName: true, status: true, opportunityCode: true } },
+      lead: { select: { id: true, leadCode: true, name: true, status: true, leadSource: true } },
       negotiation: { select: { id: true, negotiationCode: true, status: true } },
       childRevisions: { select: { id: true, quotationCode: true } },
       items: {
@@ -248,7 +249,13 @@ export async function PUT(
 
       const discountAmount = subtotal * (discountPercent / 100);
       const netTotal = subtotal - discountAmount;
-      const grandTotal = netTotal + totalTax;
+      const transportCharge = body.transportCharge !== undefined ? parseFloat(body.transportCharge) || 0 : existing.transportCharge || 0;
+      const otherCharges = body.otherCharges !== undefined ? parseFloat(body.otherCharges) || 0 : existing.otherCharges || 0;
+      const weighingLoadingCharge = body.weighingLoadingCharge !== undefined ? parseFloat(body.weighingLoadingCharge) || 0 : existing.weighingLoadingCharge || 0;
+      const deliveryCharge = body.deliveryCharge !== undefined ? parseFloat(body.deliveryCharge) || 0 : existing.deliveryCharge || 0;
+      const testingCharge = body.testingCharge !== undefined ? parseFloat(body.testingCharge) || 0 : existing.testingCharge || 0;
+      const extraCharges = transportCharge + otherCharges + weighingLoadingCharge + deliveryCharge + testingCharge;
+      const grandTotal = netTotal + totalTax + extraCharges;
 
       // Compute overall weighted margin percent (shared helper)
       const overallMarginPercent = computeOverallMarginPercent(
@@ -267,6 +274,11 @@ export async function PUT(
         finalAmount: grandTotal,
         discountPercent,
         overallMarginPercent,
+        transportCharge,
+        otherCharges,
+        weighingLoadingCharge,
+        deliveryCharge,
+        testingCharge,
       };
 
       if (body.validUntil !== undefined) updateData.validUntil = new Date(body.validUntil);
@@ -276,6 +288,7 @@ export async function PUT(
       if (body.freightTerms !== undefined) updateData.freightTerms = body.freightTerms || null;
       if (body.leadTimeDays !== undefined) updateData.leadTimeDays = body.leadTimeDays ? parseInt(body.leadTimeDays) : null;
       if (body.contactId !== undefined) updateData.contactId = body.contactId || null;
+      if (body.leadId !== undefined) updateData.leadId = body.leadId || null;
 
       // Update quotation
       const q = await tx.quotation.update({

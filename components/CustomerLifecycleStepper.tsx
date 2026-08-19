@@ -29,7 +29,7 @@ export default function CustomerLifecycleStepper({ currentStage }: { currentStag
     else if (currentStage === "Qualified") activeIdx = 2;
     else if (currentStage === "Converted") activeIdx = 3;
     else if (["Open", "ProposalSent", "Negotiation"].includes(currentStage)) activeIdx = 4;
-    else if (currentStage === "Draft" || currentStage === "Sent") activeIdx = 5;
+    else if (currentStage === "Draft" || currentStage === "Quotation Sent") activeIdx = 5;
     else if (currentStage === "Approved" || currentStage === "ContractReview") activeIdx = 6;
     else if (currentStage === "Won" || currentStage === "PaymentPending") activeIdx = 7;
     else if (currentStage === "SubscriptionActive") activeIdx = 8;

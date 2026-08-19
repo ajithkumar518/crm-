@@ -49,6 +49,11 @@ const nextConfig: NextConfig = {
         destination: "/sales-pipeline/:path*",
         permanent: true,
       },
+      {
+        source: "/catalogue/products/import",
+        destination: "/catalogue/products",
+        permanent: true,
+      },
     ];
   },
 };

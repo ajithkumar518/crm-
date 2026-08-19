@@ -33,7 +33,7 @@ import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import LeadImportModal from "@/components/leads/LeadImportModal";
 
 const LEAD_STATUSES = ["New", "Contacted", "FollowUpDue", "SQL", "Qualified", "Converted", "Lost", "Overdue", "Duplicate"];
-const LEAD_SOURCES  = ["Website", "Facebook", "Instagram", "LinkedIn", "Referral", "WalkIn", "ColdCall", "Partner", "Trade Show", "Tender Portal"];
+const LEAD_SOURCES  = ["Website", "IndiaMART", "Justdial", "TradeIndia", "WhatsApp", "Door-to-Door Marketing", "Direct Visit", "Telephonic Conversation", "Email"];
 const getTabs = (isV3: boolean) => [
   { key: '', label: 'Leads Overview' },
   { key: 'New', label: 'New' },
@@ -100,6 +100,7 @@ export default function LeadsPage() {
   const isV2 = hasMod(MODULE_KEYS.RFQ);
 
   const [leads,      setLeads]      = useState<Lead[]>([]);
+  const leadsRef = useRef<Lead[]>([]);
   const [executives, setExecutives] = useState<User[]>([]);
   const [dbLeadSources, setDbLeadSources] = useState<any[]>([]);
   const [loading,    setLoading]    = useState(true);
@@ -176,16 +177,19 @@ export default function LeadsPage() {
 
   // ── Load data ─────────────────────────────────────────────────────────────
 
-  const loadLeads = async () => {
-    setLoading(true);
+  const loadLeads = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const params: any = {};
       if (search) params.search = search;
       if (statusFilter && statusFilter !== "Overdue") params.status = statusFilter;
       const res = await getLeadsAction(params);
-      if (res.success && res.data) setLeads(res.data as any);
+      if (res.success && res.data) {
+        setLeads(res.data as any);
+        leadsRef.current = res.data as any;
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -206,6 +210,29 @@ export default function LeadsPage() {
 
   useEffect(() => { loadLeads(); }, [search, statusFilter]);
   useEffect(() => { loadExecutives(); loadLeadSources(); }, [user]);
+
+  // Auto-refresh leads list every 30 seconds to show new email leads
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const previousIds = new Set(leadsRef.current.map((l) => l.id));
+      const previousCount = leadsRef.current.length;
+      const params: any = {};
+      if (search) params.search = search;
+      if (statusFilter && statusFilter !== "Overdue") params.status = statusFilter;
+      const res = await getLeadsAction(params);
+      if (res.success && res.data) {
+        const newData = res.data as any[];
+        const newLeads = newData.filter((l: any) => !previousIds.has(l.id));
+        if (newLeads.length > 0 && previousCount > 0) {
+          toast.success(`${newLeads.length} new email lead${newLeads.length > 1 ? "s" : ""} received!`);
+        }
+        setLeads(newData);
+        leadsRef.current = newData;
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, statusFilter]);
 
 
 

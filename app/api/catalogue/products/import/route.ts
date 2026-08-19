@@ -12,6 +12,10 @@ const PRODUCT_HEADERS: Record<string, string> = {
   "unit of measure": "uom",
   "material category": "materialCategory",
   "product description": "productDescription",
+  "base price": "basePrice",
+  "hsn code": "hsnCode",
+  "min order quantity": "minOrderQuantity",
+  "product type": "productType",
 };
 
 function normalizeHeader(value: unknown): string {
@@ -88,6 +92,10 @@ export async function POST(request: Request) {
       const uom = String(row.uom ?? "").trim() || null;
       const materialCategory = String(row.materialCategory ?? "").trim() || null;
       const productDescription = String(row.productDescription ?? "").trim() || null;
+      const basePrice = row.basePrice !== undefined && row.basePrice !== null && row.basePrice !== "" ? parseFloat(String(row.basePrice)) : null;
+      const hsnCode = String(row.hsnCode ?? "").trim() || null;
+      const minOrderQuantity = row.minOrderQuantity !== undefined && row.minOrderQuantity !== null && row.minOrderQuantity !== "" ? parseFloat(String(row.minOrderQuantity)) : null;
+      const productType = normalizeProductType(row.productType);
 
       if (!materialGrade) rowErrors.push("Material Grade is required");
       if (!partNumber) rowErrors.push("Part Number is required");
@@ -158,6 +166,10 @@ export async function POST(request: Request) {
             materialSize,
             partNumber,
             rmMake,
+            basePrice,
+            hsnCode,
+            minOrderQuantity,
+            productType,
             isActive: true,
             companyId: user.companyId ?? null,
           },

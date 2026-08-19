@@ -93,7 +93,7 @@ export const V1_ITEMS: NavItem[] = [
   // V1 quotations sub-modules
   { key: 'quotations-overview', label: 'Overview', href: '/quotations', iconEmoji: '💰', keywords: ['all quotations', 'overview'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-draft', label: 'Draft', href: '/quotations?status=Draft', iconEmoji: '💰', keywords: ['draft', 'not sent'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
-  { key: 'quotations-sent', label: 'Sent', href: '/quotations?status=Sent', iconEmoji: '💰', keywords: ['sent', 'delivered'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
+  { key: 'quotations-sent', label: 'Sent', href: '/quotations?status=Quotation%20Sent', iconEmoji: '💰', keywords: ['sent', 'delivered'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-accepted', label: 'Accepted', href: '/quotations?status=Accepted', iconEmoji: '💰', keywords: ['accepted', 'won'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-rejected', label: 'Rejected', href: '/quotations?status=Rejected', iconEmoji: '💰', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-proforma', label: 'Proforma Invoices', href: '/proforma-invoices', iconEmoji: '💰', keywords: ['proforma', 'invoice', 'pi'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },

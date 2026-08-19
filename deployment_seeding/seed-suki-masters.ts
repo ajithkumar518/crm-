@@ -9,6 +9,7 @@ const SUKI_LEAD_SOURCES = [
   "Door-to-Door Marketing",
   "Direct Visit",
   "Telephonic Conversation",
+  "Email",
 ];
 
 const SUKI_PRODUCT_CATEGORIES = [

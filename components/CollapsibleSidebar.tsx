@@ -125,15 +125,10 @@ export default function CollapsibleSidebar({ user, loading, onLogout }: Collapsi
           collapsed ? "px-2 pt-6 pb-5" : "px-4 pt-6 pb-5"
         )}
       >
-        <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="w-6 h-6 flex items-center justify-center shrink-0 rounded-lg">
-            <Logo theme={logoTheme} variant="mark-only" size={24} />
+        <div className="flex items-center overflow-hidden">
+          <div className="flex items-center justify-center shrink-0">
+            <Logo theme={logoTheme} variant="full" size={28} />
           </div>
-          {!collapsed && (
-            <div className="overflow-hidden whitespace-nowrap animate-in fade-in slide-in-from-left-2 duration-200">
-              <p className="text-white text-[18px] font-bold leading-none tracking-[-0.3px] whitespace-nowrap">SUKI CRM</p>
-            </div>
-          )}
         </div>
         <button
           onClick={toggleCollapse}

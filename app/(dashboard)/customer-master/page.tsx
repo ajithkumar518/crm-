@@ -11,6 +11,7 @@ import { useToast } from "@/components/ToastProvider";
 import PageContainer from "@/components/PageContainer";
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 import { SummaryCard } from "@/components/ui/SummaryCard";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { validateEmail, validatePhone, validateAlphabetic } from "@/lib/formValidation";
 import CustomerImportModal from "@/components/customers/CustomerImportModal";
 
@@ -30,21 +31,6 @@ const icons = {
   clock: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
   map: "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
 };
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    ActiveCustomer: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Prospect: "bg-amber-50 text-amber-700 border-amber-200",
-    Renewed: "bg-blue-50 text-blue-700 border-blue-200",
-    Churned: "bg-rose-50 text-rose-700 border-rose-200",
-  };
-  const label = status === "ActiveCustomer" ? "Active Customer" : status;
-  return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${styles[status] || "bg-slate-50 text-slate-650 border-slate-200"}`}>
-      {label}
-    </span>
-  );
-}
 
 export default function CustomerMasterPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -428,13 +414,14 @@ export default function CustomerMasterPage() {
             >
               <option value="">All Lead Sources</option>
               <option value="Website">Website</option>
-              <option value="Facebook">Facebook</option>
-              <option value="Instagram">Instagram</option>
-              <option value="LinkedIn">LinkedIn</option>
-              <option value="Referral">Referral</option>
-              <option value="WalkIn">Walk-in</option>
-              <option value="ColdCall">Cold Call</option>
-              <option value="Partner">Partner</option>
+              <option value="IndiaMART">IndiaMART</option>
+              <option value="Justdial">Justdial</option>
+              <option value="TradeIndia">TradeIndia</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Door-to-Door Marketing">Door-to-Door Marketing</option>
+              <option value="Direct Visit">Direct Visit</option>
+              <option value="Telephonic Conversation">Telephonic Conversation</option>
+              <option value="Email">Email</option>
             </select>
           </div>
         </div>
@@ -502,7 +489,7 @@ export default function CustomerMasterPage() {
                       </div>
                     </td>
                     <td className="crm-td text-slate-600">{c.city || "-"}</td>
-                    <td className="crm-td"><StatusBadge status={c.status} /></td>
+                    <td className="crm-td"><StatusBadge status={c.status} showDot /></td>
                     <td className="crm-td text-right" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
                         <button
@@ -654,13 +641,14 @@ export default function CustomerMasterPage() {
                     >
                       <option value="">Select Source</option>
                       <option value="Website">Website</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="LinkedIn">LinkedIn</option>
-                      <option value="Referral">Referral</option>
-                      <option value="WalkIn">Walk-in</option>
-                      <option value="ColdCall">Cold Call</option>
-                      <option value="Partner">Partner</option>
+                      <option value="IndiaMART">IndiaMART</option>
+                      <option value="Justdial">Justdial</option>
+                      <option value="TradeIndia">TradeIndia</option>
+                      <option value="WhatsApp">WhatsApp</option>
+                      <option value="Door-to-Door Marketing">Door-to-Door Marketing</option>
+                      <option value="Direct Visit">Direct Visit</option>
+                      <option value="Telephonic Conversation">Telephonic Conversation</option>
+                      <option value="Email">Email</option>
                     </select>
                   </div>
                   {(user?.role === "Admin" || user?.role === "SalesManager") ? (

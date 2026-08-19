@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       productType: item.productType || null,
       materialGrade: item.materialGrade || null,
       materialSize: item.materialSize || null,
-      length: item.length != null ? parseFloat(item.length) : null,
+      lengthMm: item.length != null ? parseFloat(item.length) : null,
       numberOfPieces: item.numberOfPieces != null ? parseInt(item.numberOfPieces) : null,
       rmMake: item.rmMake || null,
       deliveryDays: item.deliveryDays != null ? parseInt(item.deliveryDays) : null,
@@ -191,7 +191,13 @@ export async function POST(request: NextRequest) {
 
   const totalCutting = computedItems.reduce((sum: number, it: any) => sum + (it.cuttingCharge || 0), 0);
   const discountAmount = subtotal * (discountPercent / 100);
-  const grandTotal = subtotal - discountAmount + taxAmount + totalCutting;
+  const transportCharge = parseFloat(body.transportCharge) || 0;
+  const otherCharges = parseFloat(body.otherCharges) || 0;
+  const weighingLoadingCharge = parseFloat(body.weighingLoadingCharge) || 0;
+  const deliveryCharge = parseFloat(body.deliveryCharge) || 0;
+  const testingCharge = parseFloat(body.testingCharge) || 0;
+  const extraCharges = transportCharge + otherCharges + weighingLoadingCharge + deliveryCharge + testingCharge;
+  const grandTotal = subtotal - discountAmount + taxAmount + totalCutting + extraCharges;
 
   // Generate quotation code: QT-YYYY-NNNNN
   const year = new Date().getFullYear();
@@ -233,10 +239,10 @@ export async function POST(request: NextRequest) {
         totalTax += lineTax;
       }
 
-      // Recalculate grand total with resolved tax
+      // Recalculate grand total with resolved tax and extra charges
       taxAmount = totalTax;
       const discountAmount = subtotal * (discountPercent / 100);
-      const grandTotal = subtotal - discountAmount + taxAmount + totalCutting;
+      const grandTotal = subtotal - discountAmount + taxAmount + totalCutting + extraCharges;
 
       // 1. Create quotation
       const q = await tx.quotation.create({
@@ -246,6 +252,7 @@ export async function POST(request: NextRequest) {
           customerId: body.customerId,
           contactId: body.contactId || null,
           dealId: body.dealId || null,
+          leadId: body.leadId || null,
           validUntil,
           discountPercent,
           totalAmount: subtotal,
@@ -257,6 +264,11 @@ export async function POST(request: NextRequest) {
           deliveryTerms: body.deliveryTerms || null,
           freightTerms: body.freightTerms || null,
           leadTimeDays: body.leadTimeDays ? parseInt(body.leadTimeDays) : null,
+          transportCharge,
+          otherCharges,
+          weighingLoadingCharge,
+          deliveryCharge,
+          testingCharge,
           revisionNumber: 1,
           status: "Draft",
           createdById: user.id,

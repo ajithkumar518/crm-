@@ -9,6 +9,7 @@
     "lint": "next lint",
     "cron": "ts-node scripts/email-scheduler.ts",
     "email:poll": "tsx scripts/inbound-email-poller.ts",
+    "email:poll:multi": "tsx scripts/multi-account-email-poller.ts",
     "seed:superadmin": "tsx deployment_seeding/seed-superadmin.ts",
     "seed:suki-masters": "tsx deployment_seeding/seed-suki-masters.ts"
   },
@@ -20,6 +21,7 @@
     "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
     "es-toolkit": "^1.48.1",
     "exceljs": "^4.4.0",
     "framer-motion": "^12.41.0",

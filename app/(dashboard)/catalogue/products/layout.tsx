@@ -7,6 +7,7 @@ import { useToast } from "@/components/ToastProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { FormField, Select, Input } from "@/components/ui/FormField";
 import { cn } from "@/lib/ui-utils";
+import ProductImportModal from "@/components/products/ProductImportModal";
 import {
   Plus, Search, Trash2, Check, X, FileText, BookOpen,
   Package, Filter, Download, Upload, Eye
@@ -22,7 +23,8 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
   const [statusFilter, setStatusFilter] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  
+  const [isImportOpen, setIsImportOpen] = useState(false);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -37,7 +39,7 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
       if (search) params.search = search;
       if (categoryId) params.categoryId = categoryId;
       if (productType) params.productType = productType;
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter) params.isActive = statusFilter;
       if (sortBy) params.sortBy = sortBy;
       if (sortOrder) params.sortOrder = sortOrder;
       
@@ -76,9 +78,24 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
               <Package size={18} className="text-text-muted" />
               Products
             </h1>
-            <button onClick={() => router.push("/catalogue/products/new")} className="p-1.5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors" title="Add Product">
-              <Plus size={16} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setIsImportOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border text-text-secondary rounded-lg text-[13px] font-medium hover:bg-card-hover transition-colors"
+                title="Import Products"
+              >
+                <Upload size={15} />
+                Import
+              </button>
+              <button
+                onClick={() => router.push("/catalogue/products/new")}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[var(--primary)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--primary-hover)] transition-colors"
+                title="Add Product"
+              >
+                <Plus size={15} />
+                Add
+              </button>
+            </div>
           </div>
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -175,6 +192,12 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
         onConfirm={confirmState.action}
         onCancel={() => setConfirmState({ isOpen: false, title: "", message: "", action: () => {} })}
         isDestructive={true}
+      />
+
+      <ProductImportModal
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImportDone={loadProducts}
       />
     </div>
   );

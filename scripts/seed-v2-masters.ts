@@ -40,13 +40,17 @@ const LOSS_REASONS = [
   "Other",
 ];
 
-// ── 5 Lead Sources ────────────────────────────────────────────────────────────
+// ── 9 Lead Sources (8 spec + Email from inbound poller) ───────────────────────
 const LEAD_SOURCES = [
   "Website",
-  "Referral",
-  "Trade Show",
-  "Cold Call",
-  "Tender Portal",
+  "IndiaMART",
+  "Justdial",
+  "TradeIndia",
+  "WhatsApp",
+  "Door-to-Door Marketing",
+  "Direct Visit",
+  "Telephonic Conversation",
+  "Email",
 ];
 
 async function seedTaxRates() {

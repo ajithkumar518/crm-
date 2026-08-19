@@ -79,8 +79,8 @@ export default function QuotationActionBar({
   const canEdit = quotation.status === "Draft";
   const canRequestApproval = quotation.status === "Draft" && needsApproval;
   const canSend = ["Draft", "Approved"].includes(quotation.status);
-  const canNegotiate = ["Sent", "UnderReview"].includes(quotation.status);
-  const canAcceptReject = ["Sent", "UnderReview"].includes(quotation.status);
+  const canNegotiate = ["Quotation Sent", "UnderReview"].includes(quotation.status);
+  const canAcceptReject = ["Quotation Sent", "UnderReview"].includes(quotation.status);
   
   const hasDealsOrPO = hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS);
   const canCreatePo = quotation.status === "Accepted" && hasDealsOrPO;
@@ -94,7 +94,7 @@ export default function QuotationActionBar({
   const primaryAction: "send" | "accept" | "createPo" | "markWon" | null =
     quotation.status === "Draft" && !needsApproval ? "send"
     : quotation.status === "Approved" ? "send"
-    : ["Sent", "UnderReview"].includes(quotation.status) ? "accept"
+    : ["Quotation Sent", "UnderReview"].includes(quotation.status) ? "accept"
     : canCreatePo ? "createPo"
     : canMarkWon ? "markWon"
     : null;

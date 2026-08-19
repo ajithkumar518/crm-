@@ -58,7 +58,7 @@ export async function GET() {
     prisma.deal.findMany({ where: { ...baseFilter, status: { notIn: ["Won", "Lost"] } }, select: { dealValue: true, probabilityPercent: true, status: true } }),
     prisma.quotation.count({ where: { ...baseFilter, sentAt: { gte: monthStart, lte: monthEnd } } }),
     prisma.quotation.count({ where: { ...baseFilter, acceptedAt: { gte: monthStart, lte: monthEnd } } }),
-    prisma.quotation.count({ where: { ...baseFilter, status: "Sent", validUntil: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) } } }),
+    prisma.quotation.count({ where: { ...baseFilter, status: "Quotation Sent", validUntil: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) } } }),
     prisma.quotation.aggregate({ where: { ...baseFilter, sentAt: { gte: monthStart, lte: monthEnd } }, _sum: { finalAmount: true } }),
     prisma.quotation.aggregate({ where: { ...baseFilter, acceptedAt: { gte: monthStart, lte: monthEnd } }, _sum: { finalAmount: true } }),
     prisma.rFQ.count({ where: { ...baseFilter, status: "CostingPending" } }),

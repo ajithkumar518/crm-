@@ -1039,9 +1039,9 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
           {lead.notes && (
             <div className="mt-6 pt-5 border-t border-slate-100">
               <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Notes</h4>
-              <p className="text-sm text-slate-600 bg-slate-50 rounded-xl p-4 border border-slate-100 leading-relaxed">
+              <div className="text-sm text-slate-600 bg-slate-50 rounded-xl p-4 border border-slate-100 leading-relaxed whitespace-pre-wrap min-h-[120px]">
                 {lead.notes}
-              </p>
+              </div>
             </div>
           )}
         </div>

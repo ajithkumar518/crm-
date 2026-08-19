@@ -47,6 +47,12 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
         status: "Pending",
         nextMeetingDate: { lt: now },
       },
+      include: {
+        customer: { select: { name: true } },
+        lead: { select: { name: true } },
+        deal: { select: { dealName: true } },
+        assignedUser: { select: { name: true } },
+      },
     });
 
     // 2. Find old overdue follow-ups that need Level 1 escalation (overdue > 48h and escalationLevel === 0)
@@ -56,6 +62,12 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
         status: "Overdue",
         escalationLevel: 0,
         nextMeetingDate: { lt: fortyEightHoursAgo },
+      },
+      include: {
+        customer: { select: { name: true } },
+        lead: { select: { name: true } },
+        deal: { select: { dealName: true } },
+        assignedUser: { select: { name: true } },
       },
     });
 
@@ -82,10 +94,11 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
 
       // Notify assignee
       if (f.assignedUserId) {
+        const entityName = f.customer?.name || f.lead?.name || f.deal?.dealName || "this follow-up";
         await dispatchNotification({
           userId: f.assignedUserId,
           title: "Follow-Up Overdue",
-          message: `Your scheduled follow-up for customer is now overdue.`,
+          message: `Your scheduled follow-up for ${entityName} is now overdue.`,
           type: "follow_up",
           link: "/follow-up",
         });
@@ -93,22 +106,25 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
 
       // Notify managers
       if (managerIds.length > 0) {
+        const entityName = f.customer?.name || f.lead?.name || f.deal?.dealName || "this follow-up";
+        const assigneeName = f.assignedUser?.name || "user";
         await dispatchNotificationsToMany({
           userIds: managerIds,
           title: "Follow-Up Overdue Alert",
-          message: `Follow-up assigned to user ${f.assignedUserId} is overdue.`,
+          message: `Follow-up for ${entityName} assigned to ${assigneeName} is overdue.`,
           type: "follow_up",
           link: "/follow-up",
         });
       }
 
       if (isEscalated) {
+        const entityName = f.customer?.name || f.lead?.name || f.deal?.dealName || "this follow-up";
         if (f.assignedUserId) {
           await logAudit(
             f.assignedUserId,
             "follow-up",
             "escalate",
-            `Follow-up ${f.id} automatically escalated to Level 1 (overdue > 48h)`
+            `Follow-up for ${entityName} automatically escalated to Level 1 (overdue > 48h)`
           );
         }
 
@@ -116,7 +132,7 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
           await dispatchNotificationsToMany({
             userIds: managerIds,
             title: "Follow-Up Escalated (Level 1)",
-            message: `Follow-up ${f.id} escalated to Level 1 (overdue > 48h).`,
+            message: `Follow-up for ${entityName} escalated to Level 1 (overdue > 48h).`,
             type: "follow_up",
             link: "/follow-up",
           });
@@ -131,12 +147,13 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
         data: { escalationLevel: 1 },
       });
 
+      const entityName = f.customer?.name || f.lead?.name || f.deal?.dealName || "this follow-up";
       if (f.assignedUserId) {
         await logAudit(
           f.assignedUserId,
           "follow-up",
           "escalate",
-          `Follow-up ${f.id} automatically escalated to Level 1 (overdue > 48h)`
+          `Follow-up for ${entityName} automatically escalated to Level 1 (overdue > 48h)`
         );
       }
 
@@ -144,7 +161,7 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
         await dispatchNotificationsToMany({
           userIds: managerIds,
           title: "Follow-Up Escalated (Level 1)",
-          message: `Follow-up ${f.id} escalated to Level 1 (overdue > 48h).`,
+          message: `Follow-up for ${entityName} escalated to Level 1 (overdue > 48h).`,
           type: "follow_up",
           link: "/follow-up",
         });
@@ -939,6 +956,16 @@ export async function reassignFollowUpAction(data: { id: string; assignedUserId:
       return { success: false, message: "Unauthorized: Access denied." };
     }
 
+    // Fetch customer/lead/deal details for notification
+    const followUpWithDetails = await prisma.followUp.findUnique({
+      where: { id },
+      include: {
+        customer: { select: { name: true } },
+        lead: { select: { name: true } },
+        deal: { select: { dealName: true } },
+      },
+    });
+
     const targetUser = await prisma.user.findUnique({
       where: { id: assignedUserId },
       select: { name: true, companyId: true },
@@ -956,18 +983,19 @@ export async function reassignFollowUpAction(data: { id: string; assignedUserId:
       },
     });
 
+    const entityName = followUpWithDetails?.customer?.name || followUpWithDetails?.lead?.name || followUpWithDetails?.deal?.dealName || "this follow-up";
     await logAudit(
       userPayload.id,
       "follow-up",
       "reassign",
-      `Follow-up ${id} reassigned to user ${assignedUserId} (${targetUser.name})`
+      `Follow-up for ${entityName} reassigned to user ${targetUser.name}`
     );
 
     // Notify new assignee
     await dispatchNotification({
       userId: assignedUserId,
       title: "Follow-Up Reassigned",
-      message: `A follow-up has been reassigned to you.`,
+      message: `Follow-up for ${entityName} has been reassigned to you.`,
       type: "follow_up",
       link: "/follow-up",
     });

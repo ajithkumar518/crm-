@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   const staleQuotations = await prisma.quotation.findMany({
     where: {
       deletedAt: null,
-      status: "Sent",
+      status: "Quotation Sent",
       validUntil: { lt: now },
     },
     select: { id: true, quotationCode: true, validUntil: true, createdById: true },
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       await tx.quotationStatusHistory.create({
         data: {
           quotationId: quote.id,
-          fromStatus: "Sent",
+          fromStatus: "Quotation Sent",
           toStatus: "Expired",
           changedById: user.id,
           notes: "Auto-expired: validUntil date has passed",
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         entityType: "Quotation",
         entityId: quote.id,
         type: "quotation_expired",
-        fromStatus: "Sent",
+        fromStatus: "Quotation Sent",
         toStatus: "Expired",
         metadata: { quotationCode: quote.quotationCode, validUntil: quote.validUntil },
       });

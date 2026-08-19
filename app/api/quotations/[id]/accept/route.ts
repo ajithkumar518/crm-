@@ -27,8 +27,8 @@ export async function POST(
   });
   if (!existing) return NextResponse.json({ success: false, message: "Quotation not found" }, { status: 404 });
 
-  if (!["Sent", "UnderReview"].includes(existing.status)) {
-    return NextResponse.json({ success: false, message: "Only Sent or UnderReview quotations can be accepted" }, { status: 400 });
+  if (!["Quotation Sent", "UnderReview", "Follow-up", "Revised Rate"].includes(existing.status)) {
+    return NextResponse.json({ success: false, message: "Only Quotation Sent, Follow-up, Revised Rate, or UnderReview quotations can be accepted" }, { status: 400 });
   }
 
   try {

@@ -537,7 +537,7 @@ export async function promoteVisitorToCustomerAction(id: string) {
         phone: visitor.visitorPhone,
         status: "Prospect",
         assignedUserId: assignedUser?.id || null,
-        leadSource: "WalkIn",
+        leadSource: "Direct Visit",
         companyId: userPayload.companyId,
       },
     });

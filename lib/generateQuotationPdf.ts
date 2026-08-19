@@ -35,6 +35,11 @@ export interface QuotationPdfData {
   taxAmount: number;
   finalAmount: number;
   totalAmount: number;
+  transportCharge?: number | null;
+  otherCharges?: number | null;
+  weighingLoadingCharge?: number | null;
+  deliveryCharge?: number | null;
+  testingCharge?: number | null;
   termsAndConditions?: string | null;
   paymentTerms?: string | null;
   deliveryTerms?: string | null;
@@ -338,11 +343,22 @@ export function generateQuotationPdf(data: QuotationPdfData): jsPDF {
   const grossSubtotal = discountPct > 0 ? netSubtotal / (1 - discountPct / 100) : netSubtotal;
   const discountAmount = grossSubtotal - netSubtotal;
 
+  const transportCharge = data.transportCharge || 0;
+  const otherCharges = data.otherCharges || 0;
+  const weighingLoadingCharge = data.weighingLoadingCharge || 0;
+  const deliveryCharge = data.deliveryCharge || 0;
+  const testingCharge = data.testingCharge || 0;
+
   const totals: Array<{ label: string; value: string; style?: "normal" | "deduction" | "grand" }> = [
     { label: "Gross Total", value: formatCurrency(grossSubtotal), style: "normal" },
     { label: `Discount (${discountPct}%)`, value: `-${formatCurrency(discountAmount)}`, style: "deduction" },
     { label: "Net Subtotal", value: formatCurrency(netSubtotal), style: "normal" },
     { label: "Tax (GST)", value: formatCurrency(data.taxAmount || 0), style: "normal" },
+    ...(transportCharge ? [{ label: "Transport Charges", value: formatCurrency(transportCharge), style: "normal" as const }] : []),
+    ...(otherCharges ? [{ label: "Other Charges", value: formatCurrency(otherCharges), style: "normal" as const }] : []),
+    ...(weighingLoadingCharge ? [{ label: "Weighing/Loading Charge", value: formatCurrency(weighingLoadingCharge), style: "normal" as const }] : []),
+    ...(deliveryCharge ? [{ label: "Delivery Charge", value: formatCurrency(deliveryCharge), style: "normal" as const }] : []),
+    ...(testingCharge ? [{ label: "Testing Charge", value: formatCurrency(testingCharge), style: "normal" as const }] : []),
   ];
 
   const totalsW = 80;

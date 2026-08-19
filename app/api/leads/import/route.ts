@@ -6,7 +6,7 @@ import * as ExcelJS from "exceljs";
 
 // ─── Zod schema for a single importable lead row ──────────────────────────────
 const VALID_STATUSES = ["New", "Contacted", "FollowUpDue", "SQL", "Qualified", "Lost"] as const;
-const VALID_SOURCES  = ["Website","Facebook","Instagram","LinkedIn","Referral","WalkIn","ColdCall","Partner","Trade Show","Tender Portal"] as const;
+const VALID_SOURCES  = ["Website","IndiaMART","Justdial","TradeIndia","WhatsApp","Door-to-Door Marketing","Direct Visit","Telephonic Conversation","Email"] as const;
 
 const LeadImportRowSchema = z.object({
   name:            z.string().min(1, "Name is required"),

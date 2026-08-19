@@ -134,7 +134,7 @@ function autoDetectMapping(csvHeaders: string[]): Record<string, string> {
 
 // ─── Row validator (client side preview) ──────────────────────────────────
 const VALID_STATUSES = ["New","Contacted","FollowUpDue","SQL","Qualified","Lost"];
-const VALID_SOURCES  = ["Website","Facebook","Instagram","LinkedIn","Referral","WalkIn","ColdCall","Partner","Trade Show","Tender Portal"];
+const VALID_SOURCES  = ["Website","IndiaMART","Justdial","TradeIndia","WhatsApp","Door-to-Door Marketing","Direct Visit","Telephonic Conversation","Email"];
 
 function validateRowClient(mapped: Record<string, string>): string[] {
   const errs: string[] = [];

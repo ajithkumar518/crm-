@@ -58,6 +58,7 @@ export default function NewQuotationPage() {
     discountPercent: "0",
     termsAndConditions: "",
     assignedUserId: "",
+    leadId: "",
   });
 
   const [items, setItems] = useState<any[]>([{
@@ -69,6 +70,11 @@ export default function NewQuotationPage() {
   const [deliveryTerms, setDeliveryTerms] = useState("");
   const [freightTerms, setFreightTerms] = useState("");
   const [leadTimeDays, setLeadTimeDays] = useState("");
+  const [transportCharge, setTransportCharge] = useState("");
+  const [otherCharges, setOtherCharges] = useState("");
+  const [weighingLoadingCharge, setWeighingLoadingCharge] = useState("");
+  const [deliveryCharge, setDeliveryCharge] = useState("");
+  const [testingCharge, setTestingCharge] = useState("");
 
   useEffect(() => {
     getCustomersAction().then(res => {
@@ -129,6 +135,7 @@ export default function NewQuotationPage() {
         opportunityCode: data.opportunityCode,
         rfqId: data.linkedRfqId || "",
         assignedUserId: data.assignedUserId || "",
+        leadId: data.originatingLeadId || "",
         validUntil: getDefaultValidUntil(),
       }));
       // Pre-load contacts for the account so the contact dropdown is populated
@@ -189,7 +196,13 @@ export default function NewQuotationPage() {
   }, 0);
   const discountPercent = parseFloat(form.discountPercent) || 0;
   const discountAmount = subtotal * (discountPercent / 100);
-  const finalAmount = subtotal - discountAmount + taxAmount;
+  const transportChargeNum = parseFloat(transportCharge) || 0;
+  const otherChargesNum = parseFloat(otherCharges) || 0;
+  const weighingLoadingChargeNum = parseFloat(weighingLoadingCharge) || 0;
+  const deliveryChargeNum = parseFloat(deliveryCharge) || 0;
+  const testingChargeNum = parseFloat(testingCharge) || 0;
+  const extraCharges = transportChargeNum + otherChargesNum + weighingLoadingChargeNum + deliveryChargeNum + testingChargeNum;
+  const finalAmount = subtotal - discountAmount + taxAmount + extraCharges;
 
   const addItem = () => setItems([...items, {
     productId: "", description: "", quantity: "1", unitPrice: "0", hsn: "", unit: "kgs", discountPercent: "0", taxPercent: "18",
@@ -249,7 +262,10 @@ export default function NewQuotationPage() {
       const res = await fetch("/api/quotations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...submitForm, items, paymentTerms, deliveryTerms, freightTerms, leadTimeDays }),
+        body: JSON.stringify({
+          ...submitForm, items, paymentTerms, deliveryTerms, freightTerms, leadTimeDays,
+          transportCharge, otherCharges, weighingLoadingCharge, deliveryCharge, testingCharge,
+        }),
       });
       const data = await res.json();
       const opportunityId = searchParams.get("opportunityId");
@@ -493,6 +509,27 @@ export default function NewQuotationPage() {
           </FormGrid>
         </FormSection>
 
+        {/* Extra Charges */}
+        <FormSection title="Extra Charges">
+          <FormGrid>
+            <FormField label="Transport Charges">
+              <Input type="number" step="0.01" min="0" placeholder="0.00" value={transportCharge} onChange={(e) => setTransportCharge(e.target.value)} />
+            </FormField>
+            <FormField label="Other Charges">
+              <Input type="number" step="0.01" min="0" placeholder="0.00" value={otherCharges} onChange={(e) => setOtherCharges(e.target.value)} />
+            </FormField>
+            <FormField label="Weighing/Loading Charge">
+              <Input type="number" step="0.01" min="0" placeholder="0.00" value={weighingLoadingCharge} onChange={(e) => setWeighingLoadingCharge(e.target.value)} />
+            </FormField>
+            <FormField label="Delivery Charge">
+              <Input type="number" step="0.01" min="0" placeholder="0.00" value={deliveryCharge} onChange={(e) => setDeliveryCharge(e.target.value)} />
+            </FormField>
+            <FormField label="Testing Charge">
+              <Input type="number" step="0.01" min="0" placeholder="0.00" value={testingCharge} onChange={(e) => setTestingCharge(e.target.value)} />
+            </FormField>
+          </FormGrid>
+        </FormSection>
+
         {/* Totals */}
         <FormSection title="Summary">
           <div className="space-y-2">
@@ -504,6 +541,11 @@ export default function NewQuotationPage() {
               {validatePercentage(form.discountPercent, "Header Discount") && <p className="text-[10px] text-rose-500 mt-0.5">{validatePercentage(form.discountPercent, "Header Discount")}</p>}
             </div>
             <div className="flex justify-between text-sm text-red-600"><span>Discount Amount</span><span>-{formatCurrency(discountAmount)}</span></div>
+            {transportChargeNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Transport Charges</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(transportChargeNum)}</span></div>}
+            {otherChargesNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Other Charges</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(otherChargesNum)}</span></div>}
+            {weighingLoadingChargeNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Weighing/Loading Charge</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(weighingLoadingChargeNum)}</span></div>}
+            {deliveryChargeNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Delivery Charge</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(deliveryChargeNum)}</span></div>}
+            {testingChargeNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Testing Charge</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(testingChargeNum)}</span></div>}
             <div className="flex justify-between text-sm font-bold border-t border-[var(--border)] pt-2"><span className="text-[var(--text-primary)]">Final Amount</span><span className="text-[var(--primary)]">{formatCurrency(finalAmount)}</span></div>
           </div>
         </FormSection>

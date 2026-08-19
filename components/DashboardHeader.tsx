@@ -415,7 +415,7 @@ export default function DashboardHeader({
       {/* ── Right ── */}
       <div className="flex items-center gap-2">
         {/* CRM Switcher Toggle */}
-        {user?.role !== "ServiceEngineer" && !user?.disableServiceCrm && (
+        {user?.role !== "ServiceEngineer" && !user?.disableServiceCrm && user?.email !== "shahnaz@sukisoftware.com" && (
           <div className="hidden md:block mr-2 shrink-0">
             <CrmToggle />
           </div>

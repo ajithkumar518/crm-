@@ -15,7 +15,7 @@ export async function GET() {
     const expired = await prisma.quotation.updateMany({
       where: {
         validUntil: { lt: now },
-        status: { in: ["Sent", "UnderReview"] },
+        status: { in: ["Quotation Sent", "UnderReview"] },
         deletedAt: null,
       },
       data: { status: "Expired" },
@@ -47,7 +47,7 @@ export async function GET() {
     const expiringQuotations = await prisma.quotation.findMany({
       where: {
         validUntil: { gte: now, lte: sevenDaysLater },
-        status: { in: ["Sent", "UnderReview"] },
+        status: { in: ["Quotation Sent", "UnderReview"] },
         deletedAt: null,
       },
       select: { id: true, quotationCode: true, createdById: true, validUntil: true },

@@ -102,7 +102,7 @@ export async function GET() {
     prisma.quotation.count({
       where: {
         createdById: user.id, companyId, deletedAt: null,
-        status: "Sent", validUntil: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
+        status: "Quotation Sent", validUntil: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
       },
     }),
     prisma.quotation.aggregate({

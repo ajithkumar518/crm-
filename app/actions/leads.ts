@@ -20,15 +20,14 @@ type LeadStatus =
   | "Duplicate";
 type LeadSource =
   | "Website"
-  | "Referral"
-  | "SocialMedia"
-  | "Email"
-  | "Event"
-  | "ColdCall"
-  | "Partner"
-  | "Other"
-  | "Trade Show"
-  | "Tender Portal";
+  | "IndiaMART"
+  | "Justdial"
+  | "TradeIndia"
+  | "WhatsApp"
+  | "Door-to-Door Marketing"
+  | "Direct Visit"
+  | "Telephonic Conversation"
+  | "Email";
 import { buildScope, checkRecordScope } from "@/lib/scopes";
 import { nanoid } from "nanoid";
 
@@ -48,12 +47,14 @@ function calculateLeadScore(params: {
   if (["automotive", "pharma", "textile"].includes(industry)) score += 25;
   else score += 10;
 
-  // source_quality: Referral=20, Trade Show=18, Website=15, Cold Call=10, Other=5
+  // source_quality: IndiaMART/Justdial/TradeIndia=20 (marketplace), Website=15, WhatsApp=12, Email=10, Direct Visit=18, Door-to-Door=8, Telephonic=10, Other=5
   const source = (params.leadSource || "").toLowerCase().replace(/\s/g, "");
-  if (source === "referral") score += 20;
-  else if (source === "tradeshow") score += 18;
+  if (["indiamart", "justdial", "tradeindia"].includes(source)) score += 20;
+  else if (source === "directvisit") score += 18;
   else if (source === "website") score += 15;
-  else if (source === "coldcall") score += 10;
+  else if (source === "whatsapp") score += 12;
+  else if (["email", "telephonicconversation"].includes(source)) score += 10;
+  else if (source === "door-to-doormarketing") score += 8;
   else score += 5;
 
   // designation: Head/Director/VP/GM/CEO/MD/President = 20, Manager = 15, Engineer/Exec = 10

@@ -23,11 +23,13 @@ export async function POST(
   });
 
   if (!quotation) {
+    console.log("Proforma generation failed - quotation not found for id:", id, "user companyId:", user.companyId);
     return NextResponse.json({ success: false, message: "Quotation not found" }, { status: 404 });
   }
 
   if (quotation.status !== "Accepted" && quotation.status !== "Converted to Customer") {
-    return NextResponse.json({ success: false, message: "Proforma can only be generated from an accepted quotation" }, { status: 400 });
+    console.log("Proforma generation blocked - quotation status:", quotation.status);
+    return NextResponse.json({ success: false, message: `Proforma can only be generated from an accepted quotation. Current status: ${quotation.status}` }, { status: 400 });
   }
 
   const existing = await prisma.proformaInvoice.findUnique({

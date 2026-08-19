@@ -29,6 +29,35 @@ function cleanMobile(mobile: string): string {
   return mobile.replace(/[^\d]/g, "");
 }
 
+/**
+ * Validate an Indian mobile number.
+ * Accepts: 10 digits starting with 6-9, optionally prefixed with +91 or 91.
+ * Returns the cleaned 10-digit number if valid, or null if invalid.
+ */
+function validateIndianMobile(raw: string): string | null {
+  const cleaned = cleanMobile(raw);
+  // Strip leading 91 if present (91 prefix for India)
+  let digits = cleaned;
+  if (digits.length === 12 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  }
+  // Must be exactly 10 digits, starting with 6-9
+  if (/^[6-9]\d{9}$/.test(digits)) {
+    return digits;
+  }
+  return null;
+}
+
+/**
+ * Validate an Indian GST number (15-character structured format).
+ * Format: 2-digit state code + 10-char PAN (5 letters + 4 digits + 1 letter)
+ *         + 1 entity digit + "Z" + 1 checksum alphanumeric.
+ * Regex: ^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}Z[0-9A-Z]{1}$
+ */
+function isValidGst(gst: string): boolean {
+  return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}Z[0-9A-Z]{1}$/.test(gst);
+}
+
 function normalizeCustomerCategory(value?: string | null): string | null {
   if (!value) return null;
   const v = value.trim().toUpperCase().replace(/\s+/g, "-");
@@ -144,8 +173,19 @@ export async function POST(request: Request) {
       const customerCategoryRaw = String(row.customerCategory ?? "").trim() || null;
 
       if (!name) rowErrors.push("Customer Name is required");
-      if (gstNumber && !/^[0-9A-Z]{15}$/.test(gstNumber)) rowErrors.push("GST Number must be 15 characters");
+      if (gstNumber && !isValidGst(gstNumber)) {
+        rowErrors.push("GST Number must be valid 15-char Indian GST format (e.g. 33AABCU1234A1Z5)");
+      }
       if (email && !isValidEmail(email)) rowErrors.push("Email ID is invalid");
+
+      // Mobile validation: if provided, must be a valid Indian mobile number
+      let validatedMobile: string | null = null;
+      if (mobile) {
+        validatedMobile = validateIndianMobile(mobile);
+        if (!validatedMobile) {
+          rowErrors.push("Mobile Number must be a valid 10-digit Indian mobile (starting with 6-9, optional +91 prefix)");
+        }
+      }
 
       let creditDays: number | null = null;
       if (creditDaysRaw !== undefined && creditDaysRaw !== null && String(creditDaysRaw).trim() !== "") {
@@ -191,12 +231,39 @@ export async function POST(request: Request) {
         continue;
       }
 
+      // Duplicate detection: check GST, then email, then name+mobile
       const existingGst = gstNumber
         ? await prisma.customer.findFirst({ where: { gstNumber, companyId: user.companyId ?? null } })
         : null;
       if (existingGst) {
         errors.push({ row: rowNumber, message: `Customer with GST ${gstNumber} already exists` });
         continue;
+      }
+
+      // Email duplicate check (prevents unhandled DB unique constraint error)
+      if (email) {
+        const existingEmail = await prisma.customer.findFirst({
+          where: { email, companyId: user.companyId ?? null },
+        });
+        if (existingEmail) {
+          errors.push({ row: rowNumber, message: `Customer with email ${email} already exists` });
+          continue;
+        }
+      }
+
+      // Name + mobile duplicate check (fallback when GST is blank)
+      if (!gstNumber && validatedMobile) {
+        const existingNameMobile = await prisma.customer.findFirst({
+          where: {
+            name: { equals: name },
+            phone: validatedMobile,
+            companyId: user.companyId ?? null,
+          },
+        });
+        if (existingNameMobile) {
+          errors.push({ row: rowNumber, message: `Customer with name "${name}" and mobile ${validatedMobile} already exists` });
+          continue;
+        }
       }
 
       const customerCode = `CUS-${String(baseCount + created.length + errors.length + 1).padStart(5, "0")}`;
@@ -207,7 +274,7 @@ export async function POST(request: Request) {
             customerCode,
             name,
             email: email || null,
-            phone: mobile ? cleanMobile(mobile) : null,
+            phone: validatedMobile || null,
             city: null,
             state,
             gstNumber,
@@ -225,7 +292,7 @@ export async function POST(request: Request) {
           await prisma.contact.create({
             data: {
               name: contactPerson,
-              phone: mobile ? cleanMobile(mobile) : null,
+              phone: validatedMobile || null,
               email: email || null,
               customerId: customer.id,
               ownerId: assignedUserId,

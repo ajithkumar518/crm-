@@ -14,7 +14,7 @@ export default function QuotationStatusTimeline({ quotation }: QuotationStatusTi
   const order = [
     "Draft", 
     "Approved", 
-    "Sent", 
+    "Quotation Sent", 
     ...(hasMod(MODULE_KEYS.NEGOTIATION) ? ["UnderReview"] : []), 
     "Accepted", 
     ...(hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS) ? ["Deal/PO"] : [])
@@ -30,7 +30,7 @@ export default function QuotationStatusTimeline({ quotation }: QuotationStatusTi
           const stageIdx = idx;
           const isDone = stageIdx < currentIdx;
           const isCurrent = key === quotation.status || (key === "Deal/PO" && quotation.status === "Accepted" && quotation.dealId);
-          const labelMap: Record<string, string> = { Draft: "Draft", Approved: "Approved", Sent: "Sent", UnderReview: "Negotiation", Accepted: "Accepted", "Deal/PO": "Deal / PO" };
+          const labelMap: Record<string, string> = { Draft: "Draft", Approved: "Approved", "Quotation Sent": "Quotation Sent", UnderReview: "Negotiation", Accepted: "Accepted", "Deal/PO": "Deal / PO" };
           return {
             label: labelMap[key],
             key,

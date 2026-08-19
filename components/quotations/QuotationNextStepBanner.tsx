@@ -37,7 +37,7 @@ export default function QuotationNextStepBanner({
             {quotation.status === "Draft" && (needsApproval ? "Manager approval required before sending to customer" : "Review line items and send to customer")}
             {quotation.status === "PendingApproval" && "Awaiting approval from manager — check Approval Center"}
             {quotation.status === "Approved" && "Quotation approved — ready to send to customer"}
-            {quotation.status === "Sent" && "Customer reviewing — start negotiation if they request changes"}
+            {quotation.status === "Quotation Sent" && "Customer reviewing — start negotiation if they request changes"}
             {quotation.status === "UnderReview" && "In negotiation — propose revisions or mark accepted/rejected"}
             {quotation.status === "Accepted" && (
               hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS)

@@ -50,28 +50,30 @@ export async function sendEmail(
     htmlText = html!;
   }
 
-  try {
-    const user = process.env.SMTP_USER || process.env.EMAIL_USER;
-    if (!user) {
-      console.log("=========================================");
-      console.log(`[DEVELOPMENT] Mock Email to: ${to}`);
-      console.log(`Subject: ${subjectText}`);
-      console.log("=========================================");
-      return;
-    }
-    await transporter.sendMail({
-      from:
-        process.env.SMTP_FROM ||
-        process.env.EMAIL_FROM ||
-        '"SUKI CRM" <noreply@sukisoftware.com>',
-      to,
-      subject: subjectText,
-      html: htmlText,
-      ...(attachments && attachments.length > 0 ? { attachments } : {}),
-    });
-  } catch (error) {
-    console.error("Failed to send email via SMTP:", error);
+  const smtpUser = process.env.SMTP_USER || process.env.EMAIL_USER;
+  if (!smtpUser) {
+    // No credentials configured — this is a config gap, not a silent success.
+    // Throw so callers can surface the failure instead of pretending the email was sent.
+    throw new Error(
+      "Email not sent: SMTP_USER (or EMAIL_USER) is not configured. Set SMTP credentials in .env to enable email delivery.",
+    );
   }
+
+  // Delegate to transporter — let errors propagate so callers can handle them.
+  // Previously this catch block swallowed ALL errors (auth failures, network errors,
+  // rejected recipients) and returned void, causing every caller to believe the email
+  // was sent successfully. This was the root cause of the "quotation send shows success
+  // but customer never receives email" silent-failure bug.
+  await transporter.sendMail({
+    from:
+      process.env.SMTP_FROM ||
+      process.env.EMAIL_FROM ||
+      '"SUKI CRM" <noreply@sukisoftware.com>',
+    to,
+    subject: subjectText,
+    html: htmlText,
+    ...(attachments && attachments.length > 0 ? { attachments } : {}),
+  });
 }
 
 // ── Shared header/footer HTML ─────────────────────────────────────────────────

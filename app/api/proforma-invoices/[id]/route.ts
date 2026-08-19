@@ -23,6 +23,12 @@ export async function GET(
       quotation: { select: { id: true, quotationCode: true } },
       company: { select: { id: true, name: true } },
       items: { include: { product: { select: { id: true, name: true, productCode: true } } } },
+      histories: {
+        include: { changedBy: { select: { id: true, name: true } } },
+        orderBy: { changedAt: "desc" },
+        take: 50,
+      },
+      SalesOrder: { select: { id: true, orderNumber: true, status: true } },
     },
   });
 

@@ -46,17 +46,32 @@ const statusConfig: Record<string, { classes: string; dot: string; label?: strin
   CostingPending:        { classes: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50",           dot: "bg-amber-400",  label: "Costing Pending" },
   QuotationCreated:      { classes: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50", dot: "bg-emerald-400", label: "Quotation Created" },
   Closed:                { classes: "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700/50",           dot: "bg-slate-400",  label: "Closed" },
-  // Quotation statuses
-  Draft:                 { classes: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700/50",           dot: "bg-slate-400",  label: "Draft" },
-  Sent:                  { classes: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50",                 dot: "bg-blue-400",   label: "Sent" },
+  // Quotation statuses (spec 13 + system)
+  Draft:                 { classes: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-400 dark:border-yellow-800/50",         dot: "bg-yellow-400",  label: "Draft" },
+  "Quotation Sent":      { classes: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800/50",                 dot: "bg-blue-400",   label: "Quotation Sent" },
+  "Follow-up":           { classes: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-800/50",                 dot: "bg-cyan-400",   label: "Follow-up" },
+  "Revised Rate":        { classes: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800/50",     dot: "bg-indigo-400", label: "Revised Rate" },
   Accepted:              { classes: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50", dot: "bg-emerald-400", label: "Accepted" },
-  Expired:               { classes: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/50",                 dot: "bg-rose-400",   label: "Expired" },
+  MOQ:                   { classes: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-800/50",     dot: "bg-orange-400", label: "MOQ" },
+  "Material Not Available": { classes: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/50",              dot: "bg-rose-400",   label: "Material Not Available" },
+  "No Stock":            { classes: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50",           dot: "bg-amber-400",  label: "No Stock" },
+  "Price Pending":       { classes: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-400 dark:border-yellow-800/50",     dot: "bg-yellow-400", label: "Price Pending" },
+  "Supplier Rate Checking": { classes: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800/50",  dot: "bg-violet-400", label: "Supplier Rate Checking" },
+  "Converted to Customer": { classes: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50", dot: "bg-emerald-400", label: "Converted to Customer" },
+  Others:                { classes: "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800/60 dark:text-gray-400 dark:border-gray-700/50",                dot: "bg-gray-400",   label: "Others" },
+  // System/internal statuses (PendingApproval, Approved, Expired not already defined above)
+  PendingApproval:       { classes: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-400 dark:border-orange-800/50",     dot: "bg-orange-400", label: "Pending Approval" },
+  Approved:              { classes: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50",           dot: "bg-emerald-400",  label: "Approved" },
+  // Proforma Invoice statuses
+  "Sent":                { classes: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-800/50",                    dot: "bg-cyan-400",   label: "Sent" },
+  "PO Received":         { classes: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800/50",   dot: "bg-purple-400", label: "PO Received" },
+  "Cancelled":           { classes: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/50",            dot: "bg-rose-400",   label: "Cancelled" },
+  // Legacy fallback for old DB records (Quotation Sent)
 
   // Follow-up statuses
   Pending:   { classes: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50",       dot: "bg-amber-400" },
   Completed: { classes: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/50", dot: "bg-emerald-400" },
   Overdue:   { classes: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800/50",          dot: "bg-rose-400" },
-  Cancelled: { classes: "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800/60 dark:text-slate-400 dark:border-slate-700/50",      dot: "bg-slate-400" },
 
   // Priority levels - USE CSS VARIABLES FOR DARK MODE
   Low:    { classes: "bg-emerald-50 text-emerald-700 border-emerald-200", style: { "--badge-bg": "var(--status-success-bg)", "--badge-text": "var(--status-success-text)", "--badge-border": "var(--status-success-border)" }, dot: "bg-emerald-400" },

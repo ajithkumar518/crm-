@@ -84,17 +84,28 @@ export default function Logo({
   className,
 }: LogoProps) {
   // Map themes to external gradient SVG files
-  // ?v=2 cache-busts old logo files so browsers load the updated gradients
+  // ?v=5 cache-busts all logos so browsers load the updated assets
   const logoMap: Record<LogoTheme, string> = {
-    blue: "/logo-darkblue.svg?v=2",
-    purple: "/logo-purple.svg?v=2",
-    green: "/logo-green.svg?v=2",
-    orange: "/logo-orange.svg?v=2", // Orange theme uses orange gradient
+    blue: "/logo-darkblue.svg?v=5",
+    purple: "/logo-purple.svg?v=5",
+    green: "/logo-green.svg?v=5",
+    orange: "/logo-orange.svg?v=5", // Orange theme uses orange gradient
     dark: "/crm black (3).svg?v=2", // Keep existing white-on-black for dark mode
     neutral: "/crm black (3).svg?v=2", // Keep existing white-on-black for neutral
   };
 
   const logoSrc = logoMap[theme];
+
+  // Per-theme aspect ratios matching the uploaded SVG artboards
+  const aspectRatioMap: Record<LogoTheme, number> = {
+    blue: 1893 / 622,
+    purple: 1898 / 624,
+    green: 1895 / 622,
+    orange: 1898 / 624,
+    dark: 1282 / 445,
+    neutral: 1282 / 445,
+  };
+  const aspectRatio = aspectRatioMap[theme];
 
   // Black/dark/neutral themes use the uploaded white-on-black SVG file
   if (theme === "dark" || theme === "neutral") {
@@ -129,27 +140,12 @@ export default function Logo({
     );
   }
 
-  if (variant === "mark-only") {
-    return (
-      <div suppressHydrationWarning>
-        <img
-          src={logoSrc}
-          alt="SUKI CRM"
-          width={Math.round(size * (620 / 445))}
-          height={size}
-          className={className}
-        />
-      </div>
-    );
-  }
-
-  // variant === "full" — complete brand lockup
   return (
     <div suppressHydrationWarning>
       <img
         src={logoSrc}
         alt="SUKI CRM"
-        width={Math.round(size * (1286 / 440))}
+        width={Math.round(size * aspectRatio)}
         height={size}
         className={className}
       />

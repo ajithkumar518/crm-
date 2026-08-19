@@ -6,7 +6,7 @@ import PageContainer from "@/components/PageContainer";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { useToast } from "@/components/ToastProvider";
 import { CRMSpinner } from "@/components/CRMSpinner";
-import { ChevronLeft, Mail, FileText, Package, IndianRupee } from "lucide-react";
+import { ChevronLeft, Mail, FileText, Package, IndianRupee, Trash2 } from "lucide-react";
 
 export default function ProformaDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +19,10 @@ export default function ProformaDetailPage() {
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [creatingSo, setCreatingSo] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editedItems, setEditedItems] = useState<Record<string, any>>({});
+  const [savingItems, setSavingItems] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -98,6 +102,82 @@ export default function ProformaDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm(`Are you sure you want to delete proforma ${proforma.proformaNumber}? This action cannot be undone.`)) return;
+    
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/proforma-invoices?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Proforma deleted successfully");
+        router.push("/proforma-invoices");
+      } else {
+        toast.error(data.message || "Failed to delete proforma");
+      }
+    } catch {
+      toast.error("Failed to delete proforma");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const startEdit = () => {
+    const init: Record<string, any> = {};
+    for (const it of proforma.items || []) {
+      init[it.id] = {
+        quantity: String(it.quantity),
+        unitPrice: String(it.unitPrice),
+        discountPercent: String(it.discountPercent),
+        taxPercent: String(it.taxPercent),
+        remarks: it.remarks || "",
+        cuttingCharge: it.cuttingCharge == null ? "" : String(it.cuttingCharge),
+        deliveryDays: it.deliveryDays == null ? "" : String(it.deliveryDays),
+      };
+    }
+    setEditedItems(init);
+    setEditMode(true);
+  };
+
+  const cancelEdit = () => {
+    setEditMode(false);
+    setEditedItems({});
+  };
+
+  const saveItems = async () => {
+    const itemsPayload = Object.entries(editedItems).map(([itemId, v]) => ({
+      id: itemId,
+      quantity: parseFloat(v.quantity),
+      unitPrice: parseFloat(v.unitPrice),
+      discountPercent: parseFloat(v.discountPercent),
+      taxPercent: parseFloat(v.taxPercent),
+      remarks: v.remarks || null,
+      cuttingCharge: v.cuttingCharge === "" ? null : parseFloat(v.cuttingCharge),
+      deliveryDays: v.deliveryDays === "" ? null : parseInt(v.deliveryDays),
+    }));
+    setSavingItems(true);
+    try {
+      const res = await fetch(`/api/proforma-invoices/${id}/items`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: itemsPayload }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(data.message || "Items updated");
+        setProforma(data.data);
+        setEditMode(false);
+        setEditedItems({});
+      } else {
+        toast.error(data.message || "Failed to update items");
+      }
+    } catch {
+      toast.error("Failed to update items");
+    } finally {
+      setSavingItems(false);
+    }
+  };
+
   if (loading) {
     return (
       <PageContainer>
@@ -164,7 +244,23 @@ export default function ProformaDetailPage() {
           </div>
 
           <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
-            <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-2">Items</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)]">Items</h2>
+              <div className="flex gap-2">
+                {!editMode && !proforma.SalesOrder && (
+                  <button onClick={startEdit} className="px-3 py-1 rounded-lg text-xs font-medium bg-[var(--primary)] text-white hover:opacity-90">Edit Items</button>
+                )}
+                {editMode && (
+                  <>
+                    <button onClick={saveItems} disabled={savingItems} className="px-3 py-1 rounded-lg text-xs font-medium bg-[var(--primary)] text-white hover:opacity-90 disabled:opacity-50">{savingItems ? "Saving..." : "Save"}</button>
+                    <button onClick={cancelEdit} disabled={savingItems} className="px-3 py-1 rounded-lg text-xs font-medium bg-[var(--surface-3)] text-[var(--text-secondary)] hover:opacity-90">Cancel</button>
+                  </>
+                )}
+              </div>
+            </div>
+            {proforma.SalesOrder && (
+              <p className="text-xs text-amber-600 mb-2">Editing is locked because Sales Order {proforma.SalesOrder.orderNumber} has been created from this proforma.</p>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-[var(--surface-3)] text-[var(--text-secondary)]">
@@ -177,12 +273,14 @@ export default function ProformaDetailPage() {
                     <th className="p-2 text-right">Pcs</th>
                     <th className="p-2 text-right">Qty</th>
                     <th className="p-2 text-right">Rate</th>
+                    <th className="p-2 text-right">Disc%</th>
+                    <th className="p-2 text-right">Tax%</th>
                     <th className="p-2 text-right">Total</th>
                     <th className="p-2 text-left">Remarks</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {proforma.items.map((it: any, idx: number) => (
+                  {(proforma.items || []).map((it: any, idx: number) => (
                     <tr key={it.id} className="border-t border-[var(--border-subtle)]">
                       <td className="p-2 text-[var(--text-primary)]">{idx + 1}</td>
                       <td className="p-2 text-[var(--text-primary)]">{it.description || it.product?.name || "—"}</td>
@@ -190,16 +288,52 @@ export default function ProformaDetailPage() {
                       <td className="p-2 text-[var(--text-primary)]">{it.materialSize || "—"}</td>
                       <td className="p-2 text-right text-[var(--text-primary)]">{it.lengthMm != null ? `${it.lengthMm} mm` : "—"}</td>
                       <td className="p-2 text-right text-[var(--text-primary)]">{it.numberOfPieces != null ? it.numberOfPieces : "—"}</td>
-                      <td className="p-2 text-right text-[var(--text-primary)]">{it.quantity} {it.unit || "kgs"}</td>
-                      <td className="p-2 text-right text-[var(--text-primary)]">{formatCurrency(it.unitPrice)}</td>
-                      <td className="p-2 text-right text-[var(--text-primary)]">{formatCurrency(it.lineTotal)}</td>
-                      <td className="p-2 text-[var(--text-primary)]">{it.remarks || "—"}</td>
+                      {editMode ? (
+                        <>
+                          <td className="p-1"><input type="number" step="0.001" value={editedItems[it.id]?.quantity ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], quantity: e.target.value } })} className="w-16 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                          <td className="p-1"><input type="number" step="0.01" value={editedItems[it.id]?.unitPrice ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], unitPrice: e.target.value } })} className="w-20 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                          <td className="p-1"><input type="number" step="0.01" value={editedItems[it.id]?.discountPercent ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], discountPercent: e.target.value } })} className="w-14 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                          <td className="p-1"><input type="number" step="0.01" value={editedItems[it.id]?.taxPercent ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], taxPercent: e.target.value } })} className="w-14 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                          <td className="p-2 text-right text-[var(--text-primary)]">{formatCurrency(it.lineTotal)}</td>
+                          <td className="p-1"><input type="text" value={editedItems[it.id]?.remarks ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], remarks: e.target.value } })} className="w-28 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="p-2 text-right text-[var(--text-primary)]">{it.quantity} {it.unit || "kgs"}</td>
+                          <td className="p-2 text-right text-[var(--text-primary)]">{formatCurrency(it.unitPrice)}</td>
+                          <td className="p-2 text-right text-[var(--text-primary)]">{it.discountPercent}%</td>
+                          <td className="p-2 text-right text-[var(--text-primary)]">{it.taxPercent}%</td>
+                          <td className="p-2 text-right text-[var(--text-primary)]">{formatCurrency(it.lineTotal)}</td>
+                          <td className="p-2 text-[var(--text-primary)]">{it.remarks || "—"}</td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+
+          {proforma.histories && proforma.histories.length > 0 && (
+            <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
+              <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-2">Edit History</h2>
+              <div className="space-y-1 max-h-64 overflow-y-auto">
+                {(proforma.histories || []).map((h: any) => (
+                  <div key={h.id} className="text-xs flex items-center gap-2 text-[var(--text-secondary)]">
+                    <span className="text-[var(--text-tertiary)]">{new Date(h.changedAt).toLocaleString("en-IN")}</span>
+                    <span className="font-medium text-[var(--text-primary)]">{h.changedBy?.name || "Unknown"}</span>
+                    <span>changed</span>
+                    <span className="font-mono text-[var(--primary)]">{h.fieldName}</span>
+                    <span>from</span>
+                    <span className="font-mono">{h.previousValue ?? "null"}</span>
+                    <span>to</span>
+                    <span className="font-mono">{h.newValue ?? "null"}</span>
+                    {h.notes && <span className="text-[var(--text-tertiary)]">({h.notes})</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {(proforma.paymentTerms || proforma.deliveryTerms || proforma.termsAndConditions) && (
             <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2 text-sm">
@@ -234,8 +368,14 @@ export default function ProformaDetailPage() {
               <button onClick={handleCreateSalesOrder} disabled={creatingSo || !canCreateSo} className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
                 <Package size={15} /> {creatingSo ? "Creating..." : "Create Sales Order"}
               </button>
+              <button onClick={handleDelete} disabled={deleting || proforma.SalesOrder} className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-60">
+                <Trash2 size={15} /> {deleting ? "Deleting..." : "Delete"}
+              </button>
               {!canCreateSo && (
                 <p className="text-xs text-[var(--text-tertiary)]">Sales order requires status Approved or PO Received.</p>
+              )}
+              {proforma.SalesOrder && (
+                <p className="text-xs text-[var(--text-tertiary)]">Cannot delete proforma with linked sales order.</p>
               )}
             </div>
           </div>

@@ -66,18 +66,24 @@ export async function POST(
       },
     });
 
-    if (newStatus && newStatus !== quotation.status) {
+    // Auto-set quotation status to "Follow-up" if it's currently in an active state
+    // (Quotation Sent, UnderReview, Revised Rate, Price Pending, Supplier Rate Checking)
+    // and no explicit newStatus was provided
+    const followUpStates = ["Quotation Sent", "UnderReview", "Revised Rate", "Price Pending", "Supplier Rate Checking"];
+    const targetStatus = newStatus || (followUpStates.includes(quotation.status) ? "Follow-up" : null);
+
+    if (targetStatus && targetStatus !== quotation.status) {
       await tx.quotation.update({
         where: { id },
-        data: { status: newStatus },
+        data: { status: targetStatus },
       });
       await tx.quotationStatusHistory.create({
         data: {
           quotationId: id,
           fromStatus: quotation.status,
-          toStatus: newStatus,
+          toStatus: targetStatus,
           changedById: user.id,
-          notes: `Follow-up: ${remarks || notes || newStatus}`,
+          notes: `Follow-up: ${remarks || notes || targetStatus}`,
         },
       });
     }

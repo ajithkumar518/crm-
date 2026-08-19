@@ -3328,7 +3328,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                 {formatCurrency(linkedQuotations[0]?.finalAmount || linkedQuotations[0]?.totalAmount || 0)}
               </p>
             </div>
-          ) : linkedQuotations.some((q: any) => q.status === "Sent") ? (
+          ) : linkedQuotations.some((q: any) => q.status === "Quotation Sent") ? (
             <div className="px-3 py-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40">
               <p className="text-xs font-bold text-blue-700 dark:text-blue-400">
                 ⏳ Awaiting Customer Response

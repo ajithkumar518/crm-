@@ -80,6 +80,20 @@ export async function GET(
     const primaryProductId: string | null = null;
     const primaryProductName: string | null = null;
 
+    // Resolve originating Lead (if any) — Lead.convertedOpportunityId points to the Deal
+    let originatingLeadId: string | null = null;
+    let originatingLeadCode: string | null = null;
+    if (deal.id) {
+      const lead = await prisma.lead.findFirst({
+        where: { convertedOpportunityId: deal.id, deletedAt: null },
+        select: { id: true, leadCode: true },
+      });
+      if (lead) {
+        originatingLeadId = lead.id;
+        originatingLeadCode = lead.leadCode;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -100,6 +114,8 @@ export async function GET(
         assignedUserId: deal.assignedUserId || null,
         assignedUserName: deal.assignedUser?.name || null,
         linkedRfqId: deal.rfqs?.[0]?.id || null,
+        originatingLeadId,
+        originatingLeadCode,
       },
     });
   } catch (error: any) {

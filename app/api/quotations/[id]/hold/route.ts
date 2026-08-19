@@ -27,9 +27,9 @@ export async function POST(
   });
   if (!existing) return NextResponse.json({ success: false, message: "Quotation not found" }, { status: 404 });
 
-  if (!["Sent", "UnderReview"].includes(existing.status)) {
+  if (!["Quotation Sent", "UnderReview", "Follow-up", "Revised Rate"].includes(existing.status)) {
     return NextResponse.json(
-      { success: false, message: `Cannot put a ${existing.status} quotation on hold. Only Sent or UnderReview quotations can be held.` },
+      { success: false, message: `Cannot put a ${existing.status} quotation on hold. Only Quotation Sent, Follow-up, Revised Rate, or UnderReview quotations can be held.` },
       { status: 400 }
     );
   }
@@ -100,7 +100,7 @@ export async function DELETE(
   }
 
   // Determine resume status: if negotiation exists → UnderReview, else → Sent
-  const resumeStatus = existing.negotiationId ? "UnderReview" : "Sent";
+  const resumeStatus = existing.negotiationId ? "UnderReview" : "Quotation Sent";
 
   await prisma.quotation.update({
     where: { id },

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { logAudit, extractAuditContext } from "@/lib/audit";
-import { generateQuotationPdf } from "@/lib/generateQuotationPdf";
+import { generateSukiQuotationPdf } from "@/lib/generateSukiQuotationPdf";
 
 export async function POST(
   request: NextRequest,
@@ -17,7 +17,7 @@ export async function POST(
   const quotation = await prisma.quotation.findFirst({
     where: { id, deletedAt: null, companyId: user.companyId },
     include: {
-      customer: { select: { id: true, name: true, customerCode: true, phone: true, email: true, city: true, billingAddress: true, shippingAddress: true, gstNumber: true } },
+      customer: { select: { id: true, name: true, customerCode: true, phone: true, email: true, city: true, state: true, billingAddress: true, shippingAddress: true, gstNumber: true } },
       contact: { select: { id: true, name: true, email: true, phone: true } },
       deal: { select: { id: true, dealName: true, opportunityCode: true } },
       items: {
@@ -43,28 +43,26 @@ export async function POST(
 
     const generatedByName = (await prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }))?.name || user.email;
 
-    const doc = generateQuotationPdf({
+    const doc = generateSukiQuotationPdf({
       quotationCode: quotation.quotationCode,
       revisionNumber: quotation.revisionNumber,
       status: quotation.status,
       validUntil: quotation.validUntil,
       createdAt: quotation.createdAt,
-      subtotal: quotation.subtotal || quotation.totalAmount,
-      discountPercent: quotation.discountPercent || 0,
-      taxAmount: quotation.taxAmount || 0,
-      finalAmount: quotation.finalAmount,
-      totalAmount: quotation.totalAmount,
       termsAndConditions: quotation.termsAndConditions,
       paymentTerms: quotation.paymentTerms,
       deliveryTerms: quotation.deliveryTerms,
       freightTerms: quotation.freightTerms,
       leadTimeDays: quotation.leadTimeDays,
+      transportCharge: (quotation as any).transportCharge,
+      otherCharges: (quotation as any).otherCharges,
+      weighingLoadingCharge: (quotation as any).weighingLoadingCharge,
+      deliveryCharge: (quotation as any).deliveryCharge,
+      testingCharge: (quotation as any).testingCharge,
       customer: quotation.customer,
       contact: quotation.contact,
-      deal: quotation.deal,
       company: quotation.company,
       items: quotation.items,
-      createdBy: quotation.createdBy,
       companyAddress: addrConfig?.value || "",
       companyGstin: gstinConfig?.value || "",
       companyPhone: phoneConfig?.value || "",

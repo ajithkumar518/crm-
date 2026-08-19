@@ -45,21 +45,37 @@ export async function GET() {
   const monthlyConverted = convertedCustomers;
   const monthlyTotal = monthlyLeads.reduce((sum, m) => sum + m._count.status, 0);
 
-  const executivePerformance = await prisma.customer.groupBy({
-    by: ["assignedUserId"],
-    where: { companyId, deletedAt: null },
-    _count: { id: true },
-  });
-
+  // Marketing Executive performance — reuse the sales-performance report pattern
+  // (leads handled, quotations sent, deals won, revenue) instead of "customers assigned".
   const users = await prisma.user.findMany({
     where: { companyId, isActive: true },
-    select: { id: true, name: true },
+    select: { id: true, name: true, role: true },
   });
 
-  const executivePerformanceWithNames = executivePerformance.map((e) => ({
-    name: users.find((u) => u.id === e.assignedUserId)?.name || e.assignedUserId || "Unassigned",
-    count: e._count.id,
-  }));
+  const executivePerformanceWithNames = await Promise.all(
+    users.map(async (exec) => {
+      const leadWhere = { assignedUserId: exec.id, companyId, deletedAt: null };
+      const quotationWhere = { createdById: exec.id, companyId, deletedAt: null, status: { not: "Draft" } };
+      const dealWhere = { assignedUserId: exec.id, companyId, deletedAt: null, status: "Won" };
+
+      const [leadsHandled, quotationsSent, dealsWon, revenueAgg] = await Promise.all([
+        prisma.lead.count({ where: leadWhere }),
+        prisma.quotation.count({ where: quotationWhere }),
+        prisma.deal.count({ where: dealWhere }),
+        prisma.deal.aggregate({ where: dealWhere, _sum: { dealValue: true } }),
+      ]);
+
+      return {
+        id: exec.id,
+        name: exec.name,
+        role: exec.role,
+        leadsHandled,
+        quotationsSent,
+        dealsWon,
+        revenue: revenueAgg._sum.dealValue || 0,
+      };
+    })
+  );
 
   const leadSourcePerformance = await prisma.lead.groupBy({
     by: ["leadSource"],
