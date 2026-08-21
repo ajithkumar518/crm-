@@ -75,6 +75,7 @@ export function useQuotationDetail() {
   const [discountThreshold, setDiscountThreshold] = useState(5.0);
   const [creatingPo, setCreatingPo] = useState(false);
   const [markingWon, setMarkingWon] = useState(false);
+  const [creatingDraftProforma, setCreatingDraftProforma] = useState(false);
 
   const loadQuotation = async () => {
     setLoading(true);
@@ -439,6 +440,28 @@ export function useQuotationDetail() {
     }
   };
 
+  const handleCreateDraftProforma = async () => {
+    setCreatingDraftProforma(true);
+    try {
+      const res = await fetch(`/api/proforma-invoices`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quotationId: id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Draft Proforma ${data.data.proformaNumber} created`);
+        router.push(`/proforma-invoices/${data.data.id}`);
+      } else {
+        toast.error(data.message || "Failed to create draft proforma");
+      }
+    } catch {
+      toast.error("Failed to create draft proforma");
+    } finally {
+      setCreatingDraftProforma(false);
+    }
+  };
+
   const handleMarkWon = async () => {
     if (!quotation?.dealId) return;
     setMarkingWon(true);
@@ -616,6 +639,7 @@ export function useQuotationDetail() {
     discountThreshold,
     creatingPo,
     markingWon,
+    creatingDraftProforma,
     // handlers
     loadQuotation,
     loadDocuments,
@@ -637,6 +661,7 @@ export function useQuotationDetail() {
     handleApprovalDecision,
     handleDownloadPdf,
     handleCreatePo,
+    handleCreateDraftProforma,
     handleMarkWon,
     handleDelete,
     // computed

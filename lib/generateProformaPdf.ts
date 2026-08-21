@@ -282,7 +282,8 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   const deliveryCharge = data.deliveryCharge || 0;
   const testingCharge = data.testingCharge || 0;
   const extraCharges = transportCharge + otherCharges + weighingLoadingCharge + deliveryCharge + testingCharge;
-  const grandTotal = totalTaxable + totalTax + totalCutting + extraCharges;
+  const itemTotal = totalTaxable + totalTax + totalCutting;
+  const grandTotal = itemTotal + extraCharges;
 
   // Build table head — for inter-state, replace CGST Val + SGST Val with a single IGST Val column
   const head = isInterState
@@ -325,11 +326,11 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
 
   if (isInterState) {
     body.push([
-      "", "", "", "", "", "Total", totalPcs ? String(totalPcs) : "0", totalQty ? String(totalQty) : "0", "", "", "", "", "", formatCurrency(grandTotal), "", "",
+      "", "Total", "", "", "", totalPcs ? String(totalPcs) : "0", totalQty ? String(totalQty) : "0", "", "", "", "", "", formatCurrency(itemTotal), "", "",
     ]);
   } else {
     body.push([
-      "", "", "", "", "", "Total", totalPcs ? String(totalPcs) : "0", totalQty ? String(totalQty) : "0", "", "", "", "", "", "", formatCurrency(grandTotal), "", "",
+      "", "Total", "", "", "", totalPcs ? String(totalPcs) : "0", totalQty ? String(totalQty) : "0", "", "", "", "", "", "", formatCurrency(itemTotal), "", "",
     ]);
   }
 

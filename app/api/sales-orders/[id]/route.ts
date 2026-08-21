@@ -14,7 +14,7 @@ export async function GET(
   const salesOrder = await prisma.salesOrder.findFirst({
     where: { id, companyId: user.companyId },
     include: {
-      customer: { select: { id: true, name: true, customerCode: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true, email: true } },
+      customer: { select: { id: true, name: true, customerCode: true, customerCategory: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true, email: true } },
       contact: { select: { id: true, name: true, email: true, phone: true } },
       proforma: { select: { id: true, proformaNumber: true } },
       quotation: { select: { id: true, quotationCode: true } },

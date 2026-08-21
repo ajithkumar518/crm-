@@ -36,6 +36,22 @@ export default function SalesOrderDetailPage() {
   if (loading) return <PageContainer><CRMSpinner /></PageContainer>;
   if (!order) return <PageContainer><p className="text-rose-500 text-sm">Sales order not found.</p></PageContainer>;
 
+  const items = order.items || [];
+  const totalItems = items.length;
+  const totalQuantity = items.reduce((s: number, it: any) => s + (it.quantity || 0), 0);
+  const totalPieces = items.reduce((s: number, it: any) => s + (it.numberOfPieces || 0), 0);
+  const customer8020 = order.customer?.customerCategory === "80-20" ? "80/20 Customer" : "Non-80/20 Customer";
+
+  const fields = [
+    { label: "Customer Name", value: order.customer?.name || "—" },
+    { label: "PO Date", value: order.orderDate ? new Date(order.orderDate).toLocaleDateString("en-IN") : "—" },
+    { label: "No. of Items", value: totalItems },
+    { label: "Total Quantity", value: `${totalQuantity.toFixed(3)} kgs` },
+    { label: "Total Amount", value: formatCurrency(order.grandTotal) },
+    { label: "Total No. of Pieces", value: totalPieces.toFixed(0) },
+    { label: "Customer Classification", value: customer8020 },
+  ];
+
   return (
     <PageContainer className="space-y-4">
       <div className="flex items-center gap-3">
@@ -44,17 +60,19 @@ export default function SalesOrderDetailPage() {
         <span className="text-xs px-2 py-1 rounded-full bg-[var(--surface-2)] border border-[var(--border)]">{order.status}</span>
       </div>
       <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2 text-sm">
-        <p><span className="text-[var(--text-tertiary)]">Customer:</span> {order.customer?.name}</p>
-        <p><span className="text-[var(--text-tertiary)]">Proforma:</span> {order.proforma?.proformaNumber || "—"}</p>
-        <p><span className="text-[var(--text-tertiary)]">Quotation:</span> {order.quotation?.quotationCode || "—"}</p>
-        <p><span className="text-[var(--text-tertiary)]">Grand Total:</span> <span className="font-bold text-[var(--primary)]">{formatCurrency(order.grandTotal)}</span></p>
+        {fields.map((f) => (
+          <div key={f.label} className="flex justify-between items-center">
+            <span className="text-[var(--text-tertiary)]">{f.label}</span>
+            <span className="font-medium text-[var(--text-primary)]">{f.value}</span>
+          </div>
+        ))}
       </div>
       <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
         <h2 className="text-sm font-semibold mb-2">Items</h2>
         <table className="w-full text-xs">
           <thead className="bg-[var(--surface-3)]"><tr><th className="p-2 text-left">#</th><th className="p-2 text-left">Description</th><th className="p-2 text-right">Qty</th><th className="p-2 text-right">Rate</th><th className="p-2 text-right">Total</th></tr></thead>
           <tbody>
-            {order.items.map((it: any, idx: number) => (
+            {items.map((it: any, idx: number) => (
               <tr key={it.id} className="border-t border-[var(--border-subtle)]">
                 <td className="p-2">{idx + 1}</td>
                 <td className="p-2">{it.description || it.product?.name || "—"}</td>

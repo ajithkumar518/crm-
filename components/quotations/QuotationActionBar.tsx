@@ -14,6 +14,7 @@ interface QuotationActionBarProps {
   markingWon: boolean;
   generatingPdf: boolean;
   needsApproval: boolean;
+  creatingDraftProforma?: boolean;
   onStartEdit: () => void;
   onSave: () => void;
   onCancel: () => void;
@@ -23,6 +24,7 @@ interface QuotationActionBarProps {
   onAccept: () => void;
   onReject: () => void;
   onCreatePo: () => void;
+  onCreateDraftProforma?: () => void;
   onMarkWon: () => void;
   onClone: () => void;
   onDownloadPdf: () => void;
@@ -58,6 +60,7 @@ export default function QuotationActionBar({
   savingItems,
   creatingPo,
   markingWon,
+  creatingDraftProforma,
   generatingPdf,
   needsApproval,
   onStartEdit,
@@ -69,6 +72,7 @@ export default function QuotationActionBar({
   onAccept,
   onReject,
   onCreatePo,
+  onCreateDraftProforma,
   onMarkWon,
   onClone,
   onDownloadPdf,
@@ -85,6 +89,7 @@ export default function QuotationActionBar({
   const hasDealsOrPO = hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS);
   const canCreatePo = quotation.status === "Accepted" && hasDealsOrPO;
   const canMarkWon = quotation.status === "Accepted" && !hasDealsOrPO;
+  const canCreateDraftProforma = quotation.status === "Approved" && onCreateDraftProforma;
 
   const hasChild = quotation.childRevisions && quotation.childRevisions.length > 0;
   const isNegotiationPriceRevision = quotation.negotiation && quotation.negotiation.status === "PriceRevision";
@@ -261,6 +266,12 @@ export default function QuotationActionBar({
               {canMarkWon && (
                 <button onClick={onMarkWon} disabled={markingWon} title="Mark this opportunity as Won" className={actionButtonClass(primaryAction === "markWon" ? "success" : "secondary", !markingWon)}>
                   <Trophy size={15} /> {markingWon ? "Marking..." : "Mark as Won"}
+                </button>
+              )}
+
+              {canCreateDraftProforma && (
+                <button onClick={onCreateDraftProforma} disabled={creatingDraftProforma} title="Create a draft proforma from this approved quotation" className={actionButtonClass("primary", !creatingDraftProforma)}>
+                  <FileText size={15} /> {creatingDraftProforma ? "Creating..." : "Create Draft Proforma"}
                 </button>
               )}
 

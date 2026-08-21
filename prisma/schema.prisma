@@ -3214,6 +3214,39 @@ model ProformaInvoice {
   taxAmount          Float     @default(0)
   discountPercent    Float     @default(0)
   grandTotal         Float     @default(0)
+  roundedOff         Float     @default(0)
+  sourceQuotationId  String?
+  sourceQuotationNumber String?
+  transportCharge    Float     @default(0)
+  otherCharges       Float     @default(0)
+  weighingLoadingCharge Float  @default(0)
+  deliveryCharge     Float     @default(0)
+  testingCharge      Float     @default(0)
+  irn                String?
+  ackNo              String?
+  ackDate            DateTime?
+  ewayBillNo         String?
+  ewayBillDate       DateTime?
+  customerPoNo       String?
+  customerPoDate     DateTime?
+  despatchThrough    String?
+  vehicleNo          String?
+  placeOfSupply      String?
+  billName           String?
+  billAddress        String?   @db.NVarChar(Max)
+  billState          String?
+  billStateCode      String?
+  billGstNumber      String?
+  billPhone          String?
+  shipName           String?
+  shipAddress        String?   @db.NVarChar(Max)
+  shipState          String?
+  shipStateCode      String?
+  shipGstNumber      String?
+  shipPhone          String?
+  declaration        String?   @db.NVarChar(Max)
+  preparedBy         String?
+  verifiedBy         String?
   termsAndConditions String?   @db.NVarChar(Max)
   notes              String?   @db.NVarChar(Max)
   createdById        String
@@ -3242,6 +3275,7 @@ model ProformaInvoiceItem {
   productId       String?
   description     String  @db.NVarChar(Max)
   productType     String? // Black Bar | Bright Bar
+  hsn             String?
   materialGrade   String?
   materialSize    String?
   lengthMm        Float?

@@ -73,6 +73,10 @@ export async function PATCH(
           "taxPercent",
           "remarks",
           "description",
+          "materialGrade",
+          "materialSize",
+          "lengthMm",
+          "numberOfPieces",
           "cuttingCharge",
           "deliveryDays",
         ];
@@ -123,7 +127,14 @@ export async function PATCH(
         taxAmount += lineTaxable * ((it.taxPercent || 0) / 100);
       }
       const discountAmount = subtotal * (proforma.discountPercent / 100);
-      const grandTotal = subtotal - discountAmount + taxAmount;
+      const extraCharges =
+        (proforma.transportCharge || 0) +
+        (proforma.otherCharges || 0) +
+        (proforma.weighingLoadingCharge || 0) +
+        (proforma.deliveryCharge || 0) +
+        (proforma.testingCharge || 0);
+      const roundedOff = proforma.roundedOff || 0;
+      const grandTotal = subtotal - discountAmount + taxAmount + extraCharges + roundedOff;
 
       await tx.proformaInvoice.update({
         where: { id },
@@ -154,8 +165,12 @@ export async function PATCH(
       where: { id },
       include: {
         customer: { select: { id: true, name: true, customerCode: true } },
+        contact: { select: { id: true, name: true, email: true, phone: true } },
+        quotation: { select: { id: true, quotationCode: true, transportCharge: true, otherCharges: true, weighingLoadingCharge: true, deliveryCharge: true, testingCharge: true, discountPercent: true, subtotal: true, taxAmount: true, finalAmount: true } },
+        company: { select: { id: true, name: true } },
         items: { include: { product: { select: { id: true, name: true, productCode: true } } } },
         histories: { include: { changedBy: { select: { id: true, name: true } } }, orderBy: { changedAt: "desc" }, take: 20 },
+        SalesOrder: { select: { id: true, orderNumber: true, status: true } },
       },
     });
 

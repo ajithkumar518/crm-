@@ -8,6 +8,34 @@ import { useToast } from "@/components/ToastProvider";
 import { CRMSpinner } from "@/components/CRMSpinner";
 import { ChevronLeft, Mail, FileText, Package, IndianRupee, Trash2 } from "lucide-react";
 
+function Input({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
+  return (
+    <div>
+      <label className="text-xs text-[var(--text-tertiary)] block mb-1">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)] text-xs"
+      />
+    </div>
+  );
+}
+
+function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="text-xs text-[var(--text-tertiary)] block mb-1">{label}</label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={2}
+        className="w-full px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)] text-xs"
+      />
+    </div>
+  );
+}
+
 export default function ProformaDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -23,6 +51,15 @@ export default function ProformaDetailPage() {
   const [editMode, setEditMode] = useState(false);
   const [editedItems, setEditedItems] = useState<Record<string, any>>({});
   const [savingItems, setSavingItems] = useState(false);
+  const [editedCharges, setEditedCharges] = useState<Record<string, string>>({});
+
+  const CHARGE_FIELDS = [
+    { key: "transportCharge", label: "Transport Charges" },
+    { key: "otherCharges", label: "Other Charges" },
+    { key: "weighingLoadingCharge", label: "Weighing/Loading Charge" },
+    { key: "deliveryCharge", label: "Delivery Charge" },
+    { key: "testingCharge", label: "Testing Charge" },
+  ];
 
   const load = async () => {
     setLoading(true);
@@ -122,6 +159,8 @@ export default function ProformaDetailPage() {
     }
   };
 
+  const [editedHeader, setEditedHeader] = useState<Record<string, any>>({});
+
   const startEdit = () => {
     const init: Record<string, any> = {};
     for (const it of proforma.items || []) {
@@ -130,49 +169,125 @@ export default function ProformaDetailPage() {
         unitPrice: String(it.unitPrice),
         discountPercent: String(it.discountPercent),
         taxPercent: String(it.taxPercent),
+        description: it.description || "",
+        materialGrade: it.materialGrade || "",
+        materialSize: it.materialSize || "",
+        lengthMm: it.lengthMm == null ? "" : String(it.lengthMm),
+        numberOfPieces: it.numberOfPieces == null ? "" : String(it.numberOfPieces),
         remarks: it.remarks || "",
         cuttingCharge: it.cuttingCharge == null ? "" : String(it.cuttingCharge),
         deliveryDays: it.deliveryDays == null ? "" : String(it.deliveryDays),
       };
     }
     setEditedItems(init);
+
+    const chargeInit: Record<string, string> = {};
+    for (const { key } of CHARGE_FIELDS) {
+      chargeInit[key] = String(proforma[key] ?? "");
+    }
+    setEditedCharges(chargeInit);
+
+    setEditedHeader({
+      paymentTerms: proforma.paymentTerms || "",
+      termsAndConditions: proforma.termsAndConditions || "",
+      irn: proforma.irn || "",
+      ackNo: proforma.ackNo || "",
+      ewayBillNo: proforma.ewayBillNo || "",
+      customerPoNo: proforma.customerPoNo || "",
+      despatchThrough: proforma.despatchThrough || "",
+      vehicleNo: proforma.vehicleNo || "",
+      placeOfSupply: proforma.placeOfSupply || "",
+      billName: proforma.billName || proforma.customer?.name || "",
+      billAddress: proforma.billAddress || proforma.customer?.billingAddress || "",
+      billState: proforma.billState || proforma.customer?.state || "",
+      billStateCode: proforma.billStateCode || "",
+      billGstNumber: proforma.billGstNumber || proforma.customer?.gstNumber || "",
+      billPhone: proforma.billPhone || proforma.customer?.phone || "",
+      shipName: proforma.shipName || proforma.customer?.name || "",
+      shipAddress: proforma.shipAddress || proforma.customer?.shippingAddress || "",
+      shipState: proforma.shipState || proforma.customer?.state || "",
+      shipStateCode: proforma.shipStateCode || "",
+      shipGstNumber: proforma.shipGstNumber || proforma.customer?.gstNumber || "",
+      shipPhone: proforma.shipPhone || proforma.customer?.phone || "",
+      preparedBy: proforma.preparedBy || "",
+      verifiedBy: proforma.verifiedBy || "",
+      declaration: proforma.declaration || "",
+      roundedOff: String(proforma.roundedOff ?? 0),
+    });
     setEditMode(true);
   };
 
   const cancelEdit = () => {
     setEditMode(false);
     setEditedItems({});
+    setEditedCharges({});
+    setEditedHeader({});
   };
 
-  const saveItems = async () => {
+  const saveAll = async () => {
     const itemsPayload = Object.entries(editedItems).map(([itemId, v]) => ({
       id: itemId,
       quantity: parseFloat(v.quantity),
       unitPrice: parseFloat(v.unitPrice),
       discountPercent: parseFloat(v.discountPercent),
       taxPercent: parseFloat(v.taxPercent),
+      description: v.description || null,
+      materialGrade: v.materialGrade || null,
+      materialSize: v.materialSize || null,
+      lengthMm: v.lengthMm === "" ? null : parseFloat(v.lengthMm),
+      numberOfPieces: v.numberOfPieces === "" ? null : parseFloat(v.numberOfPieces),
       remarks: v.remarks || null,
       cuttingCharge: v.cuttingCharge === "" ? null : parseFloat(v.cuttingCharge),
       deliveryDays: v.deliveryDays === "" ? null : parseInt(v.deliveryDays),
     }));
+
+    const chargePayload: Record<string, number> = {};
+    for (const { key } of CHARGE_FIELDS) {
+      chargePayload[key] = parseFloat(editedCharges[key]) || 0;
+    }
+
+    const headerPayload: Record<string, any> = {};
+    for (const key of Object.keys(editedHeader)) {
+      if (editedHeader[key] !== "" && editedHeader[key] != null) {
+        if (key === "roundedOff") headerPayload[key] = parseFloat(editedHeader[key]) || 0;
+        else headerPayload[key] = editedHeader[key];
+      } else {
+        headerPayload[key] = null;
+      }
+    }
+
     setSavingItems(true);
     try {
-      const res = await fetch(`/api/proforma-invoices/${id}/items`, {
+      const itemRes = await fetch(`/api/proforma-invoices/${id}/items`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items: itemsPayload }),
       });
-      const data = await res.json();
-      if (data.success) {
-        toast.success(data.message || "Items updated");
-        setProforma(data.data);
-        setEditMode(false);
-        setEditedItems({});
-      } else {
-        toast.error(data.message || "Failed to update items");
+      const itemData = await itemRes.json();
+      if (!itemData.success) {
+        toast.error(itemData.message || "Failed to update items");
+        return;
       }
+
+      const detailRes = await fetch(`/api/proforma-invoices/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...chargePayload, ...headerPayload }),
+      });
+      const detailData = await detailRes.json();
+      if (!detailData.success) {
+        toast.error(detailData.message || "Failed to update proforma details");
+        return;
+      }
+
+      await load();
+      toast.success("Proforma updated");
+      setEditMode(false);
+      setEditedItems({});
+      setEditedCharges({});
+      setEditedHeader({});
     } catch {
-      toast.error("Failed to update items");
+      toast.error("Failed to update proforma");
     } finally {
       setSavingItems(false);
     }
@@ -193,6 +308,11 @@ export default function ProformaDetailPage() {
       </PageContainer>
     );
   }
+
+  const charges = proforma;
+  const extraCharges = CHARGE_FIELDS.reduce((s, f) => s + ((proforma[f.key] as number) || 0), 0);
+  const discountAmount = proforma.subtotal * (proforma.discountPercent || 0) / 100;
+  const computedGrandTotal = proforma.grandTotal != null ? proforma.grandTotal : proforma.subtotal - discountAmount + proforma.taxAmount + extraCharges + (proforma.roundedOff || 0);
 
   const statusOptions = ["Draft", "Sent", "Approved", "PO Received", "Cancelled"];
   const canCreateSo = proforma.status === "Approved" || proforma.status === "PO Received";
@@ -225,7 +345,7 @@ export default function ProformaDetailPage() {
               </div>
               <div>
                 <p className="text-xs text-[var(--text-tertiary)]">Grand Total</p>
-                <p className="font-medium text-[var(--primary)]">{formatCurrency(proforma.grandTotal)}</p>
+                <p className="font-medium text-[var(--primary)]">{formatCurrency(computedGrandTotal)}</p>
               </div>
             </div>
 
@@ -248,11 +368,11 @@ export default function ProformaDetailPage() {
               <h2 className="text-sm font-semibold text-[var(--text-primary)]">Items</h2>
               <div className="flex gap-2">
                 {!editMode && !proforma.SalesOrder && (
-                  <button onClick={startEdit} className="px-3 py-1 rounded-lg text-xs font-medium bg-[var(--primary)] text-white hover:opacity-90">Edit Items</button>
+                  <button onClick={startEdit} className="px-3 py-1 rounded-lg text-xs font-medium bg-[var(--primary)] text-white hover:opacity-90">Edit</button>
                 )}
                 {editMode && (
                   <>
-                    <button onClick={saveItems} disabled={savingItems} className="px-3 py-1 rounded-lg text-xs font-medium bg-[var(--primary)] text-white hover:opacity-90 disabled:opacity-50">{savingItems ? "Saving..." : "Save"}</button>
+                    <button onClick={saveAll} disabled={savingItems} className="px-3 py-1 rounded-lg text-xs font-medium bg-[var(--primary)] text-white hover:opacity-90 disabled:opacity-50">{savingItems ? "Saving..." : "Save"}</button>
                     <button onClick={cancelEdit} disabled={savingItems} className="px-3 py-1 rounded-lg text-xs font-medium bg-[var(--surface-3)] text-[var(--text-secondary)] hover:opacity-90">Cancel</button>
                   </>
                 )}
@@ -283,13 +403,13 @@ export default function ProformaDetailPage() {
                   {(proforma.items || []).map((it: any, idx: number) => (
                     <tr key={it.id} className="border-t border-[var(--border-subtle)]">
                       <td className="p-2 text-[var(--text-primary)]">{idx + 1}</td>
-                      <td className="p-2 text-[var(--text-primary)]">{it.description || it.product?.name || "—"}</td>
-                      <td className="p-2 text-[var(--text-primary)]">{it.materialGrade || "—"}</td>
-                      <td className="p-2 text-[var(--text-primary)]">{it.materialSize || "—"}</td>
-                      <td className="p-2 text-right text-[var(--text-primary)]">{it.lengthMm != null ? `${it.lengthMm} mm` : "—"}</td>
-                      <td className="p-2 text-right text-[var(--text-primary)]">{it.numberOfPieces != null ? it.numberOfPieces : "—"}</td>
                       {editMode ? (
                         <>
+                          <td className="p-1"><input type="text" value={editedItems[it.id]?.description ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], description: e.target.value } })} className="w-32 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                          <td className="p-1"><input type="text" value={editedItems[it.id]?.materialGrade ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], materialGrade: e.target.value } })} className="w-20 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                          <td className="p-1"><input type="text" value={editedItems[it.id]?.materialSize ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], materialSize: e.target.value } })} className="w-20 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                          <td className="p-1"><input type="number" step="0.01" value={editedItems[it.id]?.lengthMm ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], lengthMm: e.target.value } })} className="w-16 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
+                          <td className="p-1"><input type="number" step="0.01" value={editedItems[it.id]?.numberOfPieces ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], numberOfPieces: e.target.value } })} className="w-16 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
                           <td className="p-1"><input type="number" step="0.001" value={editedItems[it.id]?.quantity ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], quantity: e.target.value } })} className="w-16 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
                           <td className="p-1"><input type="number" step="0.01" value={editedItems[it.id]?.unitPrice ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], unitPrice: e.target.value } })} className="w-20 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
                           <td className="p-1"><input type="number" step="0.01" value={editedItems[it.id]?.discountPercent ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], discountPercent: e.target.value } })} className="w-14 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
@@ -298,6 +418,15 @@ export default function ProformaDetailPage() {
                           <td className="p-1"><input type="text" value={editedItems[it.id]?.remarks ?? ""} onChange={(e) => setEditedItems({ ...editedItems, [it.id]: { ...editedItems[it.id], remarks: e.target.value } })} className="w-28 px-1 py-0.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)]" /></td>
                         </>
                       ) : (
+                        <>
+                          <td className="p-2 text-[var(--text-primary)]">{it.description || it.product?.name || "—"}</td>
+                          <td className="p-2 text-[var(--text-primary)]">{it.materialGrade || "—"}</td>
+                          <td className="p-2 text-[var(--text-primary)]">{it.materialSize || "—"}</td>
+                          <td className="p-2 text-right text-[var(--text-primary)]">{it.lengthMm != null ? `${it.lengthMm} mm` : "—"}</td>
+                          <td className="p-2 text-right text-[var(--text-primary)]">{it.numberOfPieces != null ? it.numberOfPieces : "—"}</td>
+                        </>
+                      )}
+                      {!editMode && (
                         <>
                           <td className="p-2 text-right text-[var(--text-primary)]">{it.quantity} {it.unit || "kgs"}</td>
                           <td className="p-2 text-right text-[var(--text-primary)]">{formatCurrency(it.unitPrice)}</td>
@@ -312,6 +441,71 @@ export default function ProformaDetailPage() {
                 </tbody>
               </table>
             </div>
+
+            {editMode && (
+              <div className="mt-4 p-4 rounded-xl bg-[var(--surface-3)] border border-[var(--border)] space-y-3">
+                <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-wide">Extra Charges</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {CHARGE_FIELDS.map((c) => (
+                    <div key={c.key}>
+                      <label className="text-xs text-[var(--text-tertiary)] block mb-1">{c.label}</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={editedCharges[c.key] ?? ""}
+                        onChange={(e) => setEditedCharges({ ...editedCharges, [c.key]: e.target.value })}
+                        className="w-full px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)] text-xs"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {editMode && (
+              <div className="mt-4 p-4 rounded-xl bg-[var(--surface-3)] border border-[var(--border)] space-y-4">
+                <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-wide">Invoice Details</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <Input label="IRN No" value={editedHeader.irn ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, irn: v })} />
+                  <Input label="Ack No" value={editedHeader.ackNo ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, ackNo: v })} />
+                  <Input label="Eway Bill No" value={editedHeader.ewayBillNo ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, ewayBillNo: v })} />
+                  <Input label="Customer PO No" value={editedHeader.customerPoNo ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, customerPoNo: v })} />
+                  <Input label="Despatch Through" value={editedHeader.despatchThrough ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, despatchThrough: v })} />
+                  <Input label="Vehicle No" value={editedHeader.vehicleNo ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, vehicleNo: v })} />
+                  <Input label="Place of Supply" value={editedHeader.placeOfSupply ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, placeOfSupply: v })} />
+                  <Input label="Rounded Off" value={editedHeader.roundedOff ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, roundedOff: v })} />
+                  <Input label="Prepared By" value={editedHeader.preparedBy ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, preparedBy: v })} />
+                  <Input label="Verified By" value={editedHeader.verifiedBy ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, verifiedBy: v })} />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <p className="text-xs text-[var(--text-tertiary)] font-semibold">Bill To</p>
+                    <Input label="Name" value={editedHeader.billName ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, billName: v })} />
+                    <TextArea label="Address" value={editedHeader.billAddress ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, billAddress: v })} />
+                    <Input label="State" value={editedHeader.billState ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, billState: v })} />
+                    <Input label="State Code" value={editedHeader.billStateCode ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, billStateCode: v })} />
+                    <Input label="GST No" value={editedHeader.billGstNumber ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, billGstNumber: v })} />
+                    <Input label="Phone" value={editedHeader.billPhone ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, billPhone: v })} />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-[var(--text-tertiary)] font-semibold">Ship To</p>
+                    <Input label="Name" value={editedHeader.shipName ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, shipName: v })} />
+                    <TextArea label="Address" value={editedHeader.shipAddress ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, shipAddress: v })} />
+                    <Input label="State" value={editedHeader.shipState ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, shipState: v })} />
+                    <Input label="State Code" value={editedHeader.shipStateCode ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, shipStateCode: v })} />
+                    <Input label="GST No" value={editedHeader.shipGstNumber ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, shipGstNumber: v })} />
+                    <Input label="Phone" value={editedHeader.shipPhone ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, shipPhone: v })} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <TextArea label="Payment Terms" value={editedHeader.paymentTerms ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, paymentTerms: v })} />
+                  <TextArea label="Terms & Conditions" value={editedHeader.termsAndConditions ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, termsAndConditions: v })} />
+                  <TextArea label="Declaration" value={editedHeader.declaration ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, declaration: v })} />
+                </div>
+              </div>
+            )}
           </div>
 
           {proforma.histories && proforma.histories.length > 0 && (
@@ -380,16 +574,29 @@ export default function ProformaDetailPage() {
             </div>
           </div>
 
-          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2 text-sm">
+          <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-3 text-sm">
             <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-wide">Summary</p>
-            <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Subtotal</span><span className="font-medium text-[var(--text-primary)]">{formatCurrency(proforma.subtotal)}</span></div>
-            <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Tax</span><span className="font-medium text-[var(--text-primary)]">{formatCurrency(proforma.taxAmount)}</span></div>
-            {proforma.discountPercent > 0 && (
-              <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Discount</span><span className="font-medium text-[var(--text-primary)]">{proforma.discountPercent}%</span></div>
-            )}
+
+            <div className="space-y-2">
+              <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Subtotal</span><span className="font-medium text-[var(--text-primary)]">{formatCurrency(proforma.subtotal)}</span></div>
+              {proforma.discountPercent > 0 && (
+                <>
+                  <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Discount ({proforma.discountPercent}%)</span><span className="font-medium text-[var(--text-primary)]">{formatCurrency(discountAmount)}</span></div>
+                  <div className="flex justify-between"><span className="text-[var(--text-secondary)]">After Discount</span><span className="font-medium text-[var(--text-primary)]">{formatCurrency(proforma.subtotal - discountAmount)}</span></div>
+                </>
+              )}
+              <div className="flex justify-between"><span className="text-[var(--text-secondary)]">Tax</span><span className="font-medium text-[var(--text-primary)]">{formatCurrency(proforma.taxAmount)}</span></div>
+              {CHARGE_FIELDS.map((c) => (
+                <div key={c.key} className="flex justify-between">
+                  <span className="text-[var(--text-secondary)]">{c.label}</span>
+                  <span className="font-medium text-[var(--text-primary)]">{formatCurrency(parseFloat(charges[c.key]) || 0)}</span>
+                </div>
+              ))}
+            </div>
+
             <div className="flex justify-between pt-2 border-t border-[var(--border-subtle)]">
               <span className="font-semibold text-[var(--text-primary)]">Grand Total</span>
-              <span className="font-bold text-[var(--primary)]">{formatCurrency(proforma.grandTotal)}</span>
+              <span className="font-bold text-[var(--primary)]">{formatCurrency(computedGrandTotal)}</span>
             </div>
           </div>
         </div>
