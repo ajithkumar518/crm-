@@ -27,6 +27,7 @@ export default function ProformaListPage() {
   const toast = useToast();
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const statusFilter = useStatusFromUrl("status");
@@ -132,6 +133,32 @@ export default function ProformaListPage() {
     }
   };
 
+  const handleDownloadPdf = async (p: any) => {
+    if (downloadingId) return;
+    setDownloadingId(p.id);
+    try {
+      const res = await fetch(`/api/proforma-invoices/${p.id}/pdf`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.message || "Failed to generate PDF. The customer state or GSTIN may be missing.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${p.proformaNumber || "proforma"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download PDF");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   const filteredQuotations = eligibleQuotations.filter((q: any) => {
     if (!quotationSearch) return true;
     const s = quotationSearch.toLowerCase();
@@ -195,9 +222,13 @@ export default function ProformaListPage() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-[var(--primary)]">{formatCurrency(p.grandTotal)}</span>
-                <a href={`/api/proforma-invoices/${p.id}/pdf`} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white hover:opacity-90">
-                  PDF
-                </a>
+                <button
+                  onClick={() => handleDownloadPdf(p)}
+                  disabled={downloadingId === p.id}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-[var(--primary)] text-white hover:opacity-90 disabled:opacity-60"
+                >
+                  {downloadingId === p.id ? "..." : "PDF"}
+                </button>
                 <button
                   onClick={() => handleDelete(p.id, p.proformaNumber)}
                   disabled={deletingId === p.id || p.SalesOrder}

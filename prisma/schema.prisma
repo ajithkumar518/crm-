@@ -151,6 +151,7 @@ model Customer {
   email            String?   @unique
   phone            String?
   city             String?
+  location         String?                 @db.NVarChar(Max) // Street/building/area address line
   status           String    @default("Prospect")
   assignedUserId   String?
   onboardingStatus String    @default("Pending")
@@ -528,6 +529,9 @@ model FollowUp {
   entityType        String?
   entityId          String?
   stageAtCreation   String?
+  quotationId       String?
+  quotationCode     String?
+  accountReference  String?
   communicationLogs CommunicationLog[]
   assignedUser      User               @relation("AssignedFollowUps", fields: [assignedUserId], references: [id], onUpdate: NoAction)
   company           Company?           @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -535,6 +539,7 @@ model FollowUp {
   customer          Customer?          @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lead              Lead?              @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   deal              Deal?              @relation(fields: [dealId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quotation         Quotation?         @relation(fields: [quotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   nextFollowUp      FollowUp?          @relation("ChainedFollowUp", fields: [nextFollowupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   prevFollowUps     FollowUp[]         @relation("ChainedFollowUp")
 
@@ -549,6 +554,7 @@ model FollowUp {
   @@index([type])
   @@index([entityType, entityId])
   @@index([assignedUserId, status, nextMeetingDate])
+  @@index([quotationId])
 }
 
 model Notification {
@@ -871,6 +877,7 @@ model Lead {
   designation            String?
   estimatedValue         Float?
   industryType           String?
+  customerCategory       String?
   isDuplicateOf          String?
   leadScore              Int                     @default(0)
   lostReason             String?                 @db.NVarChar(Max)
@@ -1486,6 +1493,7 @@ model Quotation {
   documents                QuotationDocument[]
   ProformaInvoice          ProformaInvoice?
   SalesOrder               SalesOrder[]
+  followUps                FollowUp[]
 
   @@index([customerId])
   @@index([status])

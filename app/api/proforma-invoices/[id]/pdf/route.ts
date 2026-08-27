@@ -18,6 +18,7 @@ export async function GET(
       customer: { select: { id: true, name: true, customerCode: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true, email: true } },
       contact: { select: { id: true, name: true, email: true, phone: true } },
       company: { select: { id: true, name: true } },
+      createdBy: { select: { name: true } },
       quotation: { select: { id: true, quotationCode: true, paymentTerms: true, deliveryTerms: true } },
       items: { include: { product: { select: { id: true, name: true, productCode: true, hsnCode: true } } } },
     },
@@ -72,7 +73,9 @@ export async function GET(
     };
   });
 
-  const doc = generateSukiProformaInvoicePdf({
+  let doc;
+  try {
+    doc = generateSukiProformaInvoicePdf({
     proformaNumber: proforma.proformaNumber,
     proformaDate: proforma.proformaDate,
     validityDate: proforma.validityDate,
@@ -107,9 +110,9 @@ export async function GET(
     grandTotal: proforma.grandTotal,
     roundedOff: proforma.roundedOff,
     paymentTerms: proforma.paymentTerms || proforma.quotation?.paymentTerms || "",
-    placeOfSupply: proforma.placeOfSupply || proforma.billState || proforma.customer?.state || "",
-    state: proforma.billState || proforma.customer?.state || "",
-    stateCode: proforma.billStateCode || stateCode,
+    placeOfSupply: proforma.placeOfSupply || proforma.shipState || proforma.billState || proforma.customer?.state || "",
+    state: proforma.shipState || proforma.billState || proforma.customer?.state || "",
+    stateCode: proforma.shipStateCode || proforma.billStateCode || stateCode,
     despatchThrough: proforma.despatchThrough || proforma.quotation?.deliveryTerms || "",
     vehicleNo: proforma.vehicleNo,
     customerPoNo: proforma.customerPoNo,
@@ -131,11 +134,21 @@ export async function GET(
     shipStateCode: proforma.shipStateCode,
     shipGstNumber: proforma.shipGstNumber,
     shipPhone: proforma.shipPhone,
-    preparedBy: proforma.preparedBy || generatedByName,
+    preparedBy: proforma.createdBy?.name || proforma.preparedBy || "—",
     verifiedBy: proforma.verifiedBy,
     declaration: proforma.declaration,
     termsAndConditions: proforma.termsAndConditions,
   });
+  } catch (err: any) {
+    // Tax treatment could not be determined — missing state/GSTIN data
+    return NextResponse.json(
+      {
+        success: false,
+        message: err?.message || "Cannot generate PDF: GST tax treatment could not be determined. Set the customer's state or GSTIN first.",
+      },
+      { status: 422 }
+    );
+  }
 
   const pdfBytes = doc.output("arraybuffer");
   const fileName = `${proforma.proformaNumber}.pdf`;

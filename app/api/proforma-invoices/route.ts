@@ -131,11 +131,8 @@ export async function POST(request: NextRequest) {
       validityDate: quotation.validUntil,
       paymentTerms: quotation.paymentTerms,
       deliveryTerms: quotation.deliveryTerms,
-      termsAndConditions: `1.All reports shortage must reach within 3 days and about defective supply if any within 10 days from date of delivery in writing no claim will be acceptable by us thereafter.
-2.Rejection of material will be acceptable only in original shape of out supply )not after machining & cutting hardening)
-3.All disputes are subject to Chennai Jurisdiction only.
-4.Interest @24% will be charged on all over due bills.`,
-      declaration: `Certified that the particulars given above are true and correct and the amount indicated represents the price actually charged and that there s no flow additional consideration directly or indirectly from the buyer.`,
+      termsAndConditions: `1. All reports shortage must reach within 3 days and about defective supply if any within 10 days from date of delivery in writing no claim will be acceptable by us thereafter.\n2. Rejection of material will be acceptable only in original shape of out supply (not after machining & cutting hardening)\n3. All disputes are subject to Chennai Jurisdiction only.\n4. Interest @24% will be charged on all over due bills.`,
+      declaration: `Certified that the particulars given above are true and correct and the amount indicated represents the price actually charged and that there is no flow of additional consideration directly or indirectly from the buyer.`,
       sourceQuotationId: quotation.id,
       sourceQuotationNumber: quotation.quotationCode,
       quotationId: null,

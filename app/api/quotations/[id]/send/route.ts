@@ -22,7 +22,7 @@ export async function POST(
   const existing = await prisma.quotation.findFirst({
     where: { id, deletedAt: null, companyId: user.companyId },
     include: {
-      items: true,
+      items: { include: { product: { select: { productType: true } } } },
       customer: { select: { id: true, name: true, email: true, customerCode: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true } },
       contact: { select: { id: true, name: true, email: true, phone: true } },
       deal: { select: { id: true, dealName: true, opportunityCode: true } },
@@ -295,7 +295,9 @@ export async function POST(
 
         const generatedByName = (await prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }))?.name || user.email;
 
-        const doc = generateSukiQuotationPdf({
+        let doc;
+        try {
+          doc = generateSukiQuotationPdf({
           quotationCode: quotation.quotationCode,
           revisionNumber: quotation.revisionNumber,
           status: quotation.status,
@@ -314,13 +316,25 @@ export async function POST(
           customer: existing.customer as any,
           contact: existing.contact as any,
           company: existing.company as any,
-          items: existing.items as any,
+          items: (existing.items as any[]).map((it) => ({ ...it, productType: it.product?.productType || it.productType })),
           companyAddress: addrConfig?.value || "",
           companyGstin: gstinConfig?.value || "",
           companyPhone: phoneConfig?.value || "",
           companyEmail: emailConfig?.value || "",
           generatedByName,
+          placeOfSupply: (existing as any).placeOfSupply || existing.customer?.state || null,
+          shipState: (existing as any).shipState || existing.customer?.state || null,
+          shipGstNumber: (existing as any).shipGstNumber || existing.customer?.gstNumber || null,
         });
+        } catch (err: any) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: err?.message || "Cannot send quotation: GST tax treatment could not be determined. Set the customer's state or GSTIN first.",
+            },
+            { status: 422 }
+          );
+        }
 
         const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
         const fileName = `${quotation.quotationCode}-R${quotation.revisionNumber}.pdf`;

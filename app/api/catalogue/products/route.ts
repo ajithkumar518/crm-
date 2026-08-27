@@ -106,6 +106,8 @@ export async function GET(request: Request) {
   }
 }
 
+const VALID_PRODUCT_TYPES = ["Black Bar", "Bright Bar", "Bright Ground Bar"];
+
 // POST /api/catalogue/products
 export async function POST(request: Request) {
   try {
@@ -117,6 +119,14 @@ export async function POST(request: Request) {
     if (guard) return guard;
 
     const body = await request.json();
+
+    const productType = body.productType?.trim();
+    if (!productType) {
+      return NextResponse.json({ success: false, message: "Product Type is required" }, { status: 400 });
+    }
+    if (!VALID_PRODUCT_TYPES.includes(productType)) {
+      return NextResponse.json({ success: false, message: `Product Type must be one of: ${VALID_PRODUCT_TYPES.join(", ")}` }, { status: 400 });
+    }
 
     // Auto-generate productCode per company
     const prefix = "PRD";
@@ -135,7 +145,7 @@ export async function POST(request: Request) {
         unit: body.unit ?? null,
         basePrice: body.basePrice ?? null,
         isActive: body.isActive ?? true,
-        productType: body.productType ?? null,
+        productType,
         materialGrade: body.materialGrade?.trim() || null,
         materialSize: body.materialSize?.trim() || null,
         partNumber: body.partNumber?.trim() || null,

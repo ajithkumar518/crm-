@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { resolveTaxTreatment } from "@/lib/gstState";
 
 const VALID_STATUS = ["Draft", "Sent", "Approved", "PO Received", "Cancelled"];
 
@@ -100,10 +101,11 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));
+  console.log("PROFORMA PATCH PAYLOAD FOR", id, ":", body);
 
   const existing = await prisma.proformaInvoice.findFirst({
     where: { id, companyId: user.companyId },
-    include: { customer: { select: { name: true } }, items: true },
+    include: { customer: { select: { name: true, state: true, gstNumber: true } }, items: true },
   });
 
   if (!existing) {
@@ -112,6 +114,30 @@ export async function PATCH(
 
   if (body.status !== undefined && !VALID_STATUS.includes(body.status)) {
     return NextResponse.json({ success: false, message: `Invalid status. Allowed: ${VALID_STATUS.join(", ")}` }, { status: 400 });
+  }
+
+  // ─── GST validation: block status change to "Approved" if state data is missing ───
+  // This prevents approving a proforma with undeterminable tax treatment (CGST+SGST vs IGST).
+  if (body.status === "Approved") {
+    const gstinConfig = await prisma.systemConfig.findUnique({ where: { key: "company_gstin" } });
+    const companyGstin = gstinConfig?.value || null;
+    const taxResult = resolveTaxTreatment(
+      companyGstin,
+      existing.placeOfSupply || existing.shipState || existing.billState || existing.customer?.state || null,
+      existing.shipGstNumber || existing.billGstNumber || existing.customer?.gstNumber || null,
+      existing.shipState || existing.billState || existing.customer?.state || null,
+      existing.billGstNumber || existing.customer?.gstNumber || null,
+      existing.billState || existing.customer?.state || null,
+    );
+    if (taxResult.treatment === "unknown") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Cannot approve proforma: ${taxResult.warning} Set the customer's Ship-To state, GSTIN, or Place of Supply before approving to ensure correct CGST/SGST vs IGST tax treatment.`,
+        },
+        { status: 422 }
+      );
+    }
   }
 
   const data: any = {};

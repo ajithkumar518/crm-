@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
-
-// GET /api/rfq/export?status=New&search=...
-// Exports RFQs as CSV
+import { createFormattedWorkbook, writeWorkbookBuffer, EXCEL_CONTENT_TYPE } from "@/lib/excel-utils";
 import { enforceModuleGuard } from "@/lib/moduleGuard";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
+// GET /api/rfq/export?status=New&search=...
+// Exports RFQs as a formatted Excel file
 export async function GET(request: NextRequest) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
@@ -64,31 +64,33 @@ export async function GET(request: NextRequest) {
     const lineItemDescs = r.lineItems.map((li) => `${li.itemDescription} (Qty: ${li.quantity} ${li.unit || ""})`).join("; ");
     return [
       r.rfqCode,
-      r.customer?.name || "",
-      r.customer?.customerCode || "",
+      r.customer?.name || "—",
+      r.customer?.customerCode || "—",
       r.status,
       r.priority || "Normal",
-      r.receivedDate ? new Date(r.receivedDate).toISOString().split("T")[0] : "",
-      r.customerDueDate ? new Date(r.customerDueDate).toISOString().split("T")[0] : "",
-      r.assignedUser?.name || "",
-      r.costingOwner?.name || "",
-      String(r.lineItems.length),
+      r.receivedDate ? new Date(r.receivedDate).toISOString().split("T")[0] : "—",
+      r.customerDueDate ? new Date(r.customerDueDate).toISOString().split("T")[0] : "—",
+      r.assignedUser?.name || "—",
+      r.costingOwner?.name || "—",
+      Number(r.lineItems.length),
       lineItemDescs,
       new Date(r.createdAt).toISOString(),
     ];
   });
 
-  const csv = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
-    .join("\r\n");
+  const workbook = createFormattedWorkbook(
+    "RFQ Export",
+    headers,
+    rows,
+    [20, 28, 18, 20, 16, 18, 20, 22, 22, 18, 60, 22]
+  );
 
-  // Prepend UTF-8 BOM for proper Excel rendering of ₹ symbol and special chars
-  const bom = "\uFEFF";
+  const buffer = await writeWorkbookBuffer(workbook);
 
-  return new NextResponse(bom + csv, {
+  return new NextResponse(buffer as any, {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="rfq-export-${new Date().toISOString().split("T")[0]}.csv"`,
+      "Content-Type": EXCEL_CONTENT_TYPE,
+      "Content-Disposition": `attachment; filename="rfq-export-${new Date().toISOString().split("T")[0]}.xlsx"`,
     },
   });
 }

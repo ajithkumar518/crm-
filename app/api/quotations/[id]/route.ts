@@ -205,6 +205,7 @@ export async function PUT(
       unitPrice,
       totalPrice: lineTotal,
       discountPercent: lineDiscount,
+      taxPercent: parseFloat(item.taxPercent) || 18,
       lineTotal,
       hsn: item.hsn || null,
       unit: item.unit || "Pcs",
@@ -213,6 +214,17 @@ export async function PUT(
       marginPercent: marginVal,
       priceSource,
       quantityBreakId: qbId,
+      // Preserve fields not sent by every caller — fall back to the existing DB value
+      // so a save from a form that doesn't edit these fields doesn't wipe them out.
+      productType: item.productType !== undefined ? item.productType : (matchedExisting?.productType ?? null),
+      materialGrade: item.materialGrade !== undefined ? item.materialGrade : (matchedExisting?.materialGrade ?? null),
+      materialSize: item.materialSize !== undefined ? item.materialSize : (matchedExisting?.materialSize ?? null),
+      lengthMm: item.lengthMm !== undefined ? item.lengthMm : (matchedExisting?.lengthMm ?? null),
+      numberOfPieces: item.numberOfPieces !== undefined ? item.numberOfPieces : (matchedExisting?.numberOfPieces ?? null),
+      rmMake: item.rmMake !== undefined ? item.rmMake : (matchedExisting?.rmMake ?? null),
+      deliveryDays: item.deliveryDays !== undefined ? item.deliveryDays : (matchedExisting?.deliveryDays ?? null),
+      cuttingCharge: item.cuttingCharge !== undefined ? item.cuttingCharge : (matchedExisting?.cuttingCharge ?? null),
+      remarks: item.remarks !== undefined ? item.remarks : (matchedExisting?.remarks ?? null),
     });
   }
 
@@ -222,7 +234,8 @@ export async function PUT(
       let totalTax = 0;
 
       for (const pi of processedItems) {
-        let taxPercent = 18;
+        // Respect the user's manually-entered tax percent; only do HSN lookup as fallback
+        let taxPercent = pi.taxPercent || 18;
         let hsn = pi.hsn;
 
         if (pi.productId) {
@@ -235,7 +248,8 @@ export async function PUT(
           }
         }
 
-        if (hsn) {
+        // Only override with HSN-based lookup if user left it at default 18 AND we have an HSN
+        if (hsn && (!pi.taxPercent || pi.taxPercent === 18)) {
           const taxEntry = await tx.taxMaster.findFirst({
             where: { hsnCode: hsn, isActive: true }
           });
@@ -243,6 +257,7 @@ export async function PUT(
         }
 
         pi.taxPercent = taxPercent;
+        pi.hsn = hsn;
         const lineTax = pi.lineTotal * (taxPercent / 100);
         totalTax += lineTax;
       }
@@ -297,11 +312,18 @@ export async function PUT(
       });
 
       // Replace line items
-      await tx.quotationItem.deleteMany({ where: { quotationId: id } });
+      const deleteResult = await tx.quotationItem.deleteMany({ where: { quotationId: id } });
+      let createdCount = 0;
       for (const item of processedItems) {
         await tx.quotationItem.create({
           data: { quotationId: id, ...item },
         });
+        createdCount++;
+      }
+
+      // Safety check: if we deleted items but created 0, something went wrong
+      if (deleteResult.count > 0 && createdCount === 0 && processedItems.length > 0) {
+        throw new Error("Item recreation failed: deleted existing items but created 0 new items");
       }
 
       return q;
@@ -314,6 +336,14 @@ export async function PUT(
         items: { include: { product: { select: { id: true, name: true, productCode: true } } } },
       },
     });
+
+    // Verify items were actually persisted
+    if (!fullQuotation || fullQuotation.items.length !== processedItems.length) {
+      return NextResponse.json(
+        { success: false, message: `Save verification failed: expected ${processedItems.length} items, found ${fullQuotation?.items.length ?? 0} in DB` },
+        { status: 500 }
+      );
+    }
 
     await logAudit(user.id, "Quotation", "Update", `Updated quotation ${existing.quotationCode}`, {
       resourceId: id,

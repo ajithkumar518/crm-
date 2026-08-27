@@ -2,23 +2,117 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import ExcelJS from "exceljs";
+import { createFormattedWorkbook, writeWorkbookBuffer, EXCEL_CONTENT_TYPE } from "@/lib/excel-utils";
 
+// Canonical valid values (matching the UI dropdowns)
+const VALID_STATUSES = ["Prospect", "ActiveCustomer", "Renewed", "Churned"];
+const VALID_LEAD_SOURCES = [
+  "Website",
+  "IndiaMART",
+  "Justdial",
+  "TradeIndia",
+  "WhatsApp",
+  "Door-to-Door Marketing",
+  "Direct Visit",
+  "Telephonic Conversation",
+  "Email",
+];
+const VALID_STATES = [
+  "Andhra Pradesh",
+  "Arunachal Pradesh",
+  "Assam",
+  "Bihar",
+  "Chhattisgarh",
+  "Goa",
+  "Gujarat",
+  "Haryana",
+  "Himachal Pradesh",
+  "Jharkhand",
+  "Karnataka",
+  "Kerala",
+  "Madhya Pradesh",
+  "Maharashtra",
+  "Manipur",
+  "Meghalaya",
+  "Mizoram",
+  "Nagaland",
+  "Odisha",
+  "Punjab",
+  "Rajasthan",
+  "Sikkim",
+  "Tamil Nadu",
+  "Telangana",
+  "Tripura",
+  "Uttar Pradesh",
+  "Uttarakhand",
+  "West Bengal",
+  "Andaman and Nicobar Islands",
+  "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi",
+  "Jammu and Kashmir",
+  "Ladakh",
+  "Lakshadweep",
+  "Puducherry",
+];
+const VALID_CATEGORIES = ["80-20", "NON-80-20"];
+
+// Header synonyms. Key is normalized header text (lowercase, single spaces).
+// Customer Code is intentionally absent — it is auto-generated.
 const CUSTOMER_HEADERS: Record<string, string> = {
   "customer name": "name",
-  "gst number": "gstNumber",
-  "contact person": "contactPerson",
-  "mobile number": "mobile",
+  "name": "name",
   "email id": "email",
-  "address": "address",
+  "email": "email",
+  "mobile number": "mobile",
+  "mobile": "mobile",
+  "phone": "mobile",
+  "city": "city",
+  "location": "location",
+  "status": "status",
+  "lead source": "leadSource",
+  "assign to executive": "marketingExecutive",
+  "marketing executive": "marketingExecutive",
+  "assigned executive": "marketingExecutive",
+  "gst number": "gstNumber",
+  "gstin": "gstNumber",
+  "customer category": "customerCategory",
   "state": "state",
+  "industry type": "industryType",
   "payment terms": "paymentTerms",
   "credit days": "creditDays",
-  "marketing executive": "marketingExecutive",
-  "customer category": "customerCategory",
+  "billing address": "billingAddress",
+  "address": "billingAddress",
+  "shipping address": "shippingAddress",
+  "contact person": "contactPerson",
+  "contact mobile": "contactMobile",
+  "contact email": "contactEmail",
 };
 
+const TEMPLATE_HEADERS = [
+  "Customer Name*",
+  "Email ID",
+  "Mobile Number",
+  "City",
+  "Location",
+  "Status",
+  "Lead Source*",
+  "Assign to Executive",
+  "GST Number",
+  "Customer Category",
+  "State*",
+  "Industry Type",
+  "Payment Terms",
+  "Credit Days",
+  "Billing Address",
+  "Shipping Address",
+  "Contact Person",
+  "Contact Mobile",
+  "Contact Email",
+];
+
 function normalizeHeader(value: unknown): string {
-  return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+  return String(value ?? "").trim().toLowerCase().replace(/\*/g, "").replace(/\s+/g, " ").trim();
 }
 
 function isValidEmail(email: string): boolean {
@@ -29,31 +123,18 @@ function cleanMobile(mobile: string): string {
   return mobile.replace(/[^\d]/g, "");
 }
 
-/**
- * Validate an Indian mobile number.
- * Accepts: 10 digits starting with 6-9, optionally prefixed with +91 or 91.
- * Returns the cleaned 10-digit number if valid, or null if invalid.
- */
 function validateIndianMobile(raw: string): string | null {
   const cleaned = cleanMobile(raw);
-  // Strip leading 91 if present (91 prefix for India)
   let digits = cleaned;
   if (digits.length === 12 && digits.startsWith("91")) {
     digits = digits.slice(2);
   }
-  // Must be exactly 10 digits, starting with 6-9
   if (/^[6-9]\d{9}$/.test(digits)) {
     return digits;
   }
   return null;
 }
 
-/**
- * Validate an Indian GST number (15-character structured format).
- * Format: 2-digit state code + 10-char PAN (5 letters + 4 digits + 1 letter)
- *         + 1 entity digit + "Z" + 1 checksum alphanumeric.
- * Regex: ^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}Z[0-9A-Z]{1}$
- */
 function isValidGst(gst: string): boolean {
   return /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}Z[0-9A-Z]{1}$/.test(gst);
 }
@@ -62,9 +143,54 @@ function normalizeCustomerCategory(value?: string | null): string | null {
   if (!value) return null;
   const v = value.trim().toUpperCase().replace(/\s+/g, "-");
   if (v === "80-20" || v === "80/20") return "80-20";
-  if (v === "NON-80-20" || v === "NON-80/20" || v === "NON 80-20" || v.startsWith("NON")) return "NON-80-20";
+  if (v === "NON-80-20" || v === "NON-80/20" || v === "NON-80-20-" || v.startsWith("NON")) return "NON-80-20";
   return null;
 }
+
+function normalizeStatus(value?: string | null): string {
+  if (!value) return "Prospect";
+  const v = value.trim();
+  const match = VALID_STATUSES.find((s) => s.toLowerCase() === v.toLowerCase());
+  return match || "Prospect";
+}
+
+function normalizeLeadSource(value?: string | null): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  const match = VALID_LEAD_SOURCES.find((s) => s.toLowerCase() === v.toLowerCase());
+  return match || null;
+}
+
+function normalizeState(value?: string | null): string | null {
+  if (!value) return null;
+  const v = value.trim();
+  const match = VALID_STATES.find((s) => s.toLowerCase() === v.toLowerCase());
+  return match || null;
+}
+
+const TEMPLATE_EXAMPLE = [
+  "ABC Engineering Works",       // Customer Name
+  "purchase@abcengg.com",        // Email ID
+  "9876543210",                  // Mobile Number
+  "Chennai",                     // City
+  "No. 45, Anna Salai, T. Nagar",// Location
+  "Prospect",                    // Status
+  "IndiaMART",                   // Lead Source
+  "Shahnaz",                     // Assign to Executive
+  "33AABCU1234A1Z5",             // GST Number
+  "80-20",                       // Customer Category
+  "Tamil Nadu",                  // State
+  "Manufacturing",               // Industry Type
+  "50% advance, balance before dispatch", // Payment Terms
+  30,                            // Credit Days
+  "12/3 Industrial Estate, Chennai", // Billing Address
+  "12/3 Industrial Estate, Chennai", // Shipping Address
+  "Ramesh Kumar",                // Contact Person
+  "9876543210",                  // Contact Mobile
+  "ramesh@abcengg.com",          // Contact Email
+];
+
+const TEMPLATE_COL_WIDTHS = [24, 24, 18, 18, 30, 16, 20, 22, 22, 20, 18, 20, 30, 16, 34, 34, 24, 18, 30];
 
 export async function GET() {
   const user = await verifyAuth();
@@ -72,33 +198,43 @@ export async function GET() {
     return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
   }
 
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet("Customer Master");
-
-  const headers = Object.keys(CUSTOMER_HEADERS).map(
-    (h) => h.replace(/\b\w/g, (c) => c.toUpperCase()).replace("Gst", "GST").replace("Id", "ID")
+  const workbook = createFormattedWorkbook(
+    "Customer Master",
+    TEMPLATE_HEADERS,
+    [TEMPLATE_EXAMPLE],
+    TEMPLATE_COL_WIDTHS
   );
-  sheet.addRow(headers);
-  sheet.getRow(1).font = { bold: true };
-  sheet.addRow([
-    "ABC Engineering Works",
-    "33AABCU1234A1Z5",
-    "Ramesh Kumar",
-    "9876543210",
-    "purchase@abcengg.com",
-    "12/3 Industrial Estate, Chennai",
-    "Tamil Nadu",
-    "50% advance, balance before dispatch",
-    30,
-    "Shahnaz",
-    "80-20",
-  ]);
-  sheet.columns.forEach((col) => { col.width = 26; });
 
-  const buffer = await workbook.xlsx.writeBuffer();
+  // ─── Instructions sheet ────────────────────────────────────────────────
+  const instructions = workbook.addWorksheet("Instructions");
+  instructions.addRow(["Customer Master Import - Instructions"]);
+  instructions.getRow(1).font = { bold: true, size: 12 };
+  instructions.addRow([]);
+  instructions.addRow(["Required Fields (rows missing these will be rejected):"]);
+  instructions.getRow(3).font = { bold: true };
+  instructions.addRow(["Customer Name*, Lead Source*, State*"]);
+  instructions.addRow([]);
+  instructions.addRow(["Valid Status values:"]);
+  instructions.getRow(6).font = { bold: true };
+  instructions.addRow([VALID_STATUSES.join(", ")]);
+  instructions.addRow([]);
+  instructions.addRow(["Valid Lead Source values:"]);
+  instructions.getRow(9).font = { bold: true };
+  instructions.addRow([VALID_LEAD_SOURCES.join(", ")]);
+  instructions.addRow([]);
+  instructions.addRow(["Valid Customer Category values:"]);
+  instructions.getRow(12).font = { bold: true };
+  instructions.addRow([VALID_CATEGORIES.join(", ")]);
+  instructions.addRow([]);
+  instructions.addRow(["Valid State values:"]);
+  instructions.getRow(15).font = { bold: true };
+  instructions.addRow([VALID_STATES.join(", ")]);
+  instructions.columns.forEach((col) => { col.width = 80; });
+
+  const buffer = await writeWorkbookBuffer(workbook);
   return new NextResponse(buffer as any, {
     headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Type": EXCEL_CONTENT_TYPE,
       "Content-Disposition": 'attachment; filename="customer-master-template.xlsx"',
     },
   });
@@ -161,24 +297,48 @@ export async function POST(request: Request) {
       const rowErrors: string[] = [];
 
       const name = String(row.name ?? "").trim();
-      const gstNumber = String(row.gstNumber ?? "").trim().toUpperCase() || null;
-      const contactPerson = String(row.contactPerson ?? "").trim() || null;
-      const mobile = String(row.mobile ?? "").trim() || null;
       const email = String(row.email ?? "").trim() || null;
-      const address = String(row.address ?? "").trim() || null;
-      const state = String(row.state ?? "").trim() || null;
+      const mobile = String(row.mobile ?? "").trim() || null;
+      const city = String(row.city ?? "").trim() || null;
+      const location = String(row.location ?? "").trim() || null;
+      const statusRaw = String(row.status ?? "").trim() || null;
+      const leadSourceRaw = String(row.leadSource ?? "").trim() || null;
+      const marketingExecutive = String(row.marketingExecutive ?? "").trim() || null;
+      const gstNumber = String(row.gstNumber ?? "").trim().toUpperCase() || null;
+      const customerCategoryRaw = String(row.customerCategory ?? "").trim() || null;
+      const stateRaw = String(row.state ?? "").trim() || null;
+      const industryType = String(row.industryType ?? "").trim() || null;
       const paymentTerms = String(row.paymentTerms ?? "").trim() || null;
       const creditDaysRaw = row.creditDays;
-      const marketingExecutive = String(row.marketingExecutive ?? "").trim() || null;
-      const customerCategoryRaw = String(row.customerCategory ?? "").trim() || null;
+      const billingAddress = String(row.billingAddress ?? "").trim() || null;
+      const shippingAddress = String(row.shippingAddress ?? "").trim() || null;
+      const contactPerson = String(row.contactPerson ?? "").trim() || null;
+      const contactMobile = String(row.contactMobile ?? "").trim() || null;
+      const contactEmail = String(row.contactEmail ?? "").trim() || null;
 
+      // ─── Required field validation ──────────────────────────────────────
       if (!name) rowErrors.push("Customer Name is required");
+      if (!leadSourceRaw) rowErrors.push("Lead Source is required");
+      if (!stateRaw) rowErrors.push("State is required (required for GST tax type determination)");
+
+      // ─── Normalization & format validation ──────────────────────────────
+      const status = normalizeStatus(statusRaw);
+      const leadSource = normalizeLeadSource(leadSourceRaw);
+      const state = normalizeState(stateRaw);
+      const customerCategory = normalizeCustomerCategory(customerCategoryRaw);
+
+      if (leadSourceRaw && !leadSource) {
+        rowErrors.push(`Lead Source "${leadSourceRaw}" is not valid. Valid: ${VALID_LEAD_SOURCES.join(", ")}`);
+      }
+      if (stateRaw && !state) {
+        rowErrors.push(`State "${stateRaw}" is not valid. Use the exact state name from the valid values.`);
+      }
       if (gstNumber && !isValidGst(gstNumber)) {
         rowErrors.push("GST Number must be valid 15-char Indian GST format (e.g. 33AABCU1234A1Z5)");
       }
       if (email && !isValidEmail(email)) rowErrors.push("Email ID is invalid");
 
-      // Mobile validation: if provided, must be a valid Indian mobile number
+      // Mobile validation
       let validatedMobile: string | null = null;
       if (mobile) {
         validatedMobile = validateIndianMobile(mobile);
@@ -187,6 +347,16 @@ export async function POST(request: Request) {
         }
       }
 
+      // Contact mobile validation
+      let validatedContactMobile: string | null = null;
+      if (contactMobile) {
+        validatedContactMobile = validateIndianMobile(contactMobile);
+        if (!validatedContactMobile) {
+          rowErrors.push("Contact Mobile must be a valid 10-digit Indian mobile");
+        }
+      }
+
+      // Credit days
       let creditDays: number | null = null;
       if (creditDaysRaw !== undefined && creditDaysRaw !== null && String(creditDaysRaw).trim() !== "") {
         const parsed = parseInt(String(creditDaysRaw).trim(), 10);
@@ -197,8 +367,7 @@ export async function POST(request: Request) {
         }
       }
 
-      const customerCategory = normalizeCustomerCategory(customerCategoryRaw);
-
+      // Marketing executive / assign to executive
       let assignedUserId = user.id;
       if (marketingExecutive) {
         const exec = await prisma.user.findFirst({
@@ -211,7 +380,10 @@ export async function POST(request: Request) {
           },
           select: { id: true },
         });
-        if (exec) assignedUserId = exec.id;
+        if (exec) {
+          assignedUserId = exec.id;
+        }
+        // Do NOT error if not found — fallback to current user as before
       }
 
       if (dryRun) {
@@ -231,7 +403,7 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // Duplicate detection: check GST, then email, then name+mobile
+      // ─── Duplicate detection ────────────────────────────────────────────
       const existingGst = gstNumber
         ? await prisma.customer.findFirst({ where: { gstNumber, companyId: user.companyId ?? null } })
         : null;
@@ -240,7 +412,6 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // Email duplicate check (prevents unhandled DB unique constraint error)
       if (email) {
         const existingEmail = await prisma.customer.findFirst({
           where: { email, companyId: user.companyId ?? null },
@@ -251,14 +422,9 @@ export async function POST(request: Request) {
         }
       }
 
-      // Name + mobile duplicate check (fallback when GST is blank)
       if (!gstNumber && validatedMobile) {
         const existingNameMobile = await prisma.customer.findFirst({
-          where: {
-            name: { equals: name },
-            phone: validatedMobile,
-            companyId: user.companyId ?? null,
-          },
+          where: { name: { equals: name }, phone: validatedMobile, companyId: user.companyId ?? null },
         });
         if (existingNameMobile) {
           errors.push({ row: rowNumber, message: `Customer with name "${name}" and mobile ${validatedMobile} already exists` });
@@ -273,27 +439,33 @@ export async function POST(request: Request) {
           data: {
             customerCode,
             name,
-            email: email || null,
-            phone: validatedMobile || null,
-            city: null,
+            email,
+            phone: validatedMobile,
+            city,
+            location,
             state,
+            status,
+            assignedUserId,
+            leadSource,
+            companyId: user.companyId ?? null,
+            // V2 fields
             gstNumber,
-            billingAddress: address,
-            shippingAddress: address,
+            accountType: "Prospect",
+            industryType,
+            billingAddress,
+            shippingAddress,
             paymentTerms,
             creditTermsDays: creditDays ?? 30,
             customerCategory,
-            assignedUserId,
-            companyId: user.companyId ?? null,
           },
         });
 
-        if (contactPerson) {
+        if (contactPerson || validatedContactMobile || contactEmail) {
           await prisma.contact.create({
             data: {
-              name: contactPerson,
-              phone: validatedMobile || null,
-              email: email || null,
+              name: contactPerson || "Primary Contact",
+              phone: validatedContactMobile || null,
+              email: contactEmail || null,
               customerId: customer.id,
               ownerId: assignedUserId,
               isPrimary: true,

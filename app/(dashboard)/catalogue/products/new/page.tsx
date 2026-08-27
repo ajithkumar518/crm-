@@ -77,6 +77,10 @@ export default function NewProductPage() {
     e.preventDefault();
     const nameErr = validateRequired(formData.name, "Product Name");
     if (nameErr) { toast.error(nameErr); return; }
+    if (!formData.productType) {
+      toast.error("Product Type is required");
+      return;
+    }
     if (formData.basePrice) {
       const priceErr = validateCurrency(formData.basePrice, "Base Price");
       if (priceErr) { toast.error(priceErr); return; }
@@ -224,17 +228,16 @@ export default function NewProductPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="Product Type">
+            <FormField label="Product Type *">
               <Select
                 value={formData.productType}
                 onChange={(e) => setFormData({ ...formData, productType: e.target.value })}
+                required
               >
                 <option value="">Select type</option>
-                <option value="FinishedGood">Finished Good</option>
-                <option value="RawMaterial">Raw Material</option>
-                <option value="Component">Component</option>
-                <option value="SubAssembly">Sub-Assembly</option>
-                <option value="Consumable">Consumable</option>
+                <option value="Black Bar">Black Bar</option>
+                <option value="Bright Bar">Bright Bar</option>
+                <option value="Bright Ground Bar">Bright Ground Bar</option>
               </Select>
             </FormField>
             <FormField label="Min Order Quantity">

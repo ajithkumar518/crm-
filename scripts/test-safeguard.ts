@@ -98,22 +98,22 @@ async function main() {
     `got: ${realResult}`);
 
   // resolveTaxTreatment with fabricated company GSTIN → unknown
-  const resolveFake = resolveTaxTreatment(fakeGstin, "32AABCK1234D1Z5", "Kerala");
+  const resolveFake = resolveTaxTreatment(fakeGstin, null, null, null, "32AABCK1234D1Z5", "Kerala");
   check("resolveTaxTreatment with fabricated company GSTIN → unknown", resolveFake.treatment === "unknown",
     `treatment=${resolveFake.treatment}`);
   check("resolveTaxTreatment with fabricated company GSTIN → warning", !!resolveFake.warning);
 
   // resolveTaxTreatment with empty company GSTIN → unknown
-  const resolveEmpty = resolveTaxTreatment("", "32AABCK1234D1Z5", "Kerala");
+  const resolveEmpty = resolveTaxTreatment("", null, null, null, "32AABCK1234D1Z5", "Kerala");
   check("resolveTaxTreatment with empty company GSTIN → unknown", resolveEmpty.treatment === "unknown",
     `treatment=${resolveEmpty.treatment}`);
 
   // resolveTaxTreatment with real company GSTIN → works
-  const resolveReal = resolveTaxTreatment(realGstin, "32AABCK1234D1Z5", "Kerala");
+  const resolveReal = resolveTaxTreatment(realGstin, null, null, null, "32AABCK1234D1Z5", "Kerala");
   check("resolveTaxTreatment with real company GSTIN → intra_state", resolveReal.treatment === "intra_state",
     `treatment=${resolveReal.treatment}`);
 
-  const resolveRealInter = resolveTaxTreatment(realGstin, "33AABCT5678E1Z5", "Tamil Nadu");
+  const resolveRealInter = resolveTaxTreatment(realGstin, null, null, null, "33AABCT5678E1Z5", "Tamil Nadu");
   check("resolveTaxTreatment with real company GSTIN (inter-state) → inter_state", resolveRealInter.treatment === "inter_state",
     `treatment=${resolveRealInter.treatment}`);
 

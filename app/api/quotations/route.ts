@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { logAudit, extractAuditContext } from "@/lib/audit";
 import { logEvent } from "@/lib/activity-event";
+import { computeOverallMarginPercent } from "@/lib/quotation-margins";
 
 export async function GET(request: NextRequest) {
   const user = await verifyAuth();
@@ -11,6 +12,11 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const customerId = searchParams.get("customerId");
+  const dateFrom = searchParams.get("dateFrom");
+  const dateTo = searchParams.get("dateTo");
+  const paymentTerms = searchParams.get("paymentTerms");
+  const assignedUserId = searchParams.get("assignedUserId");
+  const customerCategory = searchParams.get("customerCategory");
   const page = parseInt(searchParams.get("page") || "1");
   const pageSize = 20;
 
@@ -20,13 +26,33 @@ export async function GET(request: NextRequest) {
   };
   if (status) where.status = status;
   if (customerId) where.customerId = customerId;
+  if (assignedUserId) where.assignedUserId = assignedUserId;
+  if (paymentTerms) where.paymentTerms = { contains: paymentTerms };
+  if (customerCategory) where.customer = { customerCategory };
+  if (dateFrom || dateTo) {
+    where.createdAt = {};
+    if (dateFrom) where.createdAt.gte = new Date(`${dateFrom}T00:00:00.000Z`);
+    if (dateTo) where.createdAt.lte = new Date(`${dateTo}T23:59:59.999Z`);
+  }
 
-  const [quotations, total] = await Promise.all([
+  const [rawQuotations, total] = await Promise.all([
     prisma.quotation.findMany({
       where,
       include: {
-        customer: { select: { id: true, name: true, customerCode: true } },
-        _count: { select: { items: true } },
+        customer: { select: { id: true, name: true, customerCode: true, customerCategory: true } },
+        items: {
+          select: {
+            quantity: true,
+            unitPrice: true,
+            costBasisUnitPrice: true,
+            description: true,
+            materialGrade: true,
+            materialSize: true,
+            lengthMm: true,
+            numberOfPieces: true,
+            product: { select: { id: true, name: true, productCode: true } },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -35,13 +61,25 @@ export async function GET(request: NextRequest) {
     prisma.quotation.count({ where }),
   ]);
 
+  const quotations = rawQuotations.map((q) => {
+    const totalQuantity = q.items.reduce((sum, it) => sum + (it.quantity || 0), 0);
+    const overallMarginPercent = computeOverallMarginPercent(
+      q.items.map((it) => ({
+        quantity: it.quantity || 0,
+        unitPrice: it.unitPrice || 0,
+        costBasisUnitPrice: it.costBasisUnitPrice != null ? Number(it.costBasisUnitPrice) : null,
+      }))
+    );
+    return { ...q, totalQuantity, overallMarginPercent };
+  });
+
   return NextResponse.json({ success: true, data: quotations, total, page, totalPages: Math.ceil(total / pageSize) });
 }
 
 export async function POST(request: NextRequest) {
   const user = await verifyAuth();
-  if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
-  if (user.role === "Customer") return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
+  if (!user) return NextResponse.json({ success: false, message: "Please log in to create a quotation" }, { status: 401 });
+  if (user.role === "Customer") return NextResponse.json({ success: false, message: "Customer accounts cannot create quotations" }, { status: 403 });
 
   const body = await request.json();
 
@@ -244,6 +282,10 @@ export async function POST(request: NextRequest) {
       const discountAmount = subtotal * (discountPercent / 100);
       const grandTotal = subtotal - discountAmount + taxAmount + totalCutting + extraCharges;
 
+      const overallMarginPercent = computeOverallMarginPercent(
+        computedItems.map((it: any) => ({ quantity: it.quantity, unitPrice: it.unitPrice, costBasisUnitPrice: it.costBasisUnitPrice }))
+      );
+
       // 1. Create quotation
       const q = await tx.quotation.create({
         data: {
@@ -259,6 +301,7 @@ export async function POST(request: NextRequest) {
           subtotal,
           taxAmount,
           finalAmount: grandTotal,
+          overallMarginPercent,
           termsAndConditions: body.termsAndConditions || null,
           paymentTerms: body.paymentTerms || null,
           deliveryTerms: body.deliveryTerms || null,

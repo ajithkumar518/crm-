@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { buildScope } from "@/lib/scopes";
-import ExcelJS from "exceljs";
+import { createFormattedWorkbook, writeWorkbookBuffer, EXCEL_CONTENT_TYPE } from "@/lib/excel-utils";
 
 const REPORT_CONFIG: Record<string, { sheetName: string; columns: string[]; fetch: (user: any, filters: any) => Promise<{ rows: any[]; summary: Record<string, any> }> }> = {
   leads: {
@@ -220,24 +220,16 @@ export async function POST(
 
   const { rows, summary } = await config.fetch(user, filters);
 
-  // Build Excel
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet(config.sheetName);
+  // Build Excel with consistent formatting
+  const workbook = createFormattedWorkbook(
+    config.sheetName,
+    config.columns,
+    rows.map((row) => config.columns.map((col) => row[col] ?? "—")),
+    config.columns.map(() => 22)
+  );
+  const sheet = workbook.worksheets[0];
 
-  // Header row (bold)
-  const headerRow = sheet.addRow(config.columns);
-  headerRow.font = { bold: true };
-  headerRow.eachCell((cell) => {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF4472C4" } };
-    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  });
-
-  // Data rows
-  for (const row of rows) {
-    sheet.addRow(config.columns.map((col) => row[col] ?? "—"));
-  }
-
-  // Summary row
+  // Summary rows
   const summaryLabels = Object.keys(summary);
   if (summaryLabels.length > 0) {
     sheet.addRow([]);
@@ -247,16 +239,7 @@ export async function POST(
     }
   }
 
-  // Auto-width
-  sheet.columns.forEach((col) => {
-    const header = col.header as string;
-    if (!header) return;
-    const maxLength = Math.max(15, ...rows.map((r) => String(r[header] ?? "").length + 2));
-    col.width = maxLength;
-  });
-
-  // Generate buffer
-  const buffer = await workbook.xlsx.writeBuffer();
+  const buffer = await writeWorkbookBuffer(workbook);
 
   // Log export
   await prisma.reportExportLog.create({
@@ -269,9 +252,9 @@ export async function POST(
     },
   });
 
-  return new NextResponse(buffer, {
+  return new NextResponse(buffer as any, {
     headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Type": EXCEL_CONTENT_TYPE,
       "Content-Disposition": `attachment; filename="${reportId}-report.xlsx"`,
     },
   });

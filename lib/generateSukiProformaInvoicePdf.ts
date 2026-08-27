@@ -9,7 +9,7 @@ import {
   formatPdfDate,
   PdfColors,
 } from "./pdf-shared";
-import { resolveTaxTreatment } from "./gstState";
+import { resolveTaxTreatment, computeGstSplit, TaxTreatment, getStateCodeFromName } from "./gstState";
 
 const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
 const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
@@ -166,41 +166,89 @@ export function generateSukiProformaInvoicePdf(data: SukiProformaInvoiceData, op
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   setupPdfFonts(doc);
 
+  const margin = 8;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
   const computed = computeTotals(data);
 
   for (let i = 0; i < copies.length; i++) {
     if (i > 0) doc.addPage();
-    drawPage(doc, data, computed, copies[i], i + 1, copies.length);
+    const pagesBeforeCopy = doc.getNumberOfPages();
+
+    drawPage(doc, data, computed, copies[i], margin);
+
+    const pagesAfterCopy = doc.getNumberOfPages();
+    const totalPagesInCopy = pagesAfterCopy - pagesBeforeCopy + 1;
+
+    // Second pass: write accurate "Page X of Y" now that we know the real
+    // page count for this copy (each copy paginates independently).
+    for (let p = pagesBeforeCopy; p <= pagesAfterCopy; p++) {
+      doc.setPage(p);
+      const pageWithinCopy = p - pagesBeforeCopy + 1;
+      drawFooterPageNumber(doc, pageWithinCopy, totalPagesInCopy, margin, pageW, pageH);
+    }
   }
 
   return doc;
 }
 
 function computeTotals(data: SukiProformaInvoiceData) {
+  // Determine GST tax treatment: compare Supplier State vs Place of Supply
+  const gstResult = resolveTaxTreatment(
+    data.company?.gstin,
+    data.placeOfSupply,
+    data.shipGstNumber,
+    data.shipState,
+    data.billGstNumber,
+    data.billState,
+  );
+  const treatment = gstResult.treatment;
+  const isInterState = treatment === "inter_state";
+
+  // Block PDF generation if tax type cannot be determined — do NOT silently default
+  if (treatment === "unknown") {
+    throw new Error(
+      `Cannot generate Proforma Invoice PDF: ${gstResult.warning || "GST tax treatment could not be determined."} ` +
+      `Set the customer's Ship-To state, GSTIN, or Place of Supply field before generating the PDF.`
+    );
+  }
+
   const totalItemTaxable = data.items.reduce((s, it) => s + it.taxable, 0);
   const totalQty = data.items.reduce((s, it) => s + it.quantity, 0);
   const totalPcs = data.items.reduce((s, it) => s + (it.numberOfPieces || 0), 0);
 
-  const hsnMap = new Map<string, { taxable: number; taxPercent: number; tax: number }>();
+  // HSN map: accumulate taxable per HSN, compute CGST/SGST/IGST independently
+  const hsnMap = new Map<string, { taxable: number; taxPercent: number; cgst: number; sgst: number; igst: number; tax: number }>();
   for (const it of data.items) {
     const hsn = it.hsn || "—";
     const taxPct = it.taxPercent || 18;
+    const { cgst, sgst, igst, totalTax } = computeGstSplit(it.taxable, taxPct, treatment);
     const existing = hsnMap.get(hsn);
     if (existing) {
       existing.taxable += it.taxable;
+      existing.cgst += cgst;
+      existing.sgst += sgst;
+      existing.igst += igst;
+      existing.tax += totalTax;
     } else {
-      hsnMap.set(hsn, { taxable: it.taxable, taxPercent: taxPct, tax: 0 });
+      hsnMap.set(hsn, { taxable: it.taxable, taxPercent: taxPct, cgst, sgst, igst, tax: totalTax });
     }
   }
 
-  const hsnRows: { hsn: string; taxable: number; taxPercent: number; tax: number }[] = [];
+  const hsnRows: { hsn: string; taxable: number; taxPercent: number; cgst: number; sgst: number; igst: number; tax: number }[] = [];
   let totalHsnTaxable = 0;
   let totalHsnTax = 0;
+  let totalHsnCgst = 0;
+  let totalHsnSgst = 0;
+  let totalHsnIgst = 0;
   for (const [hsn, row] of hsnMap) {
-    row.tax = row.taxable * (row.taxPercent / 100);
-    hsnRows.push({ hsn, taxable: row.taxable, taxPercent: row.taxPercent, tax: row.tax });
+    hsnRows.push({ hsn, taxable: row.taxable, taxPercent: row.taxPercent, cgst: row.cgst, sgst: row.sgst, igst: row.igst, tax: row.tax });
     totalHsnTaxable += row.taxable;
     totalHsnTax += row.tax;
+    totalHsnCgst += row.cgst;
+    totalHsnSgst += row.sgst;
+    totalHsnIgst += row.igst;
   }
 
   const serviceTaxable =
@@ -214,9 +262,7 @@ function computeTotals(data: SukiProformaInvoiceData) {
   const serviceTax = serviceTaxable * (serviceTaxPercent / 100);
 
   if (serviceTaxable > 0) {
-    hsnRows.push({ hsn: "996111", taxable: serviceTaxable, taxPercent: serviceTaxPercent, tax: serviceTax });
-    totalHsnTaxable += serviceTaxable;
-    totalHsnTax += serviceTax;
+    // UI does not apply tax to extra charges; do not add 996111 row or increment totalHsnTax
   }
 
   const rawTotal = totalItemTaxable + serviceTaxable + totalHsnTax;
@@ -229,28 +275,63 @@ function computeTotals(data: SukiProformaInvoiceData) {
     hsnRows,
     totalHsnTaxable,
     totalHsnTax,
+    totalHsnCgst,
+    totalHsnSgst,
+    totalHsnIgst,
     serviceTaxable,
     serviceTax,
     rawTotal,
     roundedOff: rounded,
+    treatment,
+    isInterState,
+    gstResult,
   };
 }
 
-function drawPage(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<typeof computeTotals>, copyType: string, pageNum: number, totalPages: number) {
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 8;
-  const contentW = pageW - 2 * margin;
-  let y = margin;
-
+/** Draws the fixed decorative border around the full page content area. */
+function drawPageBorder(doc: jsPDF, margin: number, pageW: number, pageH: number, contentW: number): void {
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.2);
   doc.rect(margin, margin, contentW, pageH - 2 * margin);
+}
+
+/** Static footer text that doesn't depend on the final page count (drawn on every page immediately). */
+function drawFooterStatic(doc: jsPDF, margin: number, pageW: number, pageH: number): void {
+  doc.setFontSize(8);
+  setFont(doc, "normal");
+  doc.setTextColor(0, 0, 0);
+  doc.text("This is a Computer Generated Invoice", pageW / 2, pageH - margin + 3.5, { align: "center" });
+
+  const footerY = pageH - margin + 7;
+  doc.setFontSize(8);
+  setFont(doc, "normal");
+  doc.setTextColor(0, 0, 0);
+  doc.text("Ref: SUKI-PF-01", margin + 2, footerY, { align: "left" });
+  doc.text("Suki CRM", pageW / 2, footerY, { align: "center" });
+}
+
+/** "Page X of Y" — written in a second pass once the true page count for the copy is known. */
+function drawFooterPageNumber(doc: jsPDF, pageNum: number, totalPages: number, margin: number, pageW: number, pageH: number): void {
+  const footerY = pageH - margin + 7;
+  doc.setFontSize(8);
+  setFont(doc, "normal");
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Page ${pageNum} of ${totalPages}`, pageW - margin - 2, footerY, { align: "right" });
+}
+
+/**
+ * Draws the full repeatable header block: copy label, title, company banner/details,
+ * invoice meta (No./Date), and Bill To/Ship To panels. Used on page 1 and re-drawn
+ * identically on any continuation page so the header always repeats, matching the
+ * reference multi-page layout.
+ */
+function drawHeaderBlock(doc: jsPDF, data: SukiProformaInvoiceData, copyType: string, margin: number, pageW: number, contentW: number): number {
+  let y = margin;
 
   // Copy label
   doc.setFontSize(9);
-  setFont(doc, "bold");
-  doc.setTextColor(...PdfColors.primary);
+  setFont(doc, "normal");
+  doc.setTextColor(0, 0, 0);
   doc.text(copyType, pageW - margin - 2, y + 4, { align: "right" });
 
   // Title
@@ -258,17 +339,24 @@ function drawPage(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<typeo
   setFont(doc, "bold");
   doc.setTextColor(0, 0, 0);
   doc.text("PRO-FORMA INVOICE", pageW / 2, y + 4, { align: "center" });
-  y += 8;
+  y += 7;
+
+  // Horizontal line above company name
+  doc.line(margin, y, pageW - margin, y);
+  y += 5;
 
   // Company banner
   doc.setFontSize(13);
   setFont(doc, "bold");
   doc.setTextColor(0, 0, 0);
   doc.text(data.company?.name || "Shahnaz Bright Steel Industries Private Limited", pageW / 2, y, { align: "center" });
-  y += 5;
+  y += 3;
+
+  // Horizontal line below company name
+  doc.line(margin, y, pageW - margin, y);
+  y += 3;
 
   // Company details block
-  const halfW = (contentW - 6) / 2;
   const logoW = 40;
   const logoH = 18;
 
@@ -293,7 +381,6 @@ function drawPage(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<typeo
   // Right: company address
   const rightX = margin + logoW + 10;
   const availWidth = contentW - logoW - 12;
-  const centerX = rightX + availWidth / 2;
   doc.setFontSize(8);
   setFont(doc, "normal");
   doc.setTextColor(0, 0, 0);
@@ -313,115 +400,49 @@ function drawPage(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<typeo
     `CIN : ${compCin}`
   ].filter(Boolean);
 
-  let cy = y;
+  let cy = y + 1.5;
   for (const line of companyLines) {
     if (!line) continue;
     const wrapped = doc.splitTextToSize(line, availWidth);
-    doc.text(wrapped, centerX, cy, { align: "center" });
+    doc.text(wrapped, rightX, cy, { align: "left" });
     cy += wrapped.length * 3.5 + 0.5;
   }
   y = Math.max(y + logoH + 2, cy + 0.5);
 
-  // Meta strip
-  y = drawMetaStrip(doc, data, margin, y, contentW);
+  // Invoice No. / Invoice Date meta line — this IS the app's internal Proforma Number
+  // (e.g. PF-2026-00004), the same identifier used in the Proforma Overview list/URL.
+  y = drawInvoiceMeta(doc, data, margin, y, contentW);
 
-  // Customer blocks
+  // Customer blocks (Bill To / Ship To)
   y = drawCustomerBlocks(doc, data, margin, y, contentW);
 
-  // Items table
-  y = drawItemsTable(doc, data, c, margin, y, contentW);
-
-  // HSN table
-  y = drawHsnTable(doc, data, c, margin, y, contentW);
-
-  // Bank + charges summary
-  y = drawBankAndCharges(doc, data, c, margin, y, contentW);
-
-  // Amount in words
-  y += 2;
-  doc.setFontSize(8);
-  setFont(doc, "bold");
-  doc.text("Amount In Words", margin + 3, y);
-  y += 4;
-  setFont(doc, "normal");
-  const words = doc.splitTextToSize(amountInWords(data.grandTotal), contentW - 6);
-  doc.text(words, margin + 3, y);
-  y += words.length * 3.5 + 2;
-
-  // Terms & Conditions
-  y = drawTermsAndDeclaration(doc, data, margin, y, contentW);
-
-  // Signature block
-  y = drawSignatureBlock(doc, data, margin, y, contentW);
-
-  // Footer
-  doc.setFontSize(7);
-  setFont(doc, "normal");
-  doc.setTextColor(0, 0, 0);
-  doc.text("This is a Computer Generated Invoice", pageW / 2, pageH - margin - 6, { align: "center" });
-
-  const footerY = pageH - margin - 3;
-  doc.setFontSize(7);
-  doc.text("Suki CRM", pageW / 2, footerY, { align: "center" });
-  doc.text(`Page ${pageNum} of ${totalPages}`, pageW - margin - 2, footerY, { align: "right" });
+  return y;
 }
 
-function drawMetaStrip(doc: jsPDF, data: SukiProformaInvoiceData, x: number, y: number, w: number): number {
-  const leftColX = x + 3;
-  const midX = x + w / 2;
-  const rightColX = midX + 3;
-  const lineH = 3.5;
-
+/** Slim invoice meta line: Invoice No. (= Proforma Number), Invoice Date, and Payment Terms. */
+function drawInvoiceMeta(doc: jsPDF, data: SukiProformaInvoiceData, x: number, y: number, w: number): number {
+  const lineH = 5;
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.2);
 
-  const leftPairs = [
-    ["IRN No", data.irn || ""],
-    ["Ack No", data.ackNo || ""],
-    ["Ack Dt", data.ackDate ? formatPdfDate(data.ackDate) : ""],
-    ["Eway Bill No", data.ewayBillNo || ""],
-    ["Eway Bill Dt", data.ewayBillDate ? formatPdfDate(data.ewayBillDate) : ""],
-  ];
+  const ly = y + 4;
+  const col1 = x + 2;
+  const col2 = x + w * 0.37;
+  const col3 = x + w * 0.68;
 
-  const rightPairs = [
-    ["Invoice No.", data.proformaNumber],
-    ["Invoice Date", data.proformaDate ? formatPdfDate(data.proformaDate) : "—"],
-    ["Customer PO No.", data.customerPoNo || ""],
-    ["Customer PO Date", data.customerPoDate ? formatPdfDate(data.customerPoDate) : ""],
-    ["Despatch Through", data.despatchThrough || ""],
-    ["State", data.stateCode ? `${data.placeOfSupply || data.state || "—"}  State Code : ${data.stateCode}` : `${data.placeOfSupply || data.state || "—"}`],
-    ["Place of Supply", data.placeOfSupply || ""],
-    ["Payment Terms", data.paymentTerms || ""],
-    ["Vehicle No", data.vehicleNo || ""],
-  ];
+  doc.setFontSize(8);
+  setFont(doc, "bold");
+  doc.text("Invoice No.", col1, ly);
+  doc.text("Invoice Date", col2, ly);
+  doc.text("Payment Terms", col3, ly);
 
-  let ly = y + 5;
-  for (const [label, value] of leftPairs) {
-    doc.setFontSize(7);
-    setFont(doc, "bold");
-    const labelText = `${label} :`;
-    doc.text(labelText, leftColX, ly);
-    const labelW = doc.getTextWidth(labelText + " ");
-    setFont(doc, "normal");
-    doc.text(value || "—", leftColX + labelW, ly);
-    ly += lineH;
-  }
+  setFont(doc, "normal");
+  doc.text(`: ${data.proformaNumber || ""}`, col1 + 22, ly);
+  doc.text(`: ${data.proformaDate ? formatPdfDate(data.proformaDate) : ""}`, col2 + 22, ly);
+  doc.text(`: ${data.paymentTerms || ""}`, col3 + 26, ly);
 
-  let ry = y + 5;
-  for (const [label, value] of rightPairs) {
-    doc.setFontSize(7);
-    setFont(doc, "bold");
-    const labelText = `${label} :`;
-    doc.text(labelText, rightColX, ry);
-    const labelW = doc.getTextWidth(labelText + " ");
-    setFont(doc, "normal");
-    doc.text(value || "—", rightColX + labelW, ry);
-    ry += lineH;
-  }
-
-  const h = Math.max(ly, ry) - y + 2;
+  const h = lineH + 2;
   doc.rect(x, y, w, h);
-  doc.line(midX - 1, y, midX - 1, y + h);
 
   return y + h + 2;
 }
@@ -446,8 +467,8 @@ function drawCustomerBlocks(doc: jsPDF, data: SukiProformaInvoiceData, x: number
   const shipPhone = data.shipPhone || customer?.phone || "";
 
   const blocks = [
-    { title: "Details of Customer (Bill To)", name: billName, address: billAddress, state: billState, gst: billGst, phone: billPhone, x: x + 2, stateCode: data.billStateCode },
-    { title: "Details of Customer (Ship To)", name: shipName, address: shipAddress, state: shipState, gst: shipGst, phone: shipPhone, x: x + halfW + 4, stateCode: data.shipStateCode },
+    { title: "Details of Customer (Bill To)", name: billName, address: billAddress, state: billState, gst: billGst, phone: billPhone, x: x + 2, stateCode: data.billStateCode || getStateCodeFromName(billState) },
+    { title: "Details of Customer (Ship To)", name: shipName, address: shipAddress, state: shipState, gst: shipGst, phone: shipPhone, x: x + halfW + 4, stateCode: data.shipStateCode || getStateCodeFromName(shipState) },
   ];
 
   let blockEndY = y;
@@ -462,19 +483,43 @@ function drawCustomerBlocks(doc: jsPDF, data: SukiProformaInvoiceData, x: number
     const lines = [
       ["Name", b.name || "—"],
       ["Address", b.address || "—"],
-      ["State", b.state ? `${b.state}  State Code : ${b.stateCode || ""}` : "—"],
+      ["State", b.state || "—"],
       ["GST No", b.gst || "—"],
       ["Phone No", b.phone || "—"],
     ];
 
     for (const [label, value] of lines) {
-      doc.setFontSize(7);
+      doc.setFontSize(8);
       setFont(doc, "bold");
       doc.text(`${label} :`, b.x, by);
-      setFont(doc, "normal");
-      const wrapped = doc.splitTextToSize(value || "—", halfW - labelW - 8);
-      doc.text(wrapped, b.x + labelW, by);
-      by += Math.max(3.0, wrapped.length * 3.0);
+
+      if (label === "Name") {
+        // Name value emphasized in bold
+        setFont(doc, "bold");
+        const wrapped = doc.splitTextToSize(value || "—", halfW - labelW - 8);
+        doc.text(wrapped, b.x + labelW, by);
+        by += Math.max(3.0, wrapped.length * 3.0);
+      } else if (label === "State" && b.state) {
+        // State name normal, "State Code" label bold, code value normal
+        setFont(doc, "normal");
+        const statePrefix = `${b.state}  `;
+        doc.text(statePrefix, b.x + labelW, by);
+        let cursorX = b.x + labelW + doc.getTextWidth(statePrefix);
+
+        setFont(doc, "bold");
+        const stateCodeLabel = "State Code : ";
+        doc.text(stateCodeLabel, cursorX, by);
+        cursorX += doc.getTextWidth(stateCodeLabel);
+
+        setFont(doc, "normal");
+        doc.text(b.stateCode || "—", cursorX, by);
+        by += 3.0;
+      } else {
+        setFont(doc, "normal");
+        const wrapped = doc.splitTextToSize(value || "—", halfW - labelW - 8);
+        doc.text(wrapped, b.x + labelW, by);
+        by += Math.max(3.0, wrapped.length * 3.0);
+      }
     }
     blockEndY = Math.max(blockEndY, by);
   }
@@ -486,9 +531,11 @@ function drawCustomerBlocks(doc: jsPDF, data: SukiProformaInvoiceData, x: number
   return y + h + 2;
 }
 
-function drawItemsTable(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<typeof computeTotals>, x: number, y: number, w: number): number {
-  const head = [["S.No", "Description of Goods", "Length", "HSN", "Qty", "UOM", "No.of Pcs", "Rate", "Taxable Value"]];
+function buildItemsTableHead(): string[][] {
+  return [["S.No", "Description of Goods", "Length", "HSN", "Qty", "UOM", "No.of Pcs", "Rate", "Taxable Value"]];
+}
 
+function buildItemsTableBody(data: SukiProformaInvoiceData, c: ReturnType<typeof computeTotals>): (string | number)[][] {
   const body = data.items.map((it, idx) => {
     const pieceUnit = it.unit === "Bundles" || it.unit === "Bundle" ? "Bundles" : "Nos";
     const lengthText = `${it.numberOfPieces ?? ""} ${pieceUnit === "Bundles" ? "BUNDLES" : "LENGTH"}`;
@@ -513,20 +560,75 @@ function drawItemsTable(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType
     "",
     c.totalQty.toFixed(3),
     "",
-    "",
+    c.totalPcs ? `${c.totalPcs} Nos` : "",
     "",
     formatCurrency(c.totalItemTaxable),
   ]);
 
+  return body;
+}
+
+/**
+ * Measures the height the HSN summary + bank/charges + amount-in-words + terms/declaration
+ * block would need, by actually drawing them once onto a throwaway scratch page (using the
+ * exact same draw functions used for the real render) and reading back the resulting Y.
+ * This avoids brittle height heuristics — the measurement is byte-for-byte what will really
+ * be drawn later.
+ */
+function measureSummaryBlockHeight(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<typeof computeTotals>, contentW: number): number {
+  const activePage = doc.getCurrentPageInfo().pageNumber;
+
+  doc.addPage();
+  const scratchPage = doc.getNumberOfPages();
+
+  const startY = 10;
+  let y = drawHsnTable(doc, data, c, 0, startY, contentW);
+  y = drawBankAndCharges(doc, data, c, 0, y, contentW);
+
+  y += 2;
+  doc.setFontSize(8);
+  setFont(doc, "bold");
+  doc.text("Amount In Words", 0, y);
+  y += 4;
+  setFont(doc, "normal");
+  const words = doc.splitTextToSize(amountInWords(data.grandTotal), contentW - 6);
+  doc.text(words, 0, y);
+  y += words.length * 3.5 + 2;
+
+  y = drawTermsAndDeclaration(doc, data, 0, y, contentW);
+
+  const measuredHeight = y - startY;
+
+  doc.deletePage(scratchPage);
+  doc.setPage(activePage);
+
+  const signatureReserve = 18;
+  return measuredHeight + signatureReserve;
+}
+
+function drawPage(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<typeof computeTotals>, copyType: string, margin: number) {
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const contentW = pageW - 2 * margin;
+
+  drawPageBorder(doc, margin, pageW, pageH, contentW);
+  const headerEndY = drawHeaderBlock(doc, data, copyType, margin, pageW, contentW);
+  drawFooterStatic(doc, margin, pageW, pageH);
+
+  const headerBlockHeight = headerEndY - margin;
+  const footerReserve = 12;
+
+  const head = buildItemsTableHead();
+  const body = buildItemsTableBody(data, c);
+
   autoTable(doc, {
-    startY: y,
-    margin: { left: x, right: x },
-    tableWidth: w,
+    startY: headerEndY,
+    margin: { left: margin, right: margin, top: margin + headerBlockHeight, bottom: margin + footerReserve },
     head,
     body,
     styles: {
       font: "NotoSans",
-      fontSize: 7,
+      fontSize: 8,
       cellPadding: 1.2,
       lineColor: [0, 0, 0],
       lineWidth: 0.2,
@@ -557,23 +659,87 @@ function drawItemsTable(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType
         doc.setFont("NotoSans", "bold");
       }
     },
+    didDrawPage: (hookData) => {
+      // Repeat the border + full header (company info + Bill To/Ship To) on every
+      // continuation page the items table spills onto, matching the reference layout.
+      if (hookData.pageNumber > 1) {
+        drawPageBorder(doc, margin, pageW, pageH, contentW);
+        drawHeaderBlock(doc, data, copyType, margin, pageW, contentW);
+        drawFooterStatic(doc, margin, pageW, pageH);
+      }
+    },
   });
 
-  return (doc as any).lastAutoTable.finalY + 2;
+  let y = (doc as any).lastAutoTable.finalY + 2;
+
+  // Decide whether the HSN/bank/terms/signature block fits on the current page,
+  // or needs to start fresh on a new page (matching the reference's page-2 layout).
+  const requiredHeight = measureSummaryBlockHeight(doc, data, c, contentW);
+  const availableSpace = pageH - margin - footerReserve - y;
+
+  if (availableSpace < requiredHeight) {
+    doc.addPage();
+    drawPageBorder(doc, margin, pageW, pageH, contentW);
+    y = drawHeaderBlock(doc, data, copyType, margin, pageW, contentW);
+    drawFooterStatic(doc, margin, pageW, pageH);
+  }
+
+  // HSN table
+  y = drawHsnTable(doc, data, c, margin, y, contentW);
+
+  // Bank + charges summary
+  y = drawBankAndCharges(doc, data, c, margin, y, contentW);
+
+  // Amount in words
+  y += 2;
+  doc.setFontSize(8);
+  setFont(doc, "bold");
+  doc.text("Amount In Words", margin + 3, y);
+  y += 4;
+  setFont(doc, "normal");
+  const words = doc.splitTextToSize(amountInWords(data.grandTotal), contentW - 6);
+  doc.text(words, margin + 3, y);
+  y += words.length * 3.5 + 2;
+
+  // Terms & Conditions
+  y = drawTermsAndDeclaration(doc, data, margin, y, contentW);
+
+  // Signature block pinned to the bottom of the page
+  const signatureH = 12;
+  const signatureY = pageH - margin - signatureH - 3;
+  drawSignatureBlock(doc, data, margin, signatureY, contentW);
 }
 
 function drawHsnTable(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<typeof computeTotals>, x: number, y: number, w: number): number {
-  const head = [["HSN Code", "Taxable Value", "IGST %", "IGST Amt", "Total Tax"]];
+  const isInterState = c.isInterState;
 
-  const body = c.hsnRows.map((r) => [
-    r.hsn,
-    formatCurrency(r.taxable),
-    `${r.taxPercent}%`,
-    formatCurrency(r.tax),
-    formatCurrency(r.tax),
-  ]);
+  const head = isInterState
+    ? [["HSN Code", "Taxable Value", "IGST %", "IGST Amt", "Total Tax"]]
+    : [["HSN Code", "Taxable Value", "CGST %", "CGST Amt", "SGST %", "SGST Amt", "Total Tax"]];
 
-  body.push(["Total", formatCurrency(c.totalHsnTaxable), "", formatCurrency(c.totalHsnTax), formatCurrency(c.totalHsnTax)]);
+  const body = isInterState
+    ? c.hsnRows.map((r) => [
+        r.hsn,
+        formatCurrency(r.taxable),
+        `${r.taxPercent}%`,
+        formatCurrency(r.igst),
+        formatCurrency(r.tax),
+      ])
+    : c.hsnRows.map((r) => [
+        r.hsn,
+        formatCurrency(r.taxable),
+        `${r.taxPercent / 2}%`,
+        formatCurrency(r.cgst),
+        `${r.taxPercent / 2}%`,
+        formatCurrency(r.sgst),
+        formatCurrency(r.tax),
+      ]);
+
+  if (isInterState) {
+    body.push(["Total", formatCurrency(c.totalHsnTaxable), "", formatCurrency(c.totalHsnIgst), formatCurrency(c.totalHsnTax)]);
+  } else {
+    body.push(["Total", formatCurrency(c.totalHsnTaxable), "", formatCurrency(c.totalHsnCgst), "", formatCurrency(c.totalHsnSgst), formatCurrency(c.totalHsnTax)]);
+  }
 
   autoTable(doc, {
     startY: y,
@@ -583,7 +749,7 @@ function drawHsnTable(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<t
     body,
     styles: {
       font: "NotoSans",
-      fontSize: 7,
+      fontSize: 8,
       cellPadding: 1.2,
       lineColor: [0, 0, 0],
       lineWidth: 0.2,
@@ -596,13 +762,23 @@ function drawHsnTable(doc: jsPDF, data: SukiProformaInvoiceData, c: ReturnType<t
       textColor: 0,
       fontStyle: "bold",
     },
-    columnStyles: {
-      0: { halign: "left" },
-      1: { halign: "right" },
-      2: { halign: "center" },
-      3: { halign: "right" },
-      4: { halign: "right" },
-    },
+    columnStyles: isInterState
+      ? {
+          0: { halign: "left" },
+          1: { halign: "right" },
+          2: { halign: "center" },
+          3: { halign: "right" },
+          4: { halign: "right" },
+        }
+      : {
+          0: { halign: "left" },
+          1: { halign: "right" },
+          2: { halign: "center" },
+          3: { halign: "right" },
+          4: { halign: "center" },
+          5: { halign: "right" },
+          6: { halign: "right" },
+        },
     didDrawCell: (p) => {
       if (p.row.index === body.length - 1) {
         doc.setFont("NotoSans", "bold");
@@ -633,7 +809,7 @@ function drawBankAndCharges(doc: jsPDF, data: SukiProformaInvoiceData, c: Return
     ["Branch", data.bank.branch],
   ];
   for (const [label, value] of bankRows) {
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "bold");
     doc.text(`${label} :`, x + 3, by);
     setFont(doc, "normal");
@@ -649,11 +825,13 @@ function drawBankAndCharges(doc: jsPDF, data: SukiProformaInvoiceData, c: Return
   const chargeRows: [string, number][] = [
     ["Item Value", c.totalItemTaxable],
     ["Loading / Weighing Charges (Before Tax)", data.charges.weighingLoadingCharge],
-    ["Transport Charges (Before Tax)", data.charges.transportCharge],
+    ["Cutting Charges (Before Tax)", data.charges.transportCharge],
     ["Delivery Charges (Before Tax)", data.charges.deliveryCharge],
     ["Testing Charges (Before Tax)", data.charges.testingCharge],
     ["Other Charges (Before Tax)", data.charges.otherCharges],
-    ["Add : IGST", c.totalHsnTax],
+    ...(c.isInterState
+      ? [["Add : IGST", c.totalHsnIgst] as [string, number]]
+      : [["Add : CGST", c.totalHsnCgst] as [string, number], ["Add : SGST", c.totalHsnSgst] as [string, number]]),
     ["Rounded Off(+/-)", c.roundedOff],
     ["Total Amount", data.grandTotal],
   ];
@@ -661,7 +839,7 @@ function drawBankAndCharges(doc: jsPDF, data: SukiProformaInvoiceData, c: Return
   for (let i = 0; i < chargeRows.length; i++) {
     const [label, value] = chargeRows[i];
     if (i > 0 && i < chargeRows.length - 2 && value === 0) continue; // skip zero charge rows except main rows
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, i === chargeRows.length - 1 ? "bold" : "normal");
     doc.text(label, rightX, ry);
     doc.text(formatCurrency(value), rightValX, ry, { align: "right" });
@@ -702,7 +880,7 @@ function drawTermsAndDeclaration(doc: jsPDF, data: SukiProformaInvoiceData, x: n
   setFont(doc, "bold");
   doc.text("Terms & Conditions :", x + 3, y + 5);
 
-  doc.setFontSize(7);
+  doc.setFontSize(8);
   setFont(doc, "normal");
   doc.text(termsLines, textX, y + 5);
 
@@ -710,7 +888,7 @@ function drawTermsAndDeclaration(doc: jsPDF, data: SukiProformaInvoiceData, x: n
   setFont(doc, "bold");
   doc.text("Declaration :", x + 3, declY);
 
-  doc.setFontSize(7);
+  doc.setFontSize(8);
   setFont(doc, "normal");
   doc.text(declLines, textX, declY);
 
@@ -718,43 +896,40 @@ function drawTermsAndDeclaration(doc: jsPDF, data: SukiProformaInvoiceData, x: n
 }
 
 function drawSignatureBlock(doc: jsPDF, data: SukiProformaInvoiceData, x: number, y: number, w: number): number {
-  const h = 22;
-  const col1 = w * 0.18;
-  const col2 = w * 0.18;
-  const col3 = w * 0.24;
-  const col4 = w * 0.40;
+  const h = 12; // Reduced from 20 to remove dead space
+  const col1 = w * 0.30;
+  const col2 = w * 0.30;
+  const col3 = w * 0.40;
 
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.2);
   doc.rect(x, y, w, h);
   doc.line(x + col1, y, x + col1, y + h);
   doc.line(x + col1 + col2, y, x + col1 + col2, y + h);
-  doc.line(x + col1 + col2 + col3, y, x + col1 + col2 + col3, y + h);
 
-  doc.setFontSize(7);
-  setFont(doc, "bold");
-  doc.text("Prepared By", x + 3, y + 5);
-  doc.text("Verified By", x + col1 + 3, y + 5);
-
-  // QR placeholder
-  const qrX = x + col1 + col2 + (col3 - 18) / 2;
-  const qrY = y + 2;
-  doc.setDrawColor(0, 0, 0);
-  doc.rect(qrX, qrY, 18, 18);
-  doc.setFontSize(7);
-  setFont(doc, "normal");
-  doc.text("QR", qrX + 9, qrY + 10, { align: "center" });
-
-  const authX = x + col1 + col2 + col3 + 3;
-  const companyName = data.company?.name || "Shahnaz Bright Steel Industries Private Limited";
-  const forLines = doc.splitTextToSize(`For ${companyName}`, col4 - 6);
+  // Top Labels
   doc.setFontSize(8);
   setFont(doc, "bold");
-  doc.text(forLines, authX, y + 5);
+  doc.text("Prepared By", x + 3, y + 4);
+  doc.text("Verified By", x + col1 + 3, y + 4);
 
-  doc.setFontSize(7);
+  const authX = x + col1 + col2 + 3;
+  const companyName = data.company?.name || "Shahnaz Bright Steel Industries Private Limited";
+  const forLines = doc.splitTextToSize(`For ${companyName}`, col3 - 6);
+  doc.setFontSize(8);
   setFont(doc, "bold");
-  doc.text("Authorised Signatory", x + w - 3, y + h - 3, { align: "right" });
+  doc.text(forLines, authX, y + 4);
+
+  // Bottom Values / Signatory Label
+  if (data.preparedBy) {
+    doc.setFontSize(8);
+    setFont(doc, "normal");
+    doc.text(data.preparedBy, x + 3, y + 10);
+  }
+
+  doc.setFontSize(8);
+  setFont(doc, "bold");
+  doc.text("Authorised Signatory", x + w - 3, y + 10, { align: "right" });
 
   return y + h;
 }

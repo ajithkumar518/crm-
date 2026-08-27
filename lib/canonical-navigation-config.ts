@@ -78,6 +78,7 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'follow-ups-pending', label: 'Pending', href: '/follow-up?status=Pending', iconEmoji: '🔔', keywords: ['pending', 'due'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   { key: 'follow-ups-completed', label: 'Completed', href: '/follow-up?status=Completed', iconEmoji: '🔔', keywords: ['completed', 'done'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   { key: 'follow-ups-overdue', label: 'Overdue', href: '/follow-up?status=Overdue', iconEmoji: '🔔', keywords: ['overdue', 'late'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
+  { key: 'follow-ups-quotation', label: 'Quotation', href: '/follow-up/quotation', iconEmoji: '📋', keywords: ['quotation', 'quote', 'quotation follow up'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   // Pipeline sub-modules
   { key: 'pipeline-all', label: 'Overview', href: '/sales-pipeline/pipeline-list', iconEmoji: '📈', keywords: ['all opportunities', 'pipeline list'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-qualified', label: 'Qualified', href: '/sales-pipeline/pipeline-list?stage=Qualified', iconEmoji: '📈', keywords: ['qualified', 'sql'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },

@@ -7,7 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/components/ToastProvider";
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 
-export type QuotationTab = "items" | "history" | "revisions" | "approvals" | "documents";
+export type QuotationTab = "items" | "history" | "revisions" | "approvals" | "documents" | "followUps";
 
 export interface ConfirmState {
   isOpen: boolean;

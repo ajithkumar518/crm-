@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, FileCode, Copy, Download, X, XCircle, Check, FileText, MoreVertical, Trophy } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, FileCode, Copy, Download, X, XCircle, Check, FileText, MoreVertical, Trophy, CalendarClock } from "lucide-react";
 import { useHasModule } from "@/components/ModuleGate";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
+import { isQuotationFollowupAllowed } from "@/lib/feature-allowlist";
 
 interface QuotationActionBarProps {
   quotation: any;
@@ -30,6 +31,8 @@ interface QuotationActionBarProps {
   onDownloadPdf: () => void;
   onGeneratePdf: () => void;
   onDelete: () => void;
+  onFollowUp?: () => void;
+  featureUserEmail?: string | null;
 }
 
 function actionButtonClass(
@@ -78,6 +81,8 @@ export default function QuotationActionBar({
   onDownloadPdf,
   onGeneratePdf,
   onDelete,
+  onFollowUp,
+  featureUserEmail,
 }: QuotationActionBarProps) {
   const hasMod = useHasModule();
   const canEdit = quotation.status === "Draft";
@@ -85,6 +90,7 @@ export default function QuotationActionBar({
   const canSend = ["Draft", "Approved"].includes(quotation.status);
   const canNegotiate = ["Quotation Sent", "UnderReview"].includes(quotation.status);
   const canAcceptReject = ["Quotation Sent", "UnderReview"].includes(quotation.status);
+  const canFollowUp = quotation.status === "Quotation Sent" && onFollowUp && isQuotationFollowupAllowed(featureUserEmail);
   
   const hasDealsOrPO = hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS);
   const canCreatePo = quotation.status === "Accepted" && hasDealsOrPO;
@@ -280,6 +286,12 @@ export default function QuotationActionBar({
               <button onClick={onDownloadPdf} title="Open printable quotation view" className={actionButtonClass("secondary", true)}>
                 <Download size={15} /> PDF
               </button>
+
+              {canFollowUp && (
+                <button onClick={onFollowUp} title="View and create follow-ups for this quotation" className={actionButtonClass("secondary", true)}>
+                  <CalendarClock size={15} /> Follow Up
+                </button>
+              )}
 
               <button onClick={onGeneratePdf} disabled={generatingPdf} title="Generate and store a PDF document for this revision" className={actionButtonClass("secondary", !generatingPdf)}>
                 <FileText size={15} /> {generatingPdf ? "Generating..." : "Generate PDF"}

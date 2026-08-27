@@ -134,7 +134,7 @@ async function main() {
 
   check("Totals: 'Taxable Val' present", extractedText.includes("Taxable Val"));
   check("Totals: 'Tax Charges' present", extractedText.includes("Tax Charges"));
-  check("Totals: 'Transport Charges' present", extractedText.includes("Transport Charges"));
+  check("Totals: 'Cutting Charges' present", extractedText.includes("Cutting Charges"));
   check("Totals: 'Other Charges' present", extractedText.includes("Other Charges"));
   check("Totals: 'Weighing/Loading Charge' present", extractedText.includes("Weighing/Loading Charge"));
   check("Totals: 'Delivery Charge' present", extractedText.includes("Delivery Charge"));

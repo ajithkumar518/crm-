@@ -1,18 +1,34 @@
 import { NextResponse } from "next/server";
 import { verifyAuth } from "@/lib/auth";
-import ExcelJS from "exceljs";
+import { createFormattedWorkbook, writeWorkbookBuffer, EXCEL_CONTENT_TYPE } from "@/lib/excel-utils";
+
+const HEADERS = [
+  "Material Grade",
+  "Material Size",
+  "Part Number",
+  "RM Make",
+  "Unit of Measure",
+  "Material Category",
+  "Product Description",
+  "Base Price",
+  "HSN Code",
+  "Min Order Quantity",
+  "Product Type",
+];
+
+const EXAMPLE = [
+  ["SS304", "12mm", "EXAMPLE-001", "SAIL", "kgs", "Stainless Steel",
+   "EXAMPLE ROW — delete before uploading", "150.00", "7218", "100", "Black Bar"],
+];
+
+const COL_WIDTHS = [18, 14, 22, 16, 18, 22, 40, 16, 14, 22, 22];
 
 /**
  * GET /api/catalogue/products/import/template
  *
- * Returns a downloadable .xlsx template with the exact 7 column headers the
+ * Returns a downloadable .xlsx template with the exact 11 column headers the
  * product import parser expects, plus 1 example row (clearly marked as example
  * data to delete before uploading).
- *
- * The header strings match the keys in PRODUCT_HEADERS in
- * app/api/catalogue/products/import/route.ts (after normalization — the parser
- * lowercases and collapses whitespace, so "Unit of Measure" and "UOM" both map
- * to the same field). We use the full spec names here.
  */
 export async function GET() {
   try {
@@ -21,61 +37,27 @@ export async function GET() {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Products");
+    const workbook = createFormattedWorkbook("Products", HEADERS, EXAMPLE, COL_WIDTHS);
 
-    // Header row — exact column names from the spec, matching what the import
-    // parser's PRODUCT_HEADERS map recognizes (normalized to lowercase + collapsed
-    // whitespace by the parser).
-    const headers = [
-      "Material Grade",
-      "Material Size",
-      "Part Number",
-      "RM Make",
-      "Unit of Measure",
-      "Material Category",
-      "Product Description",
-      "Base Price",
-      "HSN Code",
-      "Min Order Quantity",
-      "Product Type",
-    ];
+    // Instructions sheet with valid Product Type values
+    const instructions = workbook.addWorksheet("Instructions");
+    instructions.addRow(["Product Import - Valid Values"]);
+    instructions.getRow(1).font = { bold: true, size: 12 };
+    instructions.addRow([]);
+    instructions.addRow(["Product Type (required):"]);
+    instructions.getRow(3).font = { bold: true };
+    instructions.addRow(["Black Bar", "Bright Bar", "Bright Ground Bar"]);
+    instructions.addRow([]);
+    instructions.addRow(["Other required columns:"]);
+    instructions.getRow(6).font = { bold: true };
+    instructions.addRow(["Material Grade, Part Number, Material Category"]);
+    instructions.columns.forEach((col) => { col.width = 30; });
 
-    const headerRow = worksheet.addRow(headers);
-    headerRow.font = { bold: true };
-    headerRow.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FFD9E1F2" },
-    };
+    const buffer = await writeWorkbookBuffer(workbook);
 
-    // Example row — clearly marked so users delete it before uploading
-    worksheet.addRow([
-      "SS304",
-      "12mm",
-      "EXAMPLE-001",
-      "SAIL",
-      "kgs",
-      "Stainless Steel",
-      "EXAMPLE ROW — delete before uploading",
-      "150.00",
-      "7218",
-      "100",
-      "Black Bar",
-    ]);
-
-    // Auto-width columns
-    worksheet.columns.forEach((col, i) => {
-      const header = headers[i] ?? "";
-      const exampleWidth = 40; // accommodate the example note
-      col.width = Math.max(header.length + 4, exampleWidth);
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as any, {
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Type": EXCEL_CONTENT_TYPE,
         "Content-Disposition": `attachment; filename="product-import-template.xlsx"`,
       },
     });

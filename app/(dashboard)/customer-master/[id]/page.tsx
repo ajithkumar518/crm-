@@ -502,6 +502,10 @@ export default function Customer360Page({ params: paramsPromise }: { params: Pro
                 <span className="font-medium">{customer.city || "—"}</span>
               </div>
               <div>
+                <span className="text-slate-400 text-xs">Location:</span>
+                <span className="font-medium truncate">{customer.location || "—"}</span>
+              </div>
+              <div>
                 <span className="text-slate-400 text-xs">Type:</span>
                 <span className="font-medium">{customer.accountType || "—"}</span>
               </div>
@@ -568,6 +572,7 @@ export default function Customer360Page({ params: paramsPromise }: { params: Pro
                   { label: "Email", value: customer.email || "-", truncate: true },
                   { label: "Phone", value: customer.phone || "-" },
                   { label: "City", value: customer.city || "-" },
+                  { label: "Location", value: customer.location || "-" },
                   { label: "Account Type", value: customer.accountType || "-" },
                   { label: "Industry", value: customer.industryType || "-" },
                   { label: "GSTIN", value: customer.gstNumber || "-" },

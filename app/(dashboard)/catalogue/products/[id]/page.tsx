@@ -71,7 +71,7 @@ export default function ProductDetailPage() {
           productImageUrl: data.data.productImageUrl || "",
         });
       } else {
-        toast.error("Product not found");
+        toast.error(data.message || "Product not found");
         router.push("/catalogue/products");
       }
     } catch (err) {
@@ -132,6 +132,10 @@ export default function ProductDetailPage() {
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.productType) {
+      toast.error("Product Type is required");
+      return;
+    }
     setFormLoading(true);
     try {
       const res = await fetch(`/api/catalogue/products/${params.id}`, {
@@ -387,17 +391,16 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="Product Type">
+            <FormField label="Product Type *">
               <Select
                 value={formData.productType}
                 onChange={(e) => setFormData({ ...formData, productType: e.target.value })}
+                required
               >
                 <option value="">Select type</option>
-                <option value="FinishedGood">Finished Good</option>
-                <option value="RawMaterial">Raw Material</option>
-                <option value="Component">Component</option>
-                <option value="SubAssembly">Sub-Assembly</option>
-                <option value="Consumable">Consumable</option>
+                <option value="Black Bar">Black Bar</option>
+                <option value="Bright Bar">Bright Bar</option>
+                <option value="Bright Ground Bar">Bright Ground Bar</option>
               </Select>
             </FormField>
             <FormField label="Min Order Quantity">
@@ -506,7 +509,7 @@ export default function ProductDetailPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">Product Type</p>
-                <p className="text-sm font-medium text-[var(--text-primary)]">{product.productType ? product.productType.replace(/([A-Z])/g, ' $1').trim() : "—"}</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{product.productType || "—"}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">Min Order Qty</p>

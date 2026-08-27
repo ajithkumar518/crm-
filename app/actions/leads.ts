@@ -346,6 +346,7 @@ export async function createLeadAction(data: {
   companyName: string;
   designation?: string;
   industryType?: string;
+  customerCategory?: string;
   estimatedValue?: number;
 }) {
   try {
@@ -390,19 +391,18 @@ export async function createLeadAction(data: {
       return { success: false, message: "Estimated value must be positive." };
     }
 
-    // Duplicate check on email (block creation — existing V1 behavior)
+    // Duplicate check on email (block creation — email is globally unique in the DB)
     if (email?.trim()) {
       const existingEmail = await prisma.lead.findFirst({
         where: {
           email: email.trim(),
-          companyId: userPayload.companyId,
           deletedAt: null,
         },
       });
       if (existingEmail) {
         return {
           success: false,
-          message: `Lead with email '${email}' already exists.`,
+          message: `Lead with email '${email}' already exists. Please use a different email or update the existing lead.`,
         };
       }
     }
@@ -462,6 +462,7 @@ export async function createLeadAction(data: {
         companyName: data.companyName?.trim() || null,
         designation: data.designation?.trim() || null,
         industryType: data.industryType || null,
+        customerCategory: data.customerCategory?.trim() || null,
         estimatedValue: data.estimatedValue || null,
         leadScore,
       },
@@ -549,8 +550,14 @@ export async function createLeadAction(data: {
       message: "Lead created successfully",
       data: newLead,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Create Lead Error:", error);
+    if (error?.code === "P2002") {
+      return {
+        success: false,
+        message: "A lead with this email already exists. Please use a different email or update the existing lead.",
+      };
+    }
     return { success: false, message: "Failed to create lead." };
   }
 }
@@ -577,6 +584,7 @@ export async function updateLeadAction(
     companyName?: string;
     designation?: string;
     industryType?: string;
+    customerCategory?: string;
     estimatedValue?: number;
     lostReasonRefId?: string;
   },

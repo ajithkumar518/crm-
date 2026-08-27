@@ -10,7 +10,7 @@ import {
   addPageFooter,
   PdfColors,
 } from "./pdf-shared";
-import { resolveTaxTreatment, TaxTreatment } from "./gstState";
+import { resolveTaxTreatment, computeGstSplit, TaxTreatment } from "./gstState";
 
 const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
 const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
@@ -106,6 +106,9 @@ export interface SukiQuotationPdfData {
   companyEmail?: string;
   notes?: string | null;
   generatedByName?: string;
+  placeOfSupply?: string | null;
+  shipState?: string | null;
+  shipGstNumber?: string | null;
 }
 
 const DEFAULT_TERMS = `Cutting Charges - Extra
@@ -143,15 +146,13 @@ function drawBox(doc: jsPDF, x: number, y: number, w: number, h: number, title: 
   return y + h;
 }
 
-export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  setupPdfFonts(doc);
-
-  const pageW = doc.internal.pageSize.getWidth();  // 297
-  const pageH = doc.internal.pageSize.getHeight(); // 210
-  const margin = 10;
-  const contentW = pageW - 2 * margin;
-
+/**
+ * Draws the repeatable header block: company banner + quotation meta + Bill To/Ship To boxes.
+ * Returns the Y position after the boxes (where the items table should start). This is called
+ * once for page 1, and again identically on any continuation page so the header repeats,
+ * matching the reference multi-page layout.
+ */
+function drawHeaderBlock(doc: jsPDF, data: SukiQuotationPdfData, margin: number, pageW: number, contentW: number): number {
   const companyName = "SHAHNAZ BRIGHT STEEL INDUSTRIES PRIVATE LIMITED";
 
   // ─── Header block ─────────────────────────────────────────────────────────────
@@ -176,7 +177,7 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
     doc.setFillColor(...PdfColors.primary);
     doc.rect(margin + 2, margin + 2, 18, 18, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "bold");
     doc.text("SBS", margin + 4, margin + 12);
   }
@@ -192,7 +193,6 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
   doc.setFontSize(8.5);
   setFont(doc, "normal");
   const companyDetails = [
-    "SHAHNAZ BRIGHT STEEL INDUSTRIES PRIVATE LIMITED PLANT 2",
     "No:1, Plot No.52A, 52B, No.102, Mugappair Road",
     "Padi, Chennai",
     "Tamil nadu, Pincode : 600050, India",
@@ -251,31 +251,50 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
   drawBox(doc, margin, y, halfW, boxH, "BILL TO", billLines);
   drawBox(doc, margin + halfW + 5, y, halfW, boxH, "SHIP TO", shipLines);
 
-  // ─── Items table ─────────────────────────────────────────────────────────────
   y += boxH + 4;
+  return y;
+}
+
+export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  setupPdfFonts(doc);
+
+  const pageW = doc.internal.pageSize.getWidth();  // 297
+  const pageH = doc.internal.pageSize.getHeight(); // 210
+  const margin = 10;
+  const contentW = pageW - 2 * margin;
+
+  const headerEndY = drawHeaderBlock(doc, data, margin, pageW, contentW);
+  const headerBlockHeight = headerEndY - margin;
 
   // Determine GST tax treatment (intra-state → CGST+SGST, inter-state → IGST)
+  // Compare Supplier State (from companyGstin) vs Place of Supply (from shipState or explicit override)
   const gstResult = resolveTaxTreatment(
     data.companyGstin,
+    data.placeOfSupply,
+    data.shipGstNumber,
+    data.shipState,
     data.customer?.gstNumber,
     data.customer?.state,
   );
   const isInterState = gstResult.treatment === "inter_state";
   const isUnknown = gstResult.treatment === "unknown";
 
+  // Block PDF generation if tax type cannot be determined — do NOT silently default
+  if (isUnknown) {
+    throw new Error(
+      `Cannot generate Quotation PDF: ${gstResult.warning || "GST tax treatment could not be determined."} ` +
+      `Set the customer's Ship-To state, GSTIN, or Place of Supply field before generating the PDF.`
+    );
+  }
+
   const computedItems = data.items.map((it) => {
     const cutting = it.cuttingCharge || 0;
     const taxable = it.quantity * it.unitPrice * (1 - (it.discountPercent || 0) / 100);
     const taxPct = it.taxPercent || 18;
-    const taxAmount = taxable * (taxPct / 100);
-    // For intra-state: CGST = SGST = taxAmount / 2
-    // For inter-state: IGST = full taxAmount (stored in cgst field for column rendering)
-    // For unknown: default to CGST+SGST split (will show a warning)
-    const cgst = isInterState ? 0 : taxAmount / 2;
-    const sgst = isInterState ? 0 : taxAmount / 2;
-    const igst = isInterState ? taxAmount : 0;
-    const total = taxable + taxAmount + cutting;
-    return { ...it, taxable, taxAmount, cgst, sgst, igst, cutting, total };
+    const { cgst, sgst, igst, totalTax } = computeGstSplit(taxable, taxPct, gstResult.treatment);
+    const total = taxable + totalTax + cutting;
+    return { ...it, taxable, taxAmount: totalTax, cgst, sgst, igst, cutting, total };
   });
 
   const totalTaxable = computedItems.reduce((s, it) => s + it.taxable, 0);
@@ -293,8 +312,8 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
 
   // Build table head — for inter-state, replace CGST Val + SGST Val with a single IGST Val column
   const head = isInterState
-    ? [["S.No", "Material\nDescription", "Item\nCode", "Make", "No of\nPcs", "Qty", "UOM", "Price", "Tax Val", "IGST Val", "Cutting\nCharge", "Total\nAmount", "Remarks"]]
-    : [["S.No", "Material\nDescription", "Item\nCode", "Make", "No of\nPcs", "Qty", "UOM", "Price", "Tax Val", "CGST Val", "SGST Val", "Cutting\nCharge", "Total\nAmount", "Remarks"]];
+    ? [["S.No", "Material\nDescription", "Product\nType", "Make", "No of\nPcs", "Qty", "UOM", "Price", "Tax Val", "IGST Val", "Cutting\nCharge", "Total\nAmount", "Remarks"]]
+    : [["S.No", "Material\nDescription", "Product\nType", "Make", "No of\nPcs", "Qty", "UOM", "Price", "Tax Val", "CGST Val", "SGST Val", "Cutting\nCharge", "Total\nAmount", "Remarks"]];
 
   const body = computedItems.map((it, idx) => {
     const base = [
@@ -338,13 +357,13 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
   }
 
   autoTable(doc, {
-    startY: y,
-    margin: { left: margin, right: margin, top: margin + 5, bottom: 25 },
+    startY: headerEndY,
+    margin: { left: margin, right: margin, top: margin + headerBlockHeight, bottom: 25 },
     head,
     body,
     styles: {
       font: "NotoSans",
-      fontSize: 6,
+      fontSize: 7,
       cellPadding: 0.6,
       overflow: "linebreak",
       lineColor: [0, 0, 0],
@@ -357,7 +376,7 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
       fillColor: [220, 220, 220],
       textColor: 0,
       fontStyle: "bold",
-      fontSize: 6,
+      fontSize: 7,
       halign: "center",
       valign: "middle",
     },
@@ -383,18 +402,27 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
           11: { halign: "right" },
           12: { halign: "right" },
         },
-    didDrawPage: () => {
-      addPageFooter(doc, { left: "This is a computer-generated quotation.", page: doc.getNumberOfPages() });
+    didDrawPage: (hookData) => {
+      // Repeat the full header (company info + Bill To/Ship To) on every continuation
+      // page the items table spills onto, matching the reference multi-page layout.
+      if (hookData.pageNumber > 1) {
+        drawHeaderBlock(doc, data, margin, pageW, contentW);
+      }
+      addPageFooter(doc, { left: "This is a computer-generated quotation." });
     },
   });
 
-  y = (doc as any).lastAutoTable.finalY + 5;
+  let y = (doc as any).lastAutoTable.finalY + 5;
 
   // ─── Bottom split: left comments/terms, right summary ──────────────────────────
   const bottomH = 55;
-  if (y + bottomH > pageH - 15) {
+  const sigH = 18;
+  const sigGap = 4;
+  const footerReserve = 12; // matches addPageFooter's divider position (pageH - 12)
+  const requiredBottomHeight = bottomH + sigGap + sigH; // fixed-size block, not data-dependent
+  if (pageH - y - footerReserve < requiredBottomHeight) {
     doc.addPage();
-    y = margin;
+    y = drawHeaderBlock(doc, data, margin, pageW, contentW);
   }
 
   const leftW = contentW * 0.55;
@@ -420,7 +448,7 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
 
   // Tax treatment warning (unknown state) — shown in red below comments
   if (isUnknown && gstResult.warning) {
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "bold");
     doc.setTextColor(200, 0, 0);
     const warnLines = doc.splitTextToSize(`TAX WARNING: ${gstResult.warning}`, leftW - 6);
@@ -434,7 +462,7 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
 
   // State field mismatch warning (GSTIN state code != state field)
   if (gstResult.stateFieldMismatch) {
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "bold");
     doc.setTextColor(200, 0, 0);
     const mismatchLines = doc.splitTextToSize(
@@ -459,7 +487,7 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
   doc.setFontSize(8);
   setFont(doc, "bold");
   doc.text("Terms & Condition :", margin + 3, y + 38);
-  doc.setFontSize(7);
+  doc.setFontSize(8);
   setFont(doc, "normal");
   const tnc = data.termsAndConditions || DEFAULT_TERMS;
   const tncLines = doc.splitTextToSize(tnc, leftW - 6);
@@ -477,7 +505,7 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
   const summary = [
     { label: "Taxable Val", value: totalTaxable },
     { label: isInterState ? "IGST" : "Tax Charges", value: totalTax },
-    { label: "Transport Charges", value: transportCharge },
+    { label: "Cutting Charges", value: transportCharge },
     { label: "Other Charges", value: otherCharges },
     { label: "Weighing/Loading Charge", value: weighingLoadingCharge },
     { label: "Delivery Charge", value: deliveryCharge },
@@ -501,7 +529,6 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
 
   // Signature
   const sigW = 60;
-  const sigH = 18;
   const sigX = rightX;
   const sigY = y + bottomH + 4;
   if (sigY + sigH <= pageH - 10) {
@@ -511,19 +538,19 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
     doc.setFontSize(8);
     setFont(doc, "bold");
     doc.text("For", sigX + 3, sigY + 5);
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.text("SHAHNAZ BRIGHT STEEL", sigX + 3, sigY + 10);
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "normal");
     doc.line(sigX + 3, sigY + 13, sigX + sigW - 3, sigY + 13);
     doc.text("Authorized Signature", sigX + 3, sigY + 17);
   }
 
-  // Final footer
+  // Final footer pass — page count is only known for certain once everything is drawn.
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addPageFooter(doc, { left: "This is a computer-generated quotation.", page: i });
+    addPageFooter(doc, { left: "This is a computer-generated quotation.", right: `Page ${i} of ${totalPages}` });
   }
 
   return doc;

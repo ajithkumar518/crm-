@@ -1,14 +1,17 @@
 // @ts-nocheck
 /**
- * Test: IGST vs CGST+SGST tax treatment for intra-state and inter-state customers.
+ * GST Tax Treatment Test — IGST vs CGST+SGST
  *
- * Supplier: Suki Software, GSTIN 32AAAAA0000A1Z5 (Kerala, state code 32)
+ * Supplier: Shahnaz Bright Steel Industries Pvt Ltd
+ *   GSTIN: 33ABACS6559E1ZD → Tamil Nadu (state code 33)
  *
  * Test cases:
- * 1. Intra-state: Customer in Kerala (state code 32) → CGST + SGST split
- * 2. Inter-state: Customer in Tamil Nadu (state code 33) → IGST single line
- * 3. Unknown: Customer with no state and no GSTIN → warning shown
- * 4. State mismatch: Customer GSTIN says Kerala but state field says Tamil Nadu → warning + GSTIN wins
+ * 1. Same state:    Customer in Tamil Nadu → CGST + SGST (9% + 9%)
+ * 2. Different state: Customer in Kerala    → IGST (18%)
+ * 3. Unknown:       No state/GSTIN          → warning shown
+ * 4. State mismatch: GSTIN≠state field      → GSTIN wins, warning shown
+ * 5. Unit tests for resolveTaxTreatment + computeGstSplit
+ * 6. Proforma PDF — same logic
  */
 import { PrismaClient } from "@prisma/client";
 import { config } from "dotenv";
@@ -17,7 +20,7 @@ const prisma = new PrismaClient();
 
 import { generateSukiQuotationPdf } from "../lib/generateSukiQuotationPdf";
 import { generateProformaPdf } from "../lib/generateProformaPdf";
-import { resolveTaxTreatment, getStateCodeFromGstin } from "../lib/gstState";
+import { resolveTaxTreatment, computeGstSplit, getStateCodeFromGstin } from "../lib/gstState";
 import { PDFParse } from "pdf-parse";
 import { writeFileSync } from "fs";
 
@@ -36,19 +39,92 @@ async function main() {
     console.log(`[${status}] ${label}${detail ? " — " + detail : ""}`);
   };
 
-  const COMPANY_GSTIN = "32AAAAA0000A1Z5";
+  // ──────────────────────────────────────────────────────────────────────────
+  // Supplier: Shahnaz Bright Steel Industries Pvt Ltd — Tamil Nadu (33)
+  // ──────────────────────────────────────────────────────────────────────────
+  const COMPANY_GSTIN = "33ABACS6559E1ZD";
   const supplierStateCode = getStateCodeFromGstin(COMPANY_GSTIN);
-  console.log(`\nSupplier GSTIN: ${COMPANY_GSTIN} → state code: ${supplierStateCode} (Kerala)`);
+  console.log(`\nSupplier: Shahnaz Bright Steel Industries Pvt Ltd`);
+  console.log(`Supplier GSTIN: ${COMPANY_GSTIN} → state code: ${supplierStateCode} (Tamil Nadu)`);
 
-  // ── Test 1: Intra-state (Kerala customer) — should show CGST + SGST ──
-  console.log("\n=== Test 1: Intra-state (Kerala customer) — CGST + SGST ===\n");
+  // ══════════════════════════════════════════════════════════════════════════
+  // Test 1: SAME STATE — Customer in Tamil Nadu, Supplier in Tamil Nadu
+  //   Expected: INTRA-STATE → CGST 9% + SGST 9% = ₹9,000 + ₹9,000
+  // ══════════════════════════════════════════════════════════════════════════
+  console.log("\n=== Test 1: SAME STATE (TN→TN) — expect CGST + SGST ===\n");
 
-  const intraStateDoc = generateSukiQuotationPdf({
-    quotationCode: "QT-TEST-INTRA-001",
+  const sameStateDoc = generateSukiQuotationPdf({
+    quotationCode: "QT-TEST-SAME-STATE",
     revisionNumber: 1,
     status: "Draft",
     validUntil: new Date("2026-12-31"),
-    createdAt: new Date("2026-08-14"),
+    createdAt: new Date("2026-08-22"),
+    customer: {
+      name: "Tamil Nadu Customer Pvt Ltd",
+      customerCode: "TN-001",
+      billingAddress: "Industrial Estate, Chennai",
+      city: "Chennai",
+      state: "Tamil Nadu",
+      gstNumber: "33AABCT5678E1Z5",
+      phone: "9876543210",
+      email: "tn@test.com",
+    },
+    contact: { name: "TN Contact", phone: "9876543210" },
+    company: { name: "Shahnaz Bright Steel Industries Pvt Ltd" },
+    items: [{
+      description: "SS304 Round Bar",
+      productType: "Bright Bar",
+      rmMake: "SAIL",
+      numberOfPieces: 10,
+      quantity: 100,
+      unitPrice: 1000,
+      taxPercent: 18,
+      cuttingCharge: 500,
+      remarks: "Same-state (TN→TN) — should be CGST+SGST",
+      unit: "kgs",
+    }],
+    transportCharge: 100,
+    otherCharges: 50,
+    termsAndConditions: "Test T&C",
+    companyGstin: COMPANY_GSTIN,
+    generatedByName: "Test",
+    placeOfSupply: "Tamil Nadu",
+    shipState: "Tamil Nadu",
+    shipGstNumber: "33AABCT5678E1Z5",
+  });
+
+  const sameStateText = await extractPdfText(sameStateDoc.output("arraybuffer"));
+  writeFileSync("C:\\Users\\ajithkumar\\Downloads\\QT-TEST-SAME-STATE-TN-TN.pdf", Buffer.from(sameStateDoc.output("arraybuffer")));
+
+  console.log("\n--- Same-state (TN→TN) PDF text (excerpt) ---\n");
+  console.log(sameStateText.substring(0, 800));
+
+  // Tax math: 100 * 1000 = 100000 taxable, 18% = 18000 total
+  // CGST = 9000 (9%), SGST = 9000 (9%), IGST = 0
+  const taxable = 100 * 1000;
+  const expectedCgst = taxable * 0.09;  // 9000
+  const expectedSgst = taxable * 0.09;  // 9000
+  const expectedGrandTotal = taxable + 18000 + 500 + 100 + 50;
+
+  check("Same-state (TN→TN): 'CGST Val' column present", sameStateText.includes("CGST Val"));
+  check("Same-state (TN→TN): 'SGST Val' column present", sameStateText.includes("SGST Val"));
+  check("Same-state (TN→TN): NO 'IGST Val' column", !sameStateText.includes("IGST Val"));
+  check("Same-state (TN→TN): CGST = ₹9,000.00", sameStateText.includes(formatIndianCurrency(expectedCgst)));
+  check("Same-state (TN→TN): SGST = ₹9,000.00", sameStateText.includes(formatIndianCurrency(expectedSgst)));
+  check("Same-state (TN→TN): NO tax warning", !sameStateText.includes("TAX WARNING"));
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Test 2: DIFFERENT STATE — Customer in Kerala, Supplier in Tamil Nadu
+  //   Expected: INTER-STATE → IGST 18% = ₹18,000
+  // ══════════════════════════════════════════════════════════════════════════
+  console.log("\n=== Test 2: DIFFERENT STATE (TN→KL) — expect IGST ===\n");
+
+  const diffStateDoc = generateSukiQuotationPdf({
+    quotationCode: "QT-TEST-DIFF-STATE",
+    revisionNumber: 1,
+    status: "Draft",
+    validUntil: new Date("2026-12-31"),
+    createdAt: new Date("2026-08-22"),
     customer: {
       name: "Kerala Customer Pvt Ltd",
       customerCode: "KL-001",
@@ -56,11 +132,11 @@ async function main() {
       city: "Kochi",
       state: "Kerala",
       gstNumber: "32AABCK1234D1Z5",
-      phone: "9876543210",
+      phone: "9876543211",
       email: "kerala@test.com",
     },
-    contact: { name: "Kerala Contact", phone: "9876543210" },
-    company: { name: "Suki Software" },
+    contact: { name: "Kerala Contact", phone: "9876543211" },
+    company: { name: "Shahnaz Bright Steel Industries Pvt Ltd" },
     items: [{
       description: "SS304 Round Bar",
       productType: "Bright Bar",
@@ -70,7 +146,7 @@ async function main() {
       unitPrice: 1000,
       taxPercent: 18,
       cuttingCharge: 500,
-      remarks: "Intra-state test",
+      remarks: "Different-state (TN→KL) — should be IGST",
       unit: "kgs",
     }],
     transportCharge: 100,
@@ -78,146 +154,83 @@ async function main() {
     termsAndConditions: "Test T&C",
     companyGstin: COMPANY_GSTIN,
     generatedByName: "Test",
+    placeOfSupply: "Kerala",
+    shipState: "Kerala",
+    shipGstNumber: "32AABCK1234D1Z5",
   });
 
-  const intraStateText = await extractPdfText(intraStateDoc.output("arraybuffer"));
-  writeFileSync("C:\\Users\\ajithkumar\\Downloads\\QT-TEST-INTRA-001.pdf", Buffer.from(intraStateDoc.output("arraybuffer")));
+  const diffStateText = await extractPdfText(diffStateDoc.output("arraybuffer"));
+  writeFileSync("C:\\Users\\ajithkumar\\Downloads\\QT-TEST-DIFF-STATE-TN-KL.pdf", Buffer.from(diffStateDoc.output("arraybuffer")));
 
-  console.log("\n--- Intra-state PDF text (excerpt) ---\n");
-  console.log(intraStateText.substring(0, 800));
+  console.log("\n--- Different-state (TN→KL) PDF text (excerpt) ---\n");
+  console.log(diffStateText.substring(0, 800));
 
-  // Tax math: 100 * 1000 = 100000 taxable, 18% tax = 18000, CGST = 9000, SGST = 9000
-  const intraTaxable = 100 * 1000;
-  const intraTax = intraTaxable * 0.18;
-  const intraCgst = intraTax / 2;
-  const intraSgst = intraTax / 2;
-  const intraGrandTotal = intraTaxable + intraTax + 500 + 100 + 50; // taxable + tax + cutting + transport + other
+  const expectedIgst = taxable * 0.18;  // 18000
 
-  check("Intra-state: 'CGST Val' column present", intraStateText.includes("CGST Val"));
-  check("Intra-state: 'SGST Val' column present", intraStateText.includes("SGST Val"));
-  check("Intra-state: NO 'IGST Val' column", !intraStateText.includes("IGST Val"));
-  check("Intra-state: CGST value = ₹9,000.00", intraStateText.includes(formatIndianCurrency(intraCgst)));
-  check("Intra-state: SGST value = ₹9,000.00", intraStateText.includes(formatIndianCurrency(intraSgst)));
-  check("Intra-state: 'Tax Charges' label in summary", intraStateText.includes("Tax Charges"));
-  check("Intra-state: NO 'IGST' label in summary", !intraStateText.match(/^IGST$/m));
-  check("Intra-state: Grand Total correct", intraStateText.includes(formatIndianCurrency(intraGrandTotal)));
-  check("Intra-state: NO tax warning", !intraStateText.includes("TAX WARNING"));
+  check("Different-state (TN→KL): 'IGST Val' column present", diffStateText.includes("IGST Val"));
+  check("Different-state (TN→KL): NO 'CGST Val' column", !diffStateText.includes("CGST Val"));
+  check("Different-state (TN→KL): NO 'SGST Val' column", !diffStateText.includes("SGST Val"));
+  check("Different-state (TN→KL): IGST = ₹18,000.00 (full 18%)", diffStateText.includes(formatIndianCurrency(expectedIgst)));
+  check("Different-state (TN→KL): NO tax warning", !diffStateText.includes("TAX WARNING"));
 
-  // ── Test 2: Inter-state (Tamil Nadu customer) — should show IGST ──
-  console.log("\n=== Test 2: Inter-state (Tamil Nadu customer) — IGST ===\n");
+  // Grand total should be identical (tax amount is the same regardless of split)
+  check("Grand Total: same-state == different-state (same amount owed)", expectedGrandTotal === taxable + expectedIgst + 500 + 100 + 50);
 
-  const interStateDoc = generateSukiQuotationPdf({
-    quotationCode: "QT-TEST-INTER-001",
-    revisionNumber: 1,
-    status: "Draft",
-    validUntil: new Date("2026-12-31"),
-    createdAt: new Date("2026-08-14"),
-    customer: {
-      name: "Tamil Nadu Industries Ltd",
-      customerCode: "TN-001",
-      billingAddress: "Industrial Estate, Chennai",
-      city: "Chennai",
-      state: "Tamil Nadu",
-      gstNumber: "33AABCT5678E1Z5",
-      phone: "9876543211",
-      email: "tn@test.com",
-    },
-    contact: { name: "TN Contact", phone: "9876543211" },
-    company: { name: "Suki Software" },
-    items: [{
-      description: "SS304 Round Bar",
-      productType: "Bright Bar",
-      rmMake: "SAIL",
-      numberOfPieces: 10,
-      quantity: 100,
-      unitPrice: 1000,
-      taxPercent: 18,
-      cuttingCharge: 500,
-      remarks: "Inter-state test",
-      unit: "kgs",
-    }],
-    transportCharge: 100,
-    otherCharges: 50,
-    termsAndConditions: "Test T&C",
-    companyGstin: COMPANY_GSTIN,
-    generatedByName: "Test",
-  });
+  // ══════════════════════════════════════════════════════════════════════════
+  // Test 3: UNKNOWN — no state, no GSTIN → PDF generation BLOCKED (throws)
+  // ══════════════════════════════════════════════════════════════════════════
+  console.log("\n=== Test 3: UNKNOWN state — expect PDF generation to THROW ===\n");
 
-  const interStateText = await extractPdfText(interStateDoc.output("arraybuffer"));
-  writeFileSync("C:\\Users\\ajithkumar\\Downloads\\QT-TEST-INTER-001.pdf", Buffer.from(interStateDoc.output("arraybuffer")));
+  let unknownThrew = false;
+  let unknownErrMsg = "";
+  try {
+    generateSukiQuotationPdf({
+      quotationCode: "QT-TEST-UNKNOWN",
+      revisionNumber: 1,
+      status: "Draft",
+      validUntil: new Date("2026-12-31"),
+      createdAt: new Date("2026-08-22"),
+      customer: {
+        name: "Unknown State Customer",
+        customerCode: "UNK-001",
+        billingAddress: "Some address",
+        city: "Some city",
+        state: null,
+        gstNumber: null,
+        phone: "9876543212",
+      },
+      contact: { name: "Unknown Contact", phone: "9876543212" },
+      company: { name: "Shahnaz Bright Steel Industries Pvt Ltd" },
+      items: [{
+        description: "SS304 Round Bar",
+        quantity: 100,
+        unitPrice: 1000,
+        taxPercent: 18,
+        unit: "kgs",
+      }],
+      termsAndConditions: "Test T&C",
+      companyGstin: COMPANY_GSTIN,
+      generatedByName: "Test",
+    });
+  } catch (err: any) {
+    unknownThrew = true;
+    unknownErrMsg = err.message;
+  }
+  check("Unknown: PDF generation throws (does NOT silently default)", unknownThrew);
+  check("Unknown: error message mentions 'could not be determined'", unknownErrMsg.includes("could not be determined"));
 
-  console.log("\n--- Inter-state PDF text (excerpt) ---\n");
-  console.log(interStateText.substring(0, 800));
-
-  // Tax math: same as intra-state, but IGST = full 18000 (no split)
-  const interTaxable = 100 * 1000;
-  const interTax = interTaxable * 0.18;
-  const interIgst = interTax; // full tax amount
-  const interGrandTotal = interTaxable + interTax + 500 + 100 + 50; // same grand total
-
-  check("Inter-state: 'IGST Val' column present", interStateText.includes("IGST Val"));
-  check("Inter-state: NO 'CGST Val' column", !interStateText.includes("CGST Val"));
-  check("Inter-state: NO 'SGST Val' column", !interStateText.includes("SGST Val"));
-  check("Inter-state: IGST value = ₹18,000.00 (full tax)", interStateText.includes(formatIndianCurrency(interIgst)));
-  check("Inter-state: 'IGST' label in summary", interStateText.includes("IGST"));
-  check("Inter-state: NO 'Tax Charges' label in summary", !interStateText.includes("Tax Charges"));
-  check("Inter-state: Grand Total identical to intra-state", interStateText.includes(formatIndianCurrency(interGrandTotal)));
-  check("Inter-state: NO tax warning", !interStateText.includes("TAX WARNING"));
-
-  // ── Verify Grand Total is identical regardless of split ──
-  console.log("\n=== Grand Total comparison ===\n");
-  check("Grand Total: intra == inter (same amount owed)", intraGrandTotal === interGrandTotal,
-    `intra=${intraGrandTotal}, inter=${interGrandTotal}`);
-
-  // ── Test 3: Unknown state (no GSTIN, no state) — should show warning ──
-  console.log("\n=== Test 3: Unknown state (no GSTIN, no state) — warning ===\n");
-
-  const unknownDoc = generateSukiQuotationPdf({
-    quotationCode: "QT-TEST-UNKNOWN-001",
-    revisionNumber: 1,
-    status: "Draft",
-    validUntil: new Date("2026-12-31"),
-    createdAt: new Date("2026-08-14"),
-    customer: {
-      name: "Unknown State Customer",
-      customerCode: "UNK-001",
-      billingAddress: "Some address",
-      city: "Some city",
-      state: null,
-      gstNumber: null,
-      phone: "9876543212",
-    },
-    contact: { name: "Unknown Contact", phone: "9876543212" },
-    company: { name: "Suki Software" },
-    items: [{
-      description: "SS304 Round Bar",
-      quantity: 100,
-      unitPrice: 1000,
-      taxPercent: 18,
-      unit: "kgs",
-    }],
-    termsAndConditions: "Test T&C",
-    companyGstin: COMPANY_GSTIN,
-    generatedByName: "Test",
-  });
-
-  const unknownText = await extractPdfText(unknownDoc.output("arraybuffer"));
-  console.log("\n--- Unknown state PDF text (excerpt) ---\n");
-  console.log(unknownText.substring(0, 800));
-
-  check("Unknown: 'TAX WARNING' present in PDF", unknownText.includes("TAX WARNING"));
-  check("Unknown: warning mentions state/GSTIN", unknownText.includes("state") || unknownText.includes("GSTIN"));
-  check("Unknown: defaults to CGST+SGST (safe default)", unknownText.includes("CGST Val") && unknownText.includes("SGST Val"));
-
-  // ── Test 4: State mismatch (GSTIN=Kerala, state field=Tamil Nadu) ──
-  console.log("\n=== Test 4: State mismatch (GSTIN=Kerala, field=Tamil Nadu) ===\n");
+  // ══════════════════════════════════════════════════════════════════════════
+  // Test 4: STATE MISMATCH — GSTIN says Kerala (32), state field says Tamil Nadu
+  //   Supplier TN (33), PoS from GSTIN = Kerala (32) → inter-state → IGST
+  // ══════════════════════════════════════════════════════════════════════════
+  console.log("\n=== Test 4: STATE MISMATCH (GSTIN=Kerala, field=TN) ===\n");
 
   const mismatchDoc = generateSukiQuotationPdf({
-    quotationCode: "QT-TEST-MISMATCH-001",
+    quotationCode: "QT-TEST-MISMATCH",
     revisionNumber: 1,
     status: "Draft",
     validUntil: new Date("2026-12-31"),
-    createdAt: new Date("2026-08-14"),
+    createdAt: new Date("2026-08-22"),
     customer: {
       name: "Mismatch Customer",
       customerCode: "MM-001",
@@ -228,7 +241,7 @@ async function main() {
       phone: "9876543213",
     },
     contact: { name: "Mismatch Contact", phone: "9876543213" },
-    company: { name: "Suki Software" },
+    company: { name: "Shahnaz Bright Steel Industries Pvt Ltd" },
     items: [{
       description: "SS304 Round Bar",
       quantity: 100,
@@ -242,99 +255,67 @@ async function main() {
   });
 
   const mismatchText = await extractPdfText(mismatchDoc.output("arraybuffer"));
-  console.log("\n--- State mismatch PDF text (excerpt) ---\n");
-  console.log(mismatchText.substring(0, 800));
-
-  // GSTIN state code (32 = Kerala) should win → intra-state → CGST+SGST
+  // GSTIN state (32=Kerala) ≠ Supplier (33=TN) → inter-state → IGST
   check("Mismatch: 'DATA WARNING' present", mismatchText.includes("DATA WARNING"));
-  check("Mismatch: GSTIN wins → CGST+SGST (intra-state)", mismatchText.includes("CGST Val") && mismatchText.includes("SGST Val"));
-  check("Mismatch: NO IGST (GSTIN state used, not field)", !mismatchText.includes("IGST Val"));
+  check("Mismatch: GSTIN wins → IGST (inter-state, TN→KL)", mismatchText.includes("IGST Val"));
+  check("Mismatch: NO CGST (GSTIN state used, not field)", !mismatchText.includes("CGST Val"));
 
-  // ── Test 5: resolveTaxTreatment unit tests ──
-  console.log("\n=== Test 5: resolveTaxTreatment unit tests ===\n");
+  // ══════════════════════════════════════════════════════════════════════════
+  // Test 5: UNIT TESTS — resolveTaxTreatment + computeGstSplit
+  // ══════════════════════════════════════════════════════════════════════════
+  console.log("\n=== Test 5: resolveTaxTreatment + computeGstSplit unit tests ===\n");
 
-  const r1 = resolveTaxTreatment(COMPANY_GSTIN, "32AABCK1234D1Z5", "Kerala");
-  check("resolve: intra-state (KL→KL)", r1.treatment === "intra_state", `treatment=${r1.treatment}`);
+  // 5a: Supplier TN, PoS TN → intra_state
+  const r1 = resolveTaxTreatment(COMPANY_GSTIN, "Tamil Nadu", null, null, null, null);
+  check("Unit: TN→TN = intra_state", r1.treatment === "intra_state", `treatment=${r1.treatment}`);
+  check("Unit: TN→TN PoS code = 33", r1.placeOfSupplyStateCode === "33");
 
-  const r2 = resolveTaxTreatment(COMPANY_GSTIN, "33AABCT5678E1Z5", "Tamil Nadu");
-  check("resolve: inter-state (KL→TN)", r2.treatment === "inter_state", `treatment=${r2.treatment}`);
+  // 5b: Supplier TN, PoS Kerala → inter_state
+  const r2 = resolveTaxTreatment(COMPANY_GSTIN, "Kerala", null, null, null, null);
+  check("Unit: TN→KL = inter_state", r2.treatment === "inter_state", `treatment=${r2.treatment}`);
+  check("Unit: TN→KL PoS code = 32", r2.placeOfSupplyStateCode === "32");
 
-  const r3 = resolveTaxTreatment(COMPANY_GSTIN, null, null);
-  check("resolve: unknown (no GSTIN, no state)", r3.treatment === "unknown", `treatment=${r3.treatment}`);
-  check("resolve: unknown has warning", !!r3.warning);
+  // 5c: Supplier TN, PoS Andhra Pradesh → inter_state
+  const r2b = resolveTaxTreatment(COMPANY_GSTIN, "Andhra Pradesh", null, null, null, null);
+  check("Unit: TN→AP = inter_state", r2b.treatment === "inter_state", `treatment=${r2b.treatment}`);
+  check("Unit: TN→AP PoS code = 37", r2b.placeOfSupplyStateCode === "37");
 
-  const r4 = resolveTaxTreatment(COMPANY_GSTIN, "32AABCM9999F1Z5", "Tamil Nadu");
-  check("resolve: mismatch detected", r4.stateFieldMismatch === true);
-  check("resolve: mismatch → GSTIN wins (intra-state)", r4.treatment === "intra_state", `treatment=${r4.treatment}`);
+  // 5d: No PoS info → unknown
+  const r3 = resolveTaxTreatment(COMPANY_GSTIN, null, null, null, null, null);
+  check("Unit: no info = unknown", r3.treatment === "unknown", `treatment=${r3.treatment}`);
+  check("Unit: unknown has warning", !!r3.warning);
 
-  const r5 = resolveTaxTreatment(null, "32AABCK1234D1Z5", "Kerala");
-  check("resolve: no company GSTIN → unknown", r5.treatment === "unknown");
-  check("resolve: no company GSTIN → warning about company_gstin", !!r5.warning && r5.warning.includes("company_gstin"));
+  // 5e: No company GSTIN → unknown
+  const r4 = resolveTaxTreatment(null, "Tamil Nadu", null, null, null, null);
+  check("Unit: no company GSTIN = unknown", r4.treatment === "unknown");
+  check("Unit: no company GSTIN warning mentions company_gstin", !!r4.warning && r4.warning.includes("company_gstin"));
 
-  const r6 = resolveTaxTreatment(COMPANY_GSTIN, null, "Tamil Nadu");
-  check("resolve: no customer GSTIN, state field=TN → inter-state", r6.treatment === "inter_state", `treatment=${r6.treatment}`);
+  // 5f: computeGstSplit — intra_state (TN→TN)
+  const splitIntra = computeGstSplit(100000, 18, "intra_state");
+  check("Split: intra CGST = 9000 (9% of 100000)", splitIntra.cgst === 9000, `got ${splitIntra.cgst}`);
+  check("Split: intra SGST = 9000 (9% of 100000)", splitIntra.sgst === 9000, `got ${splitIntra.sgst}`);
+  check("Split: intra IGST = 0", splitIntra.igst === 0);
+  check("Split: intra totalTax = 18000", splitIntra.totalTax === 18000, `got ${splitIntra.totalTax}`);
 
-  const r7 = resolveTaxTreatment(COMPANY_GSTIN, null, "Kerala");
-  check("resolve: no customer GSTIN, state field=KL → intra-state", r7.treatment === "intra_state", `treatment=${r7.treatment}`);
+  // 5g: computeGstSplit — inter_state (TN→KL)
+  const splitInter = computeGstSplit(100000, 18, "inter_state");
+  check("Split: inter CGST = 0", splitInter.cgst === 0);
+  check("Split: inter SGST = 0", splitInter.sgst === 0);
+  check("Split: inter IGST = 18000 (18% of 100000)", splitInter.igst === 18000, `got ${splitInter.igst}`);
+  check("Split: inter totalTax = 18000", splitInter.totalTax === 18000, `got ${splitInter.totalTax}`);
 
-  // ── Test 6: Proforma PDF — same logic ──
-  console.log("\n=== Test 6: Proforma PDF — inter-state IGST ===\n");
+  // 5h: Never both types populated simultaneously
+  check("Split: intra — IGST is 0 (not both types)", splitIntra.igst === 0);
+  check("Split: inter — CGST+SGST are 0 (not both types)", splitInter.cgst === 0 && splitInter.sgst === 0);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Test 6: PROFORMA PDF — same logic
+  // ══════════════════════════════════════════════════════════════════════════
+  console.log("\n=== Test 6: Proforma PDF — inter-state (TN→KL) IGST ===\n");
 
   const proformaInterDoc = generateProformaPdf({
-    proformaCode: "PI-TEST-INTER-001",
-    proformaDate: new Date("2026-08-14"),
-    status: "Draft",
-    customer: {
-      name: "Tamil Nadu Industries Ltd",
-      customerCode: "TN-001",
-      billingAddress: "Industrial Estate, Chennai",
-      city: "Chennai",
-      state: "Tamil Nadu",
-      gstNumber: "33AABCT5678E1Z5",
-      phone: "9876543211",
-    },
-    contact: { name: "TN Contact", phone: "9876543211" },
-    company: { name: "Suki Software" },
-    quotationCode: "QT-TEST-INTER-001",
-    items: [{
-      description: "SS304 Round Bar",
-      productType: "Bright Bar",
-      rmMake: "SAIL",
-      numberOfPieces: 10,
-      quantity: 100,
-      unitPrice: 1000,
-      taxPercent: 18,
-      cuttingCharge: 500,
-      deliveryDays: 7,
-      remarks: "Inter-state proforma test",
-      unit: "kgs",
-    }],
-    subtotal: 100000,
-    taxAmount: 18000,
-    discountPercent: 0,
-    grandTotal: 118500,
-    transportCharge: 100,
-    otherCharges: 50,
-    termsAndConditions: "Test T&C",
-    companyGstin: COMPANY_GSTIN,
-    generatedByName: "Test",
-  });
-
-  const proformaInterText = await extractPdfText(proformaInterDoc.output("arraybuffer"));
-  writeFileSync("C:\\Users\\ajithkumar\\Downloads\\PI-TEST-INTER-001.pdf", Buffer.from(proformaInterDoc.output("arraybuffer")));
-
-  console.log("\n--- Proforma inter-state PDF text (excerpt) ---\n");
-  console.log(proformaInterText.substring(0, 800));
-
-  check("Proforma inter-state: 'IGST Val' column present", proformaInterText.includes("IGST Val"));
-  check("Proforma inter-state: NO 'CGST Val' column", !proformaInterText.includes("CGST Val"));
-  check("Proforma inter-state: NO 'SGST Val' column", !proformaInterText.includes("SGST Val"));
-  check("Proforma inter-state: 'IGST' label in summary", proformaInterText.includes("IGST"));
-
-  // Proforma intra-state
-  const proformaIntraDoc = generateProformaPdf({
-    proformaCode: "PI-TEST-INTRA-001",
-    proformaDate: new Date("2026-08-14"),
+    proformaCode: "PI-TEST-INTER-TN-KL",
+    proformaDate: new Date("2026-08-22"),
     status: "Draft",
     customer: {
       name: "Kerala Customer Pvt Ltd",
@@ -343,11 +324,11 @@ async function main() {
       city: "Kochi",
       state: "Kerala",
       gstNumber: "32AABCK1234D1Z5",
-      phone: "9876543210",
+      phone: "9876543211",
     },
-    contact: { name: "Kerala Contact", phone: "9876543210" },
-    company: { name: "Suki Software" },
-    quotationCode: "QT-TEST-INTRA-001",
+    contact: { name: "Kerala Contact", phone: "9876543211" },
+    company: { name: "Shahnaz Bright Steel Industries Pvt Ltd" },
+    quotationCode: "QT-TEST-DIFF-STATE",
     items: [{
       description: "SS304 Round Bar",
       productType: "Bright Bar",
@@ -358,24 +339,79 @@ async function main() {
       taxPercent: 18,
       cuttingCharge: 500,
       deliveryDays: 7,
-      remarks: "Intra-state proforma test",
+      remarks: "Inter-state proforma (TN→KL)",
       unit: "kgs",
     }],
     subtotal: 100000,
     taxAmount: 18000,
     discountPercent: 0,
-    grandTotal: 118500,
+    grandTotal: 118650,
     transportCharge: 100,
     otherCharges: 50,
     termsAndConditions: "Test T&C",
     companyGstin: COMPANY_GSTIN,
     generatedByName: "Test",
+    placeOfSupply: "Kerala",
+    shipState: "Kerala",
+    shipGstNumber: "32AABCK1234D1Z5",
+  });
+
+  const proformaInterText = await extractPdfText(proformaInterDoc.output("arraybuffer"));
+  writeFileSync("C:\\Users\\ajithkumar\\Downloads\\PI-TEST-INTER-TN-KL.pdf", Buffer.from(proformaInterDoc.output("arraybuffer")));
+  check("Proforma inter-state (TN→KL): 'IGST Val' present", proformaInterText.includes("IGST Val"));
+  check("Proforma inter-state (TN→KL): NO 'CGST Val'", !proformaInterText.includes("CGST Val"));
+  check("Proforma inter-state (TN→KL): NO 'SGST Val'", !proformaInterText.includes("SGST Val"));
+
+  console.log("\n=== Test 6b: Proforma PDF — intra-state (TN→TN) CGST+SGST ===\n");
+
+  const proformaIntraDoc = generateProformaPdf({
+    proformaCode: "PI-TEST-INTRA-TN-TN",
+    proformaDate: new Date("2026-08-22"),
+    status: "Draft",
+    customer: {
+      name: "Tamil Nadu Customer Pvt Ltd",
+      customerCode: "TN-001",
+      billingAddress: "Industrial Estate, Chennai",
+      city: "Chennai",
+      state: "Tamil Nadu",
+      gstNumber: "33AABCT5678E1Z5",
+      phone: "9876543210",
+    },
+    contact: { name: "TN Contact", phone: "9876543210" },
+    company: { name: "Shahnaz Bright Steel Industries Pvt Ltd" },
+    quotationCode: "QT-TEST-SAME-STATE",
+    items: [{
+      description: "SS304 Round Bar",
+      productType: "Bright Bar",
+      rmMake: "SAIL",
+      numberOfPieces: 10,
+      quantity: 100,
+      unitPrice: 1000,
+      taxPercent: 18,
+      cuttingCharge: 500,
+      deliveryDays: 7,
+      remarks: "Intra-state proforma (TN→TN)",
+      unit: "kgs",
+    }],
+    subtotal: 100000,
+    taxAmount: 18000,
+    discountPercent: 0,
+    grandTotal: 118650,
+    transportCharge: 100,
+    otherCharges: 50,
+    termsAndConditions: "Test T&C",
+    companyGstin: COMPANY_GSTIN,
+    generatedByName: "Test",
+    placeOfSupply: "Tamil Nadu",
+    shipState: "Tamil Nadu",
+    shipGstNumber: "33AABCT5678E1Z5",
   });
 
   const proformaIntraText = await extractPdfText(proformaIntraDoc.output("arraybuffer"));
-  check("Proforma intra-state: 'CGST Val' column present", proformaIntraText.includes("CGST Val"));
-  check("Proforma intra-state: 'SGST Val' column present", proformaIntraText.includes("SGST Val"));
-  check("Proforma intra-state: NO 'IGST Val' column", !proformaIntraText.includes("IGST Val"));
+  writeFileSync("C:\\Users\\ajithkumar\\Downloads\\PI-TEST-INTRA-TN-TN.pdf", Buffer.from(proformaIntraDoc.output("arraybuffer")));
+  check("Proforma intra-state (TN→TN): 'CGST Val' present", proformaIntraText.includes("CGST Val"));
+  check("Proforma intra-state (TN→TN): 'SGST Val' present", proformaIntraText.includes("SGST Val"));
+  check("Proforma intra-state (TN→TN): NO 'IGST Val'", !proformaIntraText.includes("IGST Val"));
 
   console.log(`\n=== Results: ${pass} passed, ${fail} failed ===`);
   await prisma.$disconnect();

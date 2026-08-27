@@ -354,7 +354,7 @@ export function generateQuotationPdf(data: QuotationPdfData): jsPDF {
     { label: `Discount (${discountPct}%)`, value: `-${formatCurrency(discountAmount)}`, style: "deduction" },
     { label: "Net Subtotal", value: formatCurrency(netSubtotal), style: "normal" },
     { label: "Tax (GST)", value: formatCurrency(data.taxAmount || 0), style: "normal" },
-    ...(transportCharge ? [{ label: "Transport Charges", value: formatCurrency(transportCharge), style: "normal" as const }] : []),
+    ...(transportCharge ? [{ label: "Cutting Charges", value: formatCurrency(transportCharge), style: "normal" as const }] : []),
     ...(otherCharges ? [{ label: "Other Charges", value: formatCurrency(otherCharges), style: "normal" as const }] : []),
     ...(weighingLoadingCharge ? [{ label: "Weighing/Loading Charge", value: formatCurrency(weighingLoadingCharge), style: "normal" as const }] : []),
     ...(deliveryCharge ? [{ label: "Delivery Charge", value: formatCurrency(deliveryCharge), style: "normal" as const }] : []),

@@ -32,11 +32,13 @@ export async function GET(
     });
 
     if (!product) {
+      console.error(`Product detail 404: id=${id}, userCompanyId=${user.companyId}`);
       return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
     }
 
     if (product.companyId && product.companyId !== user.companyId) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
+      console.error(`Product detail 403: id=${id}, productCompanyId=${product.companyId}, userCompanyId=${user.companyId}`);
+      return NextResponse.json({ success: false, message: "Unauthorized: product does not belong to your company" }, { status: 403 });
     }
 
     return NextResponse.json({ success: true, data: product });
@@ -45,6 +47,8 @@ export async function GET(
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+const VALID_PRODUCT_TYPES = ["Black Bar", "Bright Bar", "Bright Ground Bar"];
 
 // PUT /api/catalogue/products/[id]
 
@@ -63,6 +67,14 @@ export async function PUT(
 
     const body = await request.json();
     const { id } = await params;
+
+    const productType = body.productType?.trim();
+    if (!productType) {
+      return NextResponse.json({ success: false, message: "Product Type is required" }, { status: 400 });
+    }
+    if (!VALID_PRODUCT_TYPES.includes(productType)) {
+      return NextResponse.json({ success: false, message: `Product Type must be one of: ${VALID_PRODUCT_TYPES.join(", ")}` }, { status: 400 });
+    }
 
     const existing = await prisma.product.findUnique({
       where: { id },
@@ -85,7 +97,7 @@ export async function PUT(
         unit: body.unit,
         basePrice: body.basePrice,
         isActive: body.isActive,
-        productType: body.productType ?? null,
+        productType,
         materialGrade: body.materialGrade?.trim() || null,
         materialSize: body.materialSize?.trim() || null,
         partNumber: body.partNumber?.trim() || null,

@@ -13,13 +13,17 @@ import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 import EntityDocumentTab from "@/components/documents/EntityDocumentTab";
 import { EntityTimeline } from "@/components/entity-timeline";
 import QuotationDetailPageV2 from "@/components/quotations/QuotationDetailPageV2";
+import QuotationFollowUpsTab from "@/components/quotations/QuotationFollowUpsTab";
+import QuotationFollowUpDrawer from "@/components/quotations/QuotationFollowUpDrawer";
+import { getUsersAction } from "@/app/actions/users";
 import { cn } from "@/lib/ui-utils";
 import { useHasModule } from "@/components/ModuleGate";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import { StatusStepper } from "@/components/ui/StatusStepper";
 import {
-  ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, Copy, Download, X, XCircle, Check, Plus, FileText, MoreVertical, TrendingUp
+  ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, Copy, Download, X, XCircle, Check, Plus, FileText, MoreVertical, TrendingUp, CalendarClock
 } from "lucide-react";
+import { isQuotationFollowupAllowed } from "@/lib/feature-allowlist";
 
 const Ico = ({ d, size = 16, className }: { d: string; size?: number; className?: string }) => (
   <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -67,7 +71,9 @@ export default function QuotationDetailPage() {
   const [quotation, setQuotation] = useState<any>(null);
   useSyncUrlParam(quotation?.status, "status");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"items" | "history" | "revisions" | "approvals" | "documents" | "timeline">("items");
+  const [activeTab, setActiveTab] = useState<"items" | "history" | "revisions" | "approvals" | "documents" | "timeline" | "followUps">("items");
+  const [showFollowUpDrawer, setShowFollowUpDrawer] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
   const [confirmState, setConfirmState] = useState<{ isOpen: boolean; title: string; message: string; action: () => void; input?: boolean; inputLabel?: string }>({ isOpen: false, title: "", message: "", action: () => {} });
   const [rejectReason, setRejectReason] = useState("");
   const [rejectReasonId, setRejectReasonId] = useState("");
@@ -80,9 +86,13 @@ export default function QuotationDetailPage() {
   const [editDeliveryTerms, setEditDeliveryTerms] = useState("");
   const [editFreightTerms, setEditFreightTerms] = useState("");
   const [editLeadTimeDays, setEditLeadTimeDays] = useState("");
+  const [editTransportCharge, setEditTransportCharge] = useState("");
+  const [editOtherCharges, setEditOtherCharges] = useState("");
+  const [editWeighingLoadingCharge, setEditWeighingLoadingCharge] = useState("");
+  const [editDeliveryCharge, setEditDeliveryCharge] = useState("");
+  const [editTestingCharge, setEditTestingCharge] = useState("");
   const [savingItems, setSavingItems] = useState(false);
-  const [productSearch, setProductSearch] = useState<{ idx: number; query: string } | null>(null);
-  const [productResults, setProductResults] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [approvalNotes, setApprovalNotes] = useState("");
   const [revisionModal, setRevisionModal] = useState<{ open: boolean; revisionNumber: number; data: any }>({ open: false, revisionNumber: 0, data: null });
   // Start Negotiation modal state
@@ -133,12 +143,30 @@ export default function QuotationDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    if (!hasMod(MODULE_KEYS.PRODUCT_CATALOGUE)) return;
+    fetch("/api/catalogue/products")
+      .then((res) => res.json())
+      .then((data) => { if (data.success) setProducts(data.data || []); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (!id) return;
     fetch(`/api/proforma-invoices?quotationId=${id}`)
       .then((res) => res.json())
       .then((data) => { if (data.success && data.data?.length > 0) setProforma(data.data[0]); })
       .catch(() => {});
   }, [id]);
+
+  useEffect(() => {
+    getUsersAction()
+      .then((res: any) => {
+        if (res?.success && res.data) {
+          setUsers(res.data.filter((u: any) => u.isActive && (u.role === "SalesExecutive" || u.role === "SalesManager")));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("edit") === "1" && quotation?.status === "Draft") {
@@ -181,6 +209,16 @@ export default function QuotationDetailPage() {
       costBasisUnitPrice: it.costBasisUnitPrice ? String(it.costBasisUnitPrice) : "",
       quantityBreakId: it.quantityBreakId || "",
       priceSource: it.priceSource || "StandaloneManual",
+      // Preserve fields not editable in this form so they aren't wiped on save
+      productType: it.productType || "",
+      materialGrade: it.materialGrade || "",
+      materialSize: it.materialSize || "",
+      lengthMm: it.lengthMm != null ? String(it.lengthMm) : "",
+      numberOfPieces: it.numberOfPieces != null ? String(it.numberOfPieces) : "",
+      rmMake: it.rmMake || "",
+      deliveryDays: it.deliveryDays != null ? String(it.deliveryDays) : "",
+      cuttingCharge: it.cuttingCharge != null ? String(it.cuttingCharge) : "",
+      remarks: it.remarks || "",
     })));
     setEditDiscount(quotation.discountPercent || 0);
     setEditValidUntil(quotation.validUntil ? quotation.validUntil.substring(0, 10) : "");
@@ -189,6 +227,11 @@ export default function QuotationDetailPage() {
     setEditDeliveryTerms(quotation.deliveryTerms || "");
     setEditFreightTerms(quotation.freightTerms || "");
     setEditLeadTimeDays(quotation.leadTimeDays ? String(quotation.leadTimeDays) : "");
+    setEditTransportCharge(quotation.transportCharge != null ? String(quotation.transportCharge) : "");
+    setEditOtherCharges(quotation.otherCharges != null ? String(quotation.otherCharges) : "");
+    setEditWeighingLoadingCharge(quotation.weighingLoadingCharge != null ? String(quotation.weighingLoadingCharge) : "");
+    setEditDeliveryCharge(quotation.deliveryCharge != null ? String(quotation.deliveryCharge) : "");
+    setEditTestingCharge(quotation.testingCharge != null ? String(quotation.testingCharge) : "");
     setEditMode(true);
   };
 
@@ -212,6 +255,16 @@ export default function QuotationDetailPage() {
             costBasisUnitPrice: it.costBasisUnitPrice ? parseFloat(it.costBasisUnitPrice) : null,
             quantityBreakId: it.quantityBreakId || null,
             priceSource: it.priceSource || "StandaloneManual",
+            // Steel-specific fields (editable via the "SUKI Steel Details" row in this form)
+            productType: it.productType || null,
+            materialGrade: it.materialGrade || null,
+            materialSize: it.materialSize || null,
+            lengthMm: it.lengthMm !== "" && it.lengthMm != null ? parseFloat(it.lengthMm) : null,
+            numberOfPieces: it.numberOfPieces !== "" && it.numberOfPieces != null ? parseFloat(it.numberOfPieces) : null,
+            rmMake: it.rmMake || null,
+            deliveryDays: it.deliveryDays !== "" && it.deliveryDays != null ? parseInt(it.deliveryDays) : null,
+            cuttingCharge: it.cuttingCharge !== "" && it.cuttingCharge != null ? parseFloat(it.cuttingCharge) : null,
+            remarks: it.remarks || null,
           })),
           discountPercent: editDiscount,
           validUntil: editValidUntil ? new Date(editValidUntil).toISOString() : undefined,
@@ -220,6 +273,11 @@ export default function QuotationDetailPage() {
           deliveryTerms: editDeliveryTerms,
           freightTerms: editFreightTerms,
           leadTimeDays: editLeadTimeDays || null,
+          transportCharge: editTransportCharge !== "" ? parseFloat(editTransportCharge) || 0 : 0,
+          otherCharges: editOtherCharges !== "" ? parseFloat(editOtherCharges) || 0 : 0,
+          weighingLoadingCharge: editWeighingLoadingCharge !== "" ? parseFloat(editWeighingLoadingCharge) || 0 : 0,
+          deliveryCharge: editDeliveryCharge !== "" ? parseFloat(editDeliveryCharge) || 0 : 0,
+          testingCharge: editTestingCharge !== "" ? parseFloat(editTestingCharge) || 0 : 0,
         }),
       });
       const data = await res.json();
@@ -238,41 +296,45 @@ export default function QuotationDetailPage() {
   };
 
   const addEditItem = () => {
-    setEditItems([...editItems, { id: `new_${Date.now()}`, productId: "", description: "", quantity: "1", unitPrice: "0", discountPercent: "0", taxPercent: "18", hsn: "", unit: "Pcs", notes: "", costBasisUnitPrice: "", quantityBreakId: "", priceSource: "StandaloneManual" }]);
+    setEditItems(prev => [...prev, { id: `new_${Date.now()}`, productId: "", description: "", quantity: "1", unitPrice: "0", discountPercent: "0", taxPercent: "18", hsn: "", unit: "Pcs", notes: "", costBasisUnitPrice: "", quantityBreakId: "", priceSource: "StandaloneManual", productType: "", materialGrade: "", materialSize: "", lengthMm: "", numberOfPieces: "", rmMake: "", deliveryDays: "", cuttingCharge: "", remarks: "" }]);
   };
 
   const removeEditItem = (idx: number) => {
-    setEditItems(editItems.filter((_, i) => i !== idx));
+    setConfirmState({
+      isOpen: true,
+      title: "Remove Line Item",
+      message: "Are you sure you want to remove this line item? This cannot be undone.",
+      action: () => {
+        setEditItems(prev => prev.filter((_, i) => i !== idx));
+      },
+    });
   };
 
   const updateEditItem = (idx: number, field: string, value: string) => {
-    setEditItems(editItems.map((it, i) => (i === idx ? { ...it, [field]: value } : it)));
+    setEditItems(prev => prev.map((it, i) => (i === idx ? { ...it, [field]: value } : it)));
   };
 
-  const searchProducts = async (query: string, idx: number) => {
-    setProductSearch({ idx, query });
-    if (query.length < 2) { setProductResults([]); return; }
-    try {
-      const res = await fetch(`/api/products?search=${encodeURIComponent(query)}&limit=10`);
-      const data = await res.json();
-      if (data.success) setProductResults(data.data || []);
-    } catch { setProductResults([]); }
-  };
-
-  const selectProduct = (product: any, idx: number) => {
-    setEditItems(editItems.map((it, i) => (i === idx ? {
-      ...it,
-      productId: product.id,
-      description: product.name,
-      unitPrice: String(product.unitPrice || product.basePrice || 0),
-      hsn: product.hsnCode || product.productCode || "",
-      unit: product.unit || "Pcs",
-      costBasisUnitPrice: "",
-      priceSource: "StandaloneManual",
-      quantityBreakId: "",
-    } : it)));
-    setProductSearch(null);
-    setProductResults([]);
+  const selectProduct = (idx: number, productId: string) => {
+    const product = products.find((p) => p.id === productId);
+    if (product) {
+      setEditItems(prev => prev.map((it, i) => (i === idx ? {
+        ...it,
+        productId,
+        description: product.name,
+        unitPrice: String(product.unitPrice || product.basePrice || 0),
+        hsn: product.hsnCode || product.productCode || it.hsn,
+        unit: product.unit || it.unit || "Pcs",
+        productType: product.productType || it.productType || "",
+        materialGrade: product.materialGrade || it.materialGrade || "",
+        materialSize: product.materialSize || it.materialSize || "",
+        rmMake: product.rmMake || it.rmMake || "",
+        costBasisUnitPrice: "",
+        priceSource: "StandaloneManual",
+        quantityBreakId: "",
+      } : it)));
+    } else {
+      updateEditItem(idx, "productId", productId);
+    }
   };
 
   const handleSend = async () => {
@@ -408,6 +470,18 @@ export default function QuotationDetailPage() {
     setChangingStatus(false);
   };
 
+  const openOutcomeModal = () => {
+    const outcomeStatuses = ["Rejected", "MOQ", "Material Not Available", "No Stock", "Price Pending", "Supplier Rate Checking", "Follow-up", "Revised Rate", "Others"];
+    const current = quotation?.status;
+    const currentIsOutcome = outcomeStatuses.includes(current);
+    setOutcomeForm({
+      outcomeStatus: currentIsOutcome ? current : "Rejected",
+      notes: quotation?.rejectionReason || "",
+      rejectionReasonId: current === "Rejected" ? (quotation?.rejectionReasonId || "") : "",
+    });
+    setShowOutcomeModal(true);
+  };
+
   const handleOutcomeSubmit = async () => {
     if (!outcomeForm.outcomeStatus) { toast.error("Select an outcome status"); return; }
     if (outcomeForm.outcomeStatus === "Rejected" && !outcomeForm.rejectionReasonId) {
@@ -494,8 +568,26 @@ export default function QuotationDetailPage() {
     }
   };
 
-  const handleDownloadPdf = () => {
-    window.open(`/api/quotations/${id}/pdf`, "_blank");
+  const handleDownloadPdf = async () => {
+    try {
+      const res = await fetch(`/api/quotations/${id}/pdf`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.message || "Failed to generate PDF. The customer's state or GSTIN may be missing — required for CGST/SGST vs IGST tax determination.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${quotation?.quotationCode || "quotation"}-R${quotation?.revisionNumber || 1}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download PDF");
+    }
   };
 
   const handleGenerateProforma = async () => {
@@ -624,13 +716,24 @@ export default function QuotationDetailPage() {
   const canNegotiate = ["Quotation Sent", "UnderReview", "Follow-up", "Revised Rate"].includes(quotation.status);
   const canAcceptReject = ["Quotation Sent", "UnderReview", "Follow-up", "Revised Rate", "Price Pending", "Supplier Rate Checking"].includes(quotation.status);
   const canReviseRate = ["Quotation Sent", "Follow-up", "UnderReview"].includes(quotation.status);
-  const canSetOutcome = ["Quotation Sent", "UnderReview", "Follow-up", "Revised Rate", "Price Pending", "Supplier Rate Checking"].includes(quotation.status);
+  const canSetOutcome = ["Quotation Sent", "UnderReview", "Follow-up", "Revised Rate", "Price Pending", "Supplier Rate Checking", "Rejected", "MOQ", "Material Not Available", "No Stock", "Others"].includes(quotation.status);
   const canCreatePo = quotation.status === "Accepted";
   const canGenerateProforma = ["Accepted", "Converted to Customer"].includes(quotation.status);
   const hasChild = quotation.childRevisions && quotation.childRevisions.length > 0;
   const isNegotiationPriceRevision = quotation.negotiation && quotation.negotiation.status === "PriceRevision";
   const canClone = !hasChild && (["Rejected", "Expired", "MOQ", "Material Not Available", "No Stock", "Others"].includes(quotation.status) || isNegotiationPriceRevision);
+
+  const pipelineStages = ["Draft", "Approved", "Quotation Sent", "UnderReview", "Accepted", "Deal/PO"];
+  const outcomeStatuses = ["Rejected", "MOQ", "Material Not Available", "No Stock", "Price Pending", "Supplier Rate Checking", "Follow-up", "Revised Rate", "Others"];
+  const activePipelineStage = (() => {
+    if (pipelineStages.includes(quotation.status)) return quotation.status;
+    const lastPipelineHistory = quotation.quotationStatusHistories?.find((h: any) => pipelineStages.includes(h.toStatus));
+    return lastPipelineHistory?.toStatus || "Draft";
+  })();
+  const currentIsOutcome = outcomeStatuses.includes(quotation.status) && !pipelineStages.includes(quotation.status);
   const canDelete = canEdit;
+  const canFollowUp = quotation.status === "Quotation Sent";
+  const isFeatureUser = isQuotationFollowupAllowed(user?.email);
 
   const primaryAction: "send" | "accept" | "createPo" | null =
     quotation.status === "Draft" && (!needsApproval || !hasMod(MODULE_KEYS.APPROVAL_CENTER)) ? "send"
@@ -764,12 +867,22 @@ export default function QuotationDetailPage() {
               <button onClick={handleAccept} disabled={!canAcceptReject} title={!canAcceptReject ? "Quotation must be in an active state" : "Mark quotation as accepted by customer"} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${canAcceptReject ? "text-white bg-[var(--status-success)] hover:opacity-90" : "text-[var(--text-muted)] bg-[var(--surface-2)]"}`}><Check size={15} /> Accept</button>
               {/* Set Outcome — rejection-like outcomes (MOQ, No Stock, Material Not Available, etc.) */}
               {canSetOutcome && (
-              <button onClick={() => setShowOutcomeModal(true)} title="Mark quotation with a blocking outcome" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer text-white bg-[var(--status-danger)] hover:opacity-90"><XCircle size={15} /> Set Outcome</button>
+              <button onClick={openOutcomeModal} title="Mark quotation with a blocking outcome" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer text-white bg-[var(--status-danger)] hover:opacity-90"><XCircle size={15} /> Set Outcome</button>
               )}
               {/* Mark Rejected — available in active statuses */}
               <button onClick={handleReject} disabled={!canAcceptReject} title={!canAcceptReject ? "Quotation must be in an active state" : "Mark quotation as rejected by customer"} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${canAcceptReject ? "text-white bg-[var(--status-danger)] hover:opacity-90" : "text-[var(--text-muted)] bg-[var(--surface-2)]"}`}><XCircle size={15} /> Reject</button>
               {/* PDF — always available */}
               <button onClick={handleDownloadPdf} title="Open printable quotation view" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-2)] hover:bg-[var(--border)] cursor-pointer"><Download size={15} /> PDF</button>
+              {/* Follow Up — quotation-linked follow-ups, restricted user */}
+              {canFollowUp && isFeatureUser && (
+                <button
+                  onClick={() => setShowFollowUpDrawer(true)}
+                  title="Create a follow-up for this quotation"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[var(--text-secondary)] bg-[var(--surface-2)] border border-[var(--border)] hover:bg-[var(--border)] cursor-pointer"
+                >
+                  <CalendarClock size={15} /> Follow Up
+                </button>
+              )}
               {/* Generate Proforma Invoice — only once the customer has accepted */}
               {canGenerateProforma && (
                 proforma ? (
@@ -869,6 +982,12 @@ export default function QuotationDetailPage() {
 
       {/* Workflow Stepper */}
       <div className="crm-card p-4">
+        {currentIsOutcome && (
+          <div className="mb-3 flex items-center gap-2">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Current Outcome</span>
+            <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${statusColors[quotation.status] || "bg-slate-100 text-slate-600 border border-slate-200/50"}`}>{quotation.status}</span>
+          </div>
+        )}
         <StatusStepper
           compact
           steps={
@@ -879,15 +998,11 @@ export default function QuotationDetailPage() {
             return true;
           }).map((key, idx, arr) => {
             const order = arr;
-            // When status is "Accepted", check if deal is Won to determine if Deal/PO is done or active.
-            // If deal status is "Won", Deal/PO is completed (green check). Otherwise it's the active step (blue).
-            // For V1 (where Deal/PO is removed), the active step is just "Accepted".
             const dealWon = quotation.status === "Accepted" && quotation.deal?.status === "Won";
             let activeStage = quotation.status === "Accepted"
               ? (order.includes("Deal/PO") ? (dealWon ? null : "Deal/PO") : "Accepted")
-              : (quotation.status === "Rejected" || quotation.status === "Expired" ? "Accepted"
-              : quotation.status);
-              
+              : activePipelineStage;
+
             // If the activeStage is UnderReview (because the quotation has that status) but the tenant
             // doesn't have the negotiation module, we fallback to "Quotation Sent" as the active stage, because
             // V1 quotations shouldn't even be able to reach UnderReview.
@@ -898,24 +1013,16 @@ export default function QuotationDetailPage() {
             const currentIdx = activeStage ? order.indexOf(activeStage) : order.length;
             const stageIdx = idx;
             const isDone = stageIdx < currentIdx;
-            const isCurrent = activeStage !== null && key === activeStage && quotation.status !== "Rejected" && quotation.status !== "Expired";
-            const isRejected = quotation.status === "Rejected";
+            const isCurrent = activeStage !== null && key === activeStage;
             const labelMap: Record<string,string> = { Draft: "Draft", Approved: "Approved", "Quotation Sent": "Quotation Sent", UnderReview: "Negotiation", Accepted: "Accepted", "Deal/PO": "Deal / PO" };
             return {
               label: labelMap[key],
               key,
               reached: isDone || isCurrent,
               active: isCurrent,
-              terminal: isRejected && stageIdx >= currentIdx ? "danger" as const : undefined,
             };
           })}
         />
-        {quotation.status === "Rejected" && (
-          <p className="text-xs text-[var(--status-danger-text)] font-medium mt-2 flex items-center gap-1"><Ico d={icons.x} size={12} /> Quotation rejected — use Clone &amp; Revise to create a new revision</p>
-        )}
-        {quotation.status === "Expired" && (
-          <p className="text-xs text-[var(--text-muted)] font-medium mt-2 flex items-center gap-1"><Ico d={icons.clock} size={12} /> Quotation expired — use Clone &amp; Revise to create a new revision with updated validity</p>
-        )}
       </div>
 
       {/* Summary Card */}
@@ -957,6 +1064,7 @@ export default function QuotationDetailPage() {
           ...(hasMod(MODULE_KEYS.APPROVAL_CENTER) ? [{ key: "approvals", label: "Approvals" }] : []),
           ...(hasMod(MODULE_KEYS.DOCUMENTS) ? [{ key: "documents", label: "Documents" }] : []),
           { key: "timeline", label: "Timeline" },
+          ...(isFeatureUser ? [{ key: "followUps", label: "Follow-Ups" }] : []),
         ].map((tab) => (
           <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} className={`px-4 py-2 text-sm font-medium border-b-2 cursor-pointer transition-colors ${activeTab === tab.key ? "border-[var(--primary)] text-[var(--primary)] font-semibold" : "border-transparent text-slate-500 hover:text-slate-700"}`}>{tab.label}</button>
         ))}
@@ -1009,20 +1117,23 @@ export default function QuotationDetailPage() {
                   return (
                     <div key={item.id || idx} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
                       <div className="grid grid-cols-12 gap-3 items-start">
-                        {/* Description */}
-                        <div className="col-span-4 relative">
-                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Description / Product</label>
-                          <input type="text" value={item.description} onChange={(e) => { updateEditItem(idx, "description", e.target.value); searchProducts(e.target.value, idx); }} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20" placeholder="Type to search products..." />
-                          {productSearch?.idx === idx && productResults.length > 0 && (
-                            <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                              {productResults.map((p) => (
-                                <button key={p.id} onClick={() => selectProduct(p, idx)} className="w-full text-left px-3 py-2 hover:bg-slate-50 text-xs cursor-pointer">
-                                  <span className="font-medium">{p.name}</span>
-                                  <span className="text-[10px] text-slate-500 ml-2">({p.productCode})</span>
-                                </button>
-                              ))}
-                            </div>
+                        {/* Product */}
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Product</label>
+                          {hasMod(MODULE_KEYS.PRODUCT_CATALOGUE) ? (
+                            <select value={item.productId} onChange={(e) => selectProduct(idx, e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none">
+                              <option value="">-- Product --</option>
+                              {products.map((p: any) => <option key={p.id} value={p.id}>{p.productCode} - {p.name}</option>)}
+                            </select>
+                          ) : (
+                            <p className="text-[10px] text-slate-400 py-1.5">Enter in Description →</p>
                           )}
+                        </div>
+
+                        {/* Description */}
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Description</label>
+                          <input type="text" value={item.description} onChange={(e) => updateEditItem(idx, "description", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20" placeholder="Description" />
                         </div>
 
                         {/* HSN */}
@@ -1071,6 +1182,51 @@ export default function QuotationDetailPage() {
                         {/* Remove */}
                         <div className="col-span-0.5 flex justify-end items-end pb-2">
                           <button onClick={() => removeEditItem(idx)} className="p-1 rounded-md hover:bg-rose-50 text-rose-500 cursor-pointer" title="Remove"><Ico d={icons.x} size={14} /></button>
+                        </div>
+                      </div>
+
+                      {/* SUKI Steel Details */}
+                      <div className="grid grid-cols-12 gap-3 items-start mt-2.5 pt-2.5 border-t border-slate-200/60">
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">Product Type</label>
+                          <select value={item.productType} onChange={(e) => updateEditItem(idx, "productType", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none">
+                            <option value="">--</option>
+                            <option value="Black Bar">Black Bar</option>
+                            <option value="Bright Bar">Bright Bar</option>
+                            <option value="Bright Ground Bar">Bright Ground Bar</option>
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">Material Grade</label>
+                          <input type="text" placeholder="Grade" value={item.materialGrade} onChange={(e) => updateEditItem(idx, "materialGrade", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none" />
+                        </div>
+                        <div className="col-span-1">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">Size</label>
+                          <input type="text" placeholder="Size" value={item.materialSize} onChange={(e) => updateEditItem(idx, "materialSize", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none" />
+                        </div>
+                        <div className="col-span-1">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">RM Make</label>
+                          <input type="text" placeholder="Make" value={item.rmMake} onChange={(e) => updateEditItem(idx, "rmMake", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none" />
+                        </div>
+                        <div className="col-span-1">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">Length (mm)</label>
+                          <input type="number" min="0" placeholder="mm" value={item.lengthMm} onChange={(e) => updateEditItem(idx, "lengthMm", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none" />
+                        </div>
+                        <div className="col-span-1">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">Pcs</label>
+                          <input type="number" min="0" placeholder="Pcs" value={item.numberOfPieces} onChange={(e) => updateEditItem(idx, "numberOfPieces", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none" />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">Delivery (days)</label>
+                          <input type="number" min="0" placeholder="Days" value={item.deliveryDays} onChange={(e) => updateEditItem(idx, "deliveryDays", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none" />
+                        </div>
+                        <div className="col-span-1">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">Cutting Chg</label>
+                          <input type="number" step="0.01" min="0" placeholder="0" value={item.cuttingCharge} onChange={(e) => updateEditItem(idx, "cuttingCharge", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none" />
+                        </div>
+                        <div className="col-span-1">
+                          <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 whitespace-nowrap">Remarks</label>
+                          <input type="text" placeholder="Remarks" value={item.remarks} onChange={(e) => updateEditItem(idx, "remarks", e.target.value)} className="w-full px-2.5 py-1.5 rounded-lg border border-slate-250 bg-white text-xs text-slate-900 focus:outline-none" />
                         </div>
                       </div>
 
@@ -1147,6 +1303,34 @@ export default function QuotationDetailPage() {
                   <textarea value={editTerms} onChange={(e) => setEditTerms(e.target.value)} rows={1} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900" />
                 </div>
               </div>
+
+              {/* Extra Charges */}
+              <div className="pt-3 border-t border-slate-100">
+                <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2">Extra Charges</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cutting Charges</label>
+                    <input type="number" step="0.01" min="0" placeholder="0.00" value={editTransportCharge} onChange={(e) => setEditTransportCharge(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Other Charges</label>
+                    <input type="number" step="0.01" min="0" placeholder="0.00" value={editOtherCharges} onChange={(e) => setEditOtherCharges(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Weighing/Loading Charge</label>
+                    <input type="number" step="0.01" min="0" placeholder="0.00" value={editWeighingLoadingCharge} onChange={(e) => setEditWeighingLoadingCharge(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Delivery Charge</label>
+                    <input type="number" step="0.01" min="0" placeholder="0.00" value={editDeliveryCharge} onChange={(e) => setEditDeliveryCharge(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Testing Charge</label>
+                    <input type="number" step="0.01" min="0" placeholder="0.00" value={editTestingCharge} onChange={(e) => setEditTestingCharge(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs text-slate-900" />
+                  </div>
+                </div>
+              </div>
+
               <p className="text-[10px] text-slate-400 italic">Totals and tax percents are server-computed on save — client values are automatically reconciled</p>
             </div>
           ) : (
@@ -1228,7 +1412,7 @@ export default function QuotationDetailPage() {
                   <div className="flex justify-between text-xs"><span className="text-slate-600">Discount ({quotation.discountPercent}%):</span><span className="font-semibold text-rose-600">-{formatCurrency(totalGross - (quotation.subtotal || quotation.totalAmount))}</span></div>
                   <div className="flex justify-between text-xs"><span className="text-slate-600">Net Subtotal:</span><span className="font-semibold text-slate-800">{formatCurrency(quotation.subtotal || quotation.totalAmount)}</span></div>
                   <div className="flex justify-between text-xs"><span className="text-slate-600">Tax (GST):</span><span className="font-semibold text-slate-800">+{formatCurrency(quotation.taxAmount || 0)}</span></div>
-                  {(quotation as any).transportCharge > 0 && <div className="flex justify-between text-xs"><span className="text-slate-600">Transport Charges:</span><span className="font-semibold text-slate-800">+{formatCurrency((quotation as any).transportCharge)}</span></div>}
+                  {(quotation as any).transportCharge > 0 && <div className="flex justify-between text-xs"><span className="text-slate-600">Cutting Charges:</span><span className="font-semibold text-slate-800">+{formatCurrency((quotation as any).transportCharge)}</span></div>}
                   {(quotation as any).otherCharges > 0 && <div className="flex justify-between text-xs"><span className="text-slate-600">Other Charges:</span><span className="font-semibold text-slate-800">+{formatCurrency((quotation as any).otherCharges)}</span></div>}
                   {(quotation as any).weighingLoadingCharge > 0 && <div className="flex justify-between text-xs"><span className="text-slate-600">Weighing/Loading Charge:</span><span className="font-semibold text-slate-800">+{formatCurrency((quotation as any).weighingLoadingCharge)}</span></div>}
                   {(quotation as any).deliveryCharge > 0 && <div className="flex justify-between text-xs"><span className="text-slate-600">Delivery Charge:</span><span className="font-semibold text-slate-800">+{formatCurrency((quotation as any).deliveryCharge)}</span></div>}
@@ -1406,13 +1590,18 @@ export default function QuotationDetailPage() {
         </div>
       )}
 
+      {/* Follow-Ups Tab — quotation-linked follow-ups (feature-gated) */}
+      {activeTab === "followUps" && quotation && (
+        <QuotationFollowUpsTab quotationId={quotation.id} quotationCode={quotation.quotationCode} />
+      )}
+
       <ConfirmModal
         isOpen={confirmState.isOpen && !confirmState.input}
         title={confirmState.title}
         message={confirmState.message}
         onConfirm={confirmState.action}
         onCancel={() => { setConfirmState({ isOpen: false, title: "", message: "", action: () => {} }); setRejectReason(""); setRejectReasonId(""); }}
-        isDestructive={confirmState.title.includes("Delete")}
+        isDestructive={confirmState.title.includes("Delete") || confirmState.title.includes("Remove")}
       />
 
       {/* Revision Snapshot Modal */}
@@ -1609,6 +1798,8 @@ export default function QuotationDetailPage() {
                   <option value="No Stock">No Stock</option>
                   <option value="Price Pending">Price Pending</option>
                   <option value="Supplier Rate Checking">Supplier Rate Checking</option>
+                  <option value="Follow-up">Follow-up</option>
+                  <option value="Revised Rate">Revised Rate</option>
                   <option value="Others">Others</option>
                 </select>
               </div>
@@ -1648,6 +1839,28 @@ export default function QuotationDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quotation Follow-up Drawer */}
+      {quotation && (
+        <QuotationFollowUpDrawer
+          isOpen={showFollowUpDrawer}
+          onClose={() => setShowFollowUpDrawer(false)}
+          onSuccess={() => {
+            if (activeTab === "followUps") {
+              setActiveTab("items");
+              setTimeout(() => setActiveTab("followUps"), 10);
+            }
+          }}
+          quotation={{
+            id: quotation.id,
+            quotationCode: quotation.quotationCode,
+            customerId: quotation.customerId,
+            customer: { name: quotation.customer?.name || null },
+          }}
+          user={user}
+          users={users}
+        />
       )}
     </PageContainer>
   );

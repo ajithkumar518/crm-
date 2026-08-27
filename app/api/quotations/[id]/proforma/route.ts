@@ -41,10 +41,15 @@ export async function POST(
   }
 
   const year = new Date().getFullYear();
-  const yearCount = await prisma.proformaInvoice.count({
+  const lastProforma = await prisma.proformaInvoice.findFirst({
     where: { proformaNumber: { startsWith: `PF-${year}-` } },
+    orderBy: { proformaNumber: "desc" },
+    select: { proformaNumber: true },
   });
-  const proformaNumber = `PF-${year}-${String(yearCount + 1).padStart(5, "0")}`;
+  const lastSuffix = lastProforma?.proformaNumber
+    ? (parseInt(lastProforma.proformaNumber.split("-").pop() || "0") || 0)
+    : 0;
+  const proformaNumber = `PF-${year}-${String(lastSuffix + 1).padStart(5, "0")}`;
 
   const proforma = await prisma.$transaction(async (tx) => {
     const pf = await tx.proformaInvoice.create({
@@ -61,8 +66,14 @@ export async function POST(
         subtotal: quotation.subtotal,
         taxAmount: quotation.taxAmount,
         discountPercent: quotation.discountPercent,
+        transportCharge: quotation.transportCharge || 0,
+        otherCharges: quotation.otherCharges || 0,
+        weighingLoadingCharge: quotation.weighingLoadingCharge || 0,
+        deliveryCharge: quotation.deliveryCharge || 0,
+        testingCharge: quotation.testingCharge || 0,
         grandTotal: quotation.finalAmount,
-        termsAndConditions: quotation.termsAndConditions,
+        termsAndConditions: `1. All reports shortage must reach within 3 days and about defective supply if any within 10 days from date of delivery in writing no claim will be acceptable by us thereafter.\n2. Rejection of material will be acceptable only in original shape of out supply (not after machining & cutting hardening)\n3. All disputes are subject to Chennai Jurisdiction only.\n4. Interest @24% will be charged on all over due bills.`,
+        declaration: `Certified that the particulars given above are true and correct and the amount indicated represents the price actually charged and that there is no flow of additional consideration directly or indirectly from the buyer.`,
         notes: "Generated from quotation",
         createdById: user.id,
         companyId: user.companyId,

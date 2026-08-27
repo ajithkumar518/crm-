@@ -9,17 +9,25 @@ import { useToast } from "@/components/ToastProvider";
 import { Modal } from "@/components/ui/Modal";
 
 const CUSTOMER_COLUMNS = [
-  "Customer Name",
-  "GST Number",
-  "Contact Person",
-  "Mobile Number",
+  "Customer Name*",
   "Email ID",
-  "Address",
-  "State",
+  "Mobile Number",
+  "City",
+  "Location",
+  "Status",
+  "Lead Source*",
+  "Assign to Executive",
+  "GST Number",
+  "Customer Category",
+  "State*",
+  "Industry Type",
   "Payment Terms",
   "Credit Days",
-  "Marketing Executive",
-  "Customer Category",
+  "Billing Address",
+  "Shipping Address",
+  "Contact Person",
+  "Contact Mobile",
+  "Contact Email",
 ];
 
 const STEPS = ["Upload File", "Preview & Validate", "Import"];

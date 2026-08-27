@@ -16,6 +16,7 @@ const PRODUCT_COLUMNS = [
   "Unit of Measure",
   "Material Category",
   "Product Description",
+  "Product Type",
 ];
 
 const STEPS = ["Upload File", "Preview & Validate", "Import"];

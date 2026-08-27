@@ -87,7 +87,7 @@ const emptyForm = {
   phone: "", phoneCountryCode: "+91", city: "", status: "New" as any,
   assignedUserId: "", leadSource: "", notes: "",
   // V2 fields
-  companyName: "", designation: "", industryType: "", estimatedValue: "",
+  companyName: "", designation: "", industryType: "", customerCategory: "", estimatedValue: "",
 };
 
 export default function LeadsPage() {
@@ -382,7 +382,7 @@ export default function LeadsPage() {
       status: l.status, assignedUserId: l.assignedUserId || "", leadSource: l.leadSource || "",
       notes: l.notes || "",
       companyName: l.companyName || "", designation: l.designation || "",
-      industryType: l.industryType || "", estimatedValue: l.estimatedValue ? String(l.estimatedValue) : "",
+      industryType: l.industryType || "", customerCategory: l.customerCategory || "", estimatedValue: l.estimatedValue ? String(l.estimatedValue) : "",
     });
     setFormError("");
     setFieldErrors({});
@@ -424,6 +424,7 @@ export default function LeadsPage() {
         companyName: formData.companyName || undefined,
         designation: formData.designation || undefined,
         industryType: formData.industryType || undefined,
+        customerCategory: formData.customerCategory || undefined,
         estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
       });
     } else {
@@ -438,6 +439,7 @@ export default function LeadsPage() {
         companyName: formData.companyName.trim(),
         designation: formData.designation || undefined,
         industryType: formData.industryType || undefined,
+        customerCategory: formData.customerCategory || undefined,
         estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
       });
     }
@@ -1093,6 +1095,17 @@ export default function LeadsPage() {
               >
                 <option value="">Select industry...</option>
                 {INDUSTRY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              </Select>
+            </FormField>
+
+            <FormField label="Customer Category">
+              <Select
+                value={formData.customerCategory}
+                onChange={e => setFormData(p => ({ ...p, customerCategory: e.target.value }))}
+              >
+                <option value="">Select Category</option>
+                <option value="80-20">80-20</option>
+                <option value="NON-80-20">NON-80-20</option>
               </Select>
             </FormField>
 

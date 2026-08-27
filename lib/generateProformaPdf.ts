@@ -10,7 +10,7 @@ import {
   addPageFooter,
   PdfColors,
 } from "./pdf-shared";
-import { resolveTaxTreatment } from "./gstState";
+import { resolveTaxTreatment, computeGstSplit } from "./gstState";
 
 const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
 const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
@@ -174,7 +174,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
     doc.setFillColor(...PdfColors.primary);
     doc.rect(margin + 2, margin + 2, 18, 18, "F");
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "bold");
     doc.text("SBS", margin + 4, margin + 12);
   }
@@ -251,24 +251,33 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   y += boxH + 4;
 
   // Determine GST tax treatment (intra-state → CGST+SGST, inter-state → IGST)
+  // Compare Supplier State vs Place of Supply (ship-to state or explicit override)
   const gstResult = resolveTaxTreatment(
     data.companyGstin,
+    (data as any).placeOfSupply,
+    (data as any).shipGstNumber,
+    (data as any).shipState,
     data.customer?.gstNumber,
     data.customer?.state,
   );
   const isInterState = gstResult.treatment === "inter_state";
   const isUnknown = gstResult.treatment === "unknown";
 
+  // Block PDF generation if tax type cannot be determined — do NOT silently default
+  if (isUnknown) {
+    throw new Error(
+      `Cannot generate Proforma PDF: ${gstResult.warning || "GST tax treatment could not be determined."} ` +
+      `Set the customer's Ship-To state, GSTIN, or Place of Supply field before generating the PDF.`
+    );
+  }
+
   const computedItems = data.items.map((it) => {
     const cutting = it.cuttingCharge || 0;
     const taxable = it.quantity * it.unitPrice * (1 - (it.discountPercent || 0) / 100);
     const taxPct = it.taxPercent || 18;
-    const taxAmount = taxable * (taxPct / 100);
-    const cgst = isInterState ? 0 : taxAmount / 2;
-    const sgst = isInterState ? 0 : taxAmount / 2;
-    const igst = isInterState ? taxAmount : 0;
-    const total = taxable + taxAmount + cutting;
-    return { ...it, taxable, taxAmount, cgst, sgst, igst, cutting, total };
+    const { cgst, sgst, igst, totalTax } = computeGstSplit(taxable, taxPct, gstResult.treatment);
+    const total = taxable + totalTax + cutting;
+    return { ...it, taxable, taxAmount: totalTax, cgst, sgst, igst, cutting, total };
   });
 
   const totalTaxable = computedItems.reduce((s, it) => s + it.taxable, 0);
@@ -341,7 +350,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
     body,
     styles: {
       font: "NotoSans",
-      fontSize: 6,
+      fontSize: 7,
       cellPadding: 0.6,
       overflow: "linebreak",
       lineColor: [0, 0, 0],
@@ -354,7 +363,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
       fillColor: [220, 220, 220],
       textColor: 0,
       fontStyle: "bold",
-      fontSize: 6,
+      fontSize: 7,
       halign: "center",
       valign: "middle",
     },
@@ -415,7 +424,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
 
   // Tax treatment warning (unknown state) — shown in red below comments
   if (isUnknown && gstResult.warning) {
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "bold");
     doc.setTextColor(200, 0, 0);
     const warnLines = doc.splitTextToSize(`TAX WARNING: ${gstResult.warning}`, leftW - 6);
@@ -429,7 +438,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
 
   // State field mismatch warning (GSTIN state code != state field)
   if (gstResult.stateFieldMismatch) {
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "bold");
     doc.setTextColor(200, 0, 0);
     const mismatchLines = doc.splitTextToSize(
@@ -454,7 +463,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   doc.setFontSize(8);
   setFont(doc, "bold");
   doc.text("Terms & Condition :", margin + 3, y + 38);
-  doc.setFontSize(7);
+  doc.setFontSize(8);
   setFont(doc, "normal");
   const tnc = data.termsAndConditions || DEFAULT_TERMS;
   const tncLines = doc.splitTextToSize(tnc, leftW - 6);
@@ -471,7 +480,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   const summary = [
     { label: "Taxable Val", value: totalTaxable },
     { label: isInterState ? "IGST" : "Tax Charges", value: totalTax },
-    { label: "Transport Charges", value: transportCharge },
+    { label: "Cutting Charges", value: transportCharge },
     { label: "Other Charges", value: otherCharges },
     { label: "Weighing/Loading Charge", value: weighingLoadingCharge },
     { label: "Delivery Charge", value: deliveryCharge },
@@ -504,9 +513,9 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
     doc.setFontSize(8);
     setFont(doc, "bold");
     doc.text("For", sigX + 3, sigY + 5);
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.text("SHAHNAZ BRIGHT STEEL", sigX + 3, sigY + 10);
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     setFont(doc, "normal");
     doc.line(sigX + 3, sigY + 13, sigX + sigW - 3, sigY + 13);
     doc.text("Authorized Signature", sigX + 3, sigY + 17);

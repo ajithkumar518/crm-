@@ -1,0 +1,353 @@
+---
+title: Leads
+module: Leads
+route: /leads
+icon: 📞
+order: 2
+---
+
+# Leads
+
+The Leads module is where sales teams create, qualify, and convert prospects before they become active deals. Every lead gets a unique lead code, a source tag, an assigned owner, and a 15-minute response countdown. As the team calls, follows up, and qualifies the lead, its status moves from **New** toward **Converted** — or to **Lost** if the prospect is not a fit.
+
+> **Who sees this:** All internal users except Customers. Sales Executives see only the leads assigned to them. Admins and Sales Managers can see every lead in the company and reassign owners.
+
+---
+
+## Pages in this Module
+
+| # | Page | Route | Purpose |
+|---|------|-------|---------|
+| 1 | [Leads Overview](#1-leads-overview) | `/leads` | Filterable list, KPI cards, create/edit/import, and quick workflow actions |
+| 2 | [Lead Detail](#2-lead-detail) | `/leads/{id}` | Full lead profile, follow-ups, activities, BANT checklist, and conversion |
+| 3 | [Lead Capture](#3-lead-capture) | `/leads/capture` | Quick front-desk/public registration form with material-interest fields |
+| 4 | [Log Activity](#4-log-activity) | `/activities/new` | Form for logging a call, meeting, email, or note against a lead |
+
+The **Leads Overview** is the main workspace. The other routes open when you click a lead, choose Capture from the menu, or select a workflow action such as "Log Call".
+
+---
+
+## 1. Leads Overview
+
+**Route:** `/leads`
+
+This is the default lead list. At the top, summary cards show counts for Total Leads, New Leads, Today’s Follow-Up, SQL, Overdue, and Duplicate. Below that, a table lists every lead with columns for lead code, name, company, industry, phone, next follow-up, source, score, status, SLA, owner, and quick action buttons.
+
+[SCREENSHOT NEEDED: Leads Overview page showing the KPI cards and the lead list table with status badges and SLA countdowns]
+
+### Filters and Search
+
+Use the toolbar above the table to narrow the list:
+
+| Control | What it does |
+|---------|--------------|
+| **Search box** | Find by lead name, email, phone, or lead code |
+| **Status filter** | Show only New, Contacted, FollowUpDue, SQL, Qualified, Converted, Lost, Overdue, or Duplicate |
+| **Follow-Up filter** | Show leads with Pending, Overdue, or Completed follow-ups |
+| **Date range** | Filter by creation date |
+| **Clear Filters** | Reset all filters and show the full list |
+
+Click any lead row to open its detail page. Use the pencil icon in a row to edit it directly. Admins and Sales Managers also see a trash icon to delete a lead.
+
+### User Actions on the Overview
+
+| Action | How to perform |
+|--------|----------------|
+| Add a lead | Click **Add Lead** in the top-right corner |
+| Edit a lead | Click the lead row or the pencil icon |
+| Delete a lead | Click the trash icon (Admin / Manager only) |
+| Export the list | Click **Export CSV** |
+| Import leads | Click **Import Leads** (Admin / Manager only) |
+| Filter by status tab | Click the summary cards or use the status dropdown |
+
+---
+
+## 2. Lead Detail
+
+**Route:** `/leads/{id}`
+
+The detail page is the control center for a single lead. It shows a header card with name, lead code, status badge, contact details, assigned owner, and creation date. Below that is a progress tracker showing where the lead sits in the pipeline: **New → Contacted → SQL → Qualified → Converted**.
+
+[SCREENSHOT NEEDED: Lead Detail header with the status badge, assigned owner, and pipeline progress tracker visible]
+
+### Tabs
+
+The page has several tabs. Click each tab to view or manage a different part of the lead:
+
+| Tab | What you see / do there |
+|-----|--------------------------|
+| **Overview** | All lead fields in a read-only grid plus the notes section |
+| **Follow Ups** | Scheduled calls, meetings, and notes. Add or complete follow-ups here |
+| **Activities** | Recorded calls, meetings, emails, and notes |
+| **BANT Checklist** | Confirm Budget, Authority, Need, and Timeline to qualify the lead |
+| **Competitor Intelligence** | Competitor notes for this lead |
+| **Documents** | Files attached to the lead |
+
+A "Next Best Action" panel at the top of the page suggests the most logical next step, such as **Log First Call**, **Create Follow-Up**, **Mark as SQL**, or **Convert Lead**. Primary and secondary buttons update automatically as the lead moves through the pipeline.
+
+---
+
+## 3. Lead Capture
+
+**Route:** `/leads/capture`
+
+The Capture page is a simplified registration form for quickly adding a lead at the front desk, from a trade show, or from an inbound phone inquiry. It is split into a form on the left and a list of already-captured leads on the right.
+
+[SCREENSHOT NEEDED: Lead Capture page showing the registration form and the captured-leads list side by side]
+
+### Fields on the Capture form
+
+| Field | Required? | What to enter |
+|-------|-----------|---------------|
+| **Name** | Yes | Contact person’s full name |
+| **Company** | No | Company or organization name |
+| **Email** | No | Contact email address |
+| **Phone** | No | Phone number with country code if needed |
+| **City / State** | No | Prospect’s location |
+| **Lead Source** | No | Where the inquiry came from (Website, IndiaMART, Justdial, WhatsApp, etc.) |
+| **Material Interest** | No | Product or material the lead is asking about, e.g. "EN19 50mm Black Bar" |
+| **Quantity (kgs)** | No | Approximate quantity |
+| **Expected Price** | No | Price the lead expects |
+| **Notes** | No | Any extra context |
+
+Click **Capture Lead**. The lead is saved with a status of **New** and appears in the captured list. It is also visible in the main `/leads` list.
+
+---
+
+## 4. Log Activity
+
+**Route:** `/activities/new`
+
+The activity form is where you record every interaction. It is reached from the lead detail page when you click **Log Call**, **Add Note**, or **Log Follow-Up Activity**, or automatically after you create a new lead and choose to log the first call.
+
+[SCREENSHOT NEEDED: Activity form with the call-type tab selected, showing direction, duration, outcome, and notes fields]
+
+### Activity Types
+
+| Type | What to record |
+|------|----------------|
+| **Call** | Direction (Outbound/Inbound), duration in minutes, outcome, and call notes |
+| **Meeting** | Date and time, mode (In-person/Virtual/Hybrid), location, agenda, and optional outcome |
+| **Note** | Free-text note about the lead |
+| **Email** | Direction, subject, and email body summary |
+
+For a call, the notes field is required. Once saved, the activity appears on the **Activities** tab of the lead.
+
+> **Important:** Logging the first call on a **New** lead changes the lead status to **Contacted** automatically and satisfies the 15-minute SLA countdown.
+
+---
+
+## Core Workflows
+
+### 1. Creating a new lead
+
+There are three ways to create a lead:
+
+#### From the Leads page
+
+1. Open **Leads** from the sidebar (or go to `/leads`).
+2. Click **Add Lead** in the top-right corner.
+3. Fill in the form:
+
+| Field | Required? | Guidance |
+|-------|-----------|----------|
+| **Lead Name** | Yes | Contact person’s full name |
+| **Phone No** | Yes | Select country code, then enter a valid phone number |
+| **Email ID** | Yes | Valid email address |
+| **Company Name** | Yes | Organization name |
+| **Designation** | No | Job title, e.g. Purchase Manager |
+| **Industry Type** | No | Choose from the dropdown |
+| **Estimated Value** | No | Approximate deal value in INR |
+| **City** | Yes | Prospect’s city |
+| **Lead Source** | Yes | Source of the inquiry |
+| **Status** | No | Defaults to **New** |
+| **Assigned To** | No | Only Admins / Managers can assign to an executive. If left blank, it is assigned to the person creating it. |
+| **Remarks** | No | Free-text notes |
+
+4. Click **Save Lead**.
+5. A success message appears and the new lead is added to the list.
+6. If you assigned the lead to yourself, a guided modal opens so you can **Log First Activity** or skip it.
+
+#### From the Lead Capture page
+
+1. Go to `/leads/capture`.
+2. Enter the quick capture details (see [Lead Capture](#3-lead-capture) above).
+3. Click **Capture Lead**.
+
+#### From an empty list
+
+1. If the leads list is empty, a **Add First Lead** button appears in the center of the table.
+2. Click it and follow the same steps as above.
+
+[SCREENSHOT NEEDED: Add New Lead modal with all fields filled in and the Save Lead button visible]
+
+### 2. Editing a lead
+
+1. From the leads table, click the lead row or the **pencil** icon.
+2. The same form opens, pre-filled with the lead’s current details.
+3. Change the fields you need. You can also update the **Status** directly from the dropdown if you have permission.
+4. Click **Update Lead**.
+
+[SCREENSHOT NEEDED: Edit Lead modal pre-filled with existing lead data]
+
+### 3. Changing lead status
+
+The lead status moves through the pipeline automatically when you perform the right actions, or it can be changed directly in the edit form when needed.
+
+#### New → Contacted
+
+1. Open the lead detail page for a **New** lead.
+2. Click **Log First Call** (or the primary action button).
+3. Fill the call form with at least the call notes and click save.
+4. The status changes to **Contacted**, the 15-minute SLA is marked as met, and the lead is ready for follow-up.
+
+#### Contacted → Follow-up
+
+1. On the lead detail page, click **Create Follow-Up**.
+2. Pick a date and time, choose the type (Call / Meeting / Note), and add notes.
+3. Click **Save Follow-up**.
+4. The lead status becomes **FollowUpDue** until the follow-up is completed.
+
+#### New / Contacted → SQL (Sales Qualified Lead)
+
+There are two ways:
+
+**Using the BANT Checklist tab:**
+1. Click the **BANT Checklist** tab.
+2. Check the boxes for **Budget**, **Authority**, and **Need**.
+3. Enter the **Timeline in months**.
+4. Click **Qualify as SQL**.
+
+**Using the Qualify modal:**
+1. Click the **Mark as SQL** action.
+2. Enter the **Budget Asked** and **Timeline Asked**.
+3. Optionally check **Lead is Genuine**.
+4. Click **Mark as SQL**.
+
+[SCREENSHOT NEEDED: BANT Checklist tab with all four checkboxes and the Qualify as SQL button]
+
+#### SQL → Qualified
+
+1. After a follow-up is completed, a prompt asks what to do next.
+2. Click **Qualify Lead**.
+3. The lead status becomes **Qualified** and a customer record is created automatically.
+
+#### Qualified / SQL → Converted (Won)
+
+1. On the lead detail page, click **Convert Lead**.
+2. In the convert form, fill in the three sections:
+   - **Account**: company name, GSTIN (optional), account type, industry, billing address
+   - **Contact**: full name, designation, email, phone, contact category
+   - **Opportunity**: opportunity name, estimated value, expected close date
+3. Click **Convert Lead**.
+4. The lead status becomes **Converted** and you are taken to the Sales Pipeline to continue the deal.
+
+In some product variants, after qualifying or converting you may be asked whether a sample is required. Choose **Yes** to go to Sample Management, or **No** to go to the Sales Pipeline.
+
+[SCREENSHOT NEEDED: Convert Lead modal showing the Account, Contact, and Opportunity sections]
+
+#### Any status → Lost
+
+1. On the lead detail page, click **Mark Lost**.
+2. Select a **Loss Reason** from the dropdown.
+3. Optionally add extra notes.
+4. Click **Confirm Mark Lost**.
+5. The lead status becomes **Lost** and any pending follow-ups are cancelled.
+
+[SCREENSHOT NEEDED: Mark Lead as Lost modal with the Loss Reason dropdown]
+
+### 4. Adding a follow-up
+
+1. Open the lead detail page and click the **Follow Ups** tab, or use the primary **Create Follow-Up** action.
+2. Click **Add Follow-up**.
+3. Fill in the form:
+
+| Field | What to enter |
+|-------|---------------|
+| **Date & Time** | When the follow-up is due |
+| **Type** | Call, Meeting, or Note |
+| **Assign To** | Leave as the lead owner or pick another executive (Admin / Manager only) |
+| **Priority** | High, Medium, or Low |
+| **Notes** | What should be discussed or done |
+
+4. Click **Save Follow-up**.
+5. The follow-up appears in the Follow Ups tab and on the lead detail banner.
+
+[SCREENSHOT NEEDED: Add Follow-up modal with date, type, priority, and notes fields]
+
+### 5. Logging a call or activity
+
+1. Open the lead detail page and click the **Activities** tab.
+2. Click **Log Call** or **Add Note**.
+   - Alternatively, click the **Log Follow-Up Activity** button on a pending follow-up row.
+3. Choose the activity type (Call, Meeting, Note, or Email).
+4. Fill the required fields.
+5. Click **Log Activity & Done**.
+6. The activity is saved and the follow-up is marked completed if one was selected.
+
+[SCREENSHOT NEEDED: Activities tab showing a logged call with duration, outcome, and notes]
+
+### 6. Converting or qualifying a lead
+
+See the status change sections above for full steps. In short:
+
+- **Qualify** when you have confirmed Budget, Authority, Need, and Timeline.
+- **Convert** when the lead is SQL or Qualified and you are ready to create an Account, Contact, and Opportunity.
+
+After conversion, the lead moves out of the Leads list and becomes a deal in the Sales Pipeline.
+
+### 7. Reassigning an owner
+
+1. On the lead detail page, find **Assigned to** in the header card.
+2. Click **Reassign** (only Admins and Sales Managers see this).
+3. Select a different executive from the dropdown.
+4. Optionally enter a reason, e.g. "Executive on leave" or "Workload redistribution".
+5. Click **Reassign Lead**.
+6. The lead is reassigned and a fresh 15-minute SLA countdown starts for the new owner.
+
+[SCREENSHOT NEEDED: Reassign Lead modal with the executive dropdown and reason field]
+
+---
+
+## Lead Status Reference
+
+| Status | Meaning |
+|--------|---------|
+| **New** | Just created; no first contact yet. The 15-minute SLA clock is running. |
+| **Contacted** | First call or interaction has been logged. |
+| **FollowUpDue** | A follow-up is scheduled but not yet completed. |
+| **SQL** | Sales Qualified Lead — Budget, Authority, Need, and Timeline confirmed. |
+| **Qualified** | Ready to convert into an account and opportunity. |
+| **Converted** | Lead has been converted to a customer/opportunity in the pipeline. |
+| **Lost** | Lead is no longer being pursued. |
+| **Overdue** | A follow-up or SLA has passed its due date. |
+| **Duplicate** | A matching lead already exists in the system. |
+
+---
+
+## Access Notes
+
+- **Sales Executives** can only view and manage leads assigned to them.
+- **Admins and Sales Managers** can view, edit, delete, reassign, and import any lead in their company.
+- **Customers** do not have access to the Leads module.
+- **SuperAdmin users** can only see company data while in support or impersonation mode.
+- When an Admin or Manager acts on a lead owned by someone else, the system records the action under their identity for accountability.
+
+---
+
+## User Actions Summary
+
+| Action | Where to start | What happens next |
+|--------|----------------|-------------------|
+| **Create lead** | `/leads` → Add Lead or `/leads/capture` | Lead is saved as New; workflow modal prompts for first activity |
+| **Edit lead** | Leads table → lead row or pencil icon | Modal opens pre-filled; click Update Lead |
+| **Change status** | Lead detail → action buttons or Edit modal | Status updates and appropriate downstream actions appear |
+| **Log call** | Lead detail → Log First Call / Log Call | Activity saved; New lead becomes Contacted |
+| **Add follow-up** | Lead detail → Follow Ups tab or Create Follow-Up | Follow-up appears on the lead and in the due list |
+| **Complete follow-up** | Pending follow-up → Log Activity | Follow-up marked completed; status can be updated |
+| **Qualify as SQL** | Lead detail → BANT Checklist or Mark as SQL | Lead becomes SQL and can be converted |
+| **Convert lead** | Lead detail → Convert Lead | Account, Contact, and Opportunity are created; lead becomes Converted |
+| **Mark lost** | Lead detail → Mark Lost | Lead becomes Lost; pending follow-ups cancelled |
+| **Reassign owner** | Lead detail → Reassign | New owner assigned; SLA resets |
+| **Export leads** | `/leads` → Export CSV | A CSV file downloads with the current list |
+| **Import leads** | `/leads` → Import Leads (Admin / Manager only) | Bulk leads are imported from a CSV or Excel file |

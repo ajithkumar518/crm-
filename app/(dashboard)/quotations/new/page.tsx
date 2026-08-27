@@ -13,6 +13,7 @@ import { validatePositiveNumeric, validateCurrency, validatePercentage, validate
 import { cn } from "@/lib/ui-utils";
 import { useHasModule } from "@/components/ModuleGate";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
+import { ConfirmModal } from "@/components/ConfirmModal";
 
 const Ico = ({ d, size = 16, className }: { d: string; size?: number; className?: string }) => (
   <svg width={size} height={size} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -75,6 +76,7 @@ export default function NewQuotationPage() {
   const [weighingLoadingCharge, setWeighingLoadingCharge] = useState("");
   const [deliveryCharge, setDeliveryCharge] = useState("");
   const [testingCharge, setTestingCharge] = useState("");
+  const [customerCategory, setCustomerCategory] = useState("");
 
   useEffect(() => {
     getCustomersAction().then(res => {
@@ -171,6 +173,15 @@ export default function NewQuotationPage() {
   }, [form.customerId]);
 
   useEffect(() => {
+    if (form.customerId) {
+      const c = customers.find((cust: any) => cust.id === form.customerId);
+      setCustomerCategory(c?.customerCategory || "");
+    } else {
+      setCustomerCategory("");
+    }
+  }, [form.customerId, customers]);
+
+  useEffect(() => {
     fetch("/api/terms-and-conditions/default")
       .then(res => res.json())
       .then(data => {
@@ -208,6 +219,8 @@ export default function NewQuotationPage() {
     productId: "", description: "", quantity: "1", unitPrice: "0", hsn: "", unit: "kgs", discountPercent: "0", taxPercent: "18",
     productType: "", materialGrade: "", materialSize: "", length: "", numberOfPieces: "", rmMake: "", deliveryDays: "", cuttingCharge: "", remarks: "",
   }]);
+  const [removeItemConfirm, setRemoveItemConfirm] = useState<{ open: boolean; idx: number | null }>({ open: false, idx: null });
+  const requestRemoveItem = (idx: number) => setRemoveItemConfirm({ open: true, idx });
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
   const updateItem = (idx: number, field: string, value: string) => {
     setItems(items.map((item, i) => (i === idx ? { ...item, [field]: value } : item)));
@@ -335,6 +348,13 @@ export default function NewQuotationPage() {
                 </p>
               )}
             </FormField>
+            <FormField label="Customer Category">
+              <Select value={customerCategory} disabled className="bg-[var(--surface-2)]">
+                <option value="">{form.customerId ? "(not set in Customer Master)" : "Select customer first"}</option>
+                <option value="80-20">80-20</option>
+                <option value="Non 80-20">Non 80-20</option>
+              </Select>
+            </FormField>
             <FormField label="Contact">
               <Select value={form.contactId} onChange={(e) => setForm({ ...form, contactId: e.target.value })} disabled={!form.customerId}>
                 <option value="">-- Select Contact --</option>
@@ -440,7 +460,7 @@ export default function NewQuotationPage() {
                   </div>
                   <div className="col-span-0 flex flex-col items-start justify-end pb-1">
                     <span className="text-xs font-medium text-[var(--text-primary)]">{((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0) * (1 - (parseFloat(item.discountPercent) || 0) / 100)).toFixed(2)}</span>
-                    {items.length > 1 && <button type="button" onClick={() => removeItem(idx)} className="p-1 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer mt-1"><Ico d={icons.x} size={12} /></button>}
+                    {items.length > 1 && <button type="button" onClick={() => requestRemoveItem(idx)} className="p-1 rounded-lg hover:bg-red-50 text-red-500 cursor-pointer mt-1"><Ico d={icons.x} size={12} /></button>}
                   </div>
                 </div>
                 {/* SUKI Steel Details */}
@@ -512,7 +532,7 @@ export default function NewQuotationPage() {
         {/* Extra Charges */}
         <FormSection title="Extra Charges">
           <FormGrid>
-            <FormField label="Transport Charges">
+            <FormField label="Cutting Charges">
               <Input type="number" step="0.01" min="0" placeholder="0.00" value={transportCharge} onChange={(e) => setTransportCharge(e.target.value)} />
             </FormField>
             <FormField label="Other Charges">
@@ -541,7 +561,7 @@ export default function NewQuotationPage() {
               {validatePercentage(form.discountPercent, "Header Discount") && <p className="text-[10px] text-rose-500 mt-0.5">{validatePercentage(form.discountPercent, "Header Discount")}</p>}
             </div>
             <div className="flex justify-between text-sm text-red-600"><span>Discount Amount</span><span>-{formatCurrency(discountAmount)}</span></div>
-            {transportChargeNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Transport Charges</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(transportChargeNum)}</span></div>}
+            {transportChargeNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Cutting Charges</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(transportChargeNum)}</span></div>}
             {otherChargesNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Other Charges</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(otherChargesNum)}</span></div>}
             {weighingLoadingChargeNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Weighing/Loading Charge</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(weighingLoadingChargeNum)}</span></div>}
             {deliveryChargeNum > 0 && <div className="flex justify-between text-sm"><span className="text-[var(--text-secondary)]">Delivery Charge</span><span className="font-medium text-[var(--text-primary)]">+{formatCurrency(deliveryChargeNum)}</span></div>}
@@ -556,6 +576,16 @@ export default function NewQuotationPage() {
         </FormActions>
       </form>
       </CompactFormContainer>
+
+      <ConfirmModal
+        isOpen={removeItemConfirm.open}
+        title="Remove Line Item"
+        message="Are you sure you want to remove this line item? This cannot be undone."
+        confirmText="Remove"
+        isDestructive
+        onConfirm={() => { if (removeItemConfirm.idx !== null) removeItem(removeItemConfirm.idx); }}
+        onCancel={() => setRemoveItemConfirm({ open: false, idx: null })}
+      />
     </PageContainer>
   );
 }

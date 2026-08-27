@@ -22,14 +22,14 @@ function Input({ label, value, onChange, type = "text" }: { label: string; value
   );
 }
 
-function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function TextArea({ label, value, onChange, rows = 2 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
   return (
     <div>
       <label className="text-xs text-[var(--text-tertiary)] block mb-1">{label}</label>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        rows={2}
+        rows={rows}
         className="w-full px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--surface-1)] text-[var(--text-primary)] text-xs"
       />
     </div>
@@ -47,6 +47,7 @@ export default function ProformaDetailPage() {
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [creatingSo, setCreatingSo] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedItems, setEditedItems] = useState<Record<string, any>>({});
@@ -54,12 +55,15 @@ export default function ProformaDetailPage() {
   const [editedCharges, setEditedCharges] = useState<Record<string, string>>({});
 
   const CHARGE_FIELDS = [
-    { key: "transportCharge", label: "Transport Charges" },
+    { key: "transportCharge", label: "Cutting Charges" },
     { key: "otherCharges", label: "Other Charges" },
     { key: "weighingLoadingCharge", label: "Weighing/Loading Charge" },
     { key: "deliveryCharge", label: "Delivery Charge" },
     { key: "testingCharge", label: "Testing Charge" },
   ];
+
+  const DEFAULT_TERMS = `1. All reports shortage must reach within 3 days and about defective supply if any within 10 days from date of delivery in writing no claim will be acceptable by us thereafter.\n2. Rejection of material will be acceptable only in original shape of out supply (not after machining & cutting hardening)\n3. All disputes are subject to Chennai Jurisdiction only.\n4. Interest @24% will be charged on all over due bills.`;
+  const DEFAULT_DECLARATION = `Certified that the particulars given above are true and correct and the amount indicated represents the price actually charged and that there is no flow of additional consideration directly or indirectly from the buyer.`;
 
   const load = async () => {
     setLoading(true);
@@ -96,6 +100,31 @@ export default function ProformaDetailPage() {
       toast.error("Failed to update status");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    try {
+      const res = await fetch(`/api/proforma-invoices/${id}/pdf`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.message || "Failed to generate PDF. The customer's state or GSTIN may be missing — required for CGST/SGST vs IGST tax determination.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${proforma?.proformaNumber || "proforma"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download PDF");
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -189,7 +218,7 @@ export default function ProformaDetailPage() {
 
     setEditedHeader({
       paymentTerms: proforma.paymentTerms || "",
-      termsAndConditions: proforma.termsAndConditions || "",
+      termsAndConditions: proforma.termsAndConditions || DEFAULT_TERMS,
       irn: proforma.irn || "",
       ackNo: proforma.ackNo || "",
       ewayBillNo: proforma.ewayBillNo || "",
@@ -211,7 +240,7 @@ export default function ProformaDetailPage() {
       shipPhone: proforma.shipPhone || proforma.customer?.phone || "",
       preparedBy: proforma.preparedBy || "",
       verifiedBy: proforma.verifiedBy || "",
-      declaration: proforma.declaration || "",
+      declaration: proforma.declaration || DEFAULT_DECLARATION,
       roundedOff: String(proforma.roundedOff ?? 0),
     });
     setEditMode(true);
@@ -312,7 +341,7 @@ export default function ProformaDetailPage() {
   const charges = proforma;
   const extraCharges = CHARGE_FIELDS.reduce((s, f) => s + ((proforma[f.key] as number) || 0), 0);
   const discountAmount = proforma.subtotal * (proforma.discountPercent || 0) / 100;
-  const computedGrandTotal = proforma.grandTotal != null ? proforma.grandTotal : proforma.subtotal - discountAmount + proforma.taxAmount + extraCharges + (proforma.roundedOff || 0);
+  const computedGrandTotal = proforma.subtotal - discountAmount + proforma.taxAmount + extraCharges + (proforma.roundedOff || 0);
 
   const statusOptions = ["Draft", "Sent", "Approved", "PO Received", "Cancelled"];
   const canCreateSo = proforma.status === "Approved" || proforma.status === "PO Received";
@@ -501,8 +530,8 @@ export default function ProformaDetailPage() {
 
                 <div className="grid grid-cols-1 gap-3">
                   <TextArea label="Payment Terms" value={editedHeader.paymentTerms ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, paymentTerms: v })} />
-                  <TextArea label="Terms & Conditions" value={editedHeader.termsAndConditions ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, termsAndConditions: v })} />
-                  <TextArea label="Declaration" value={editedHeader.declaration ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, declaration: v })} />
+                  <TextArea label="Terms & Conditions" rows={4} value={editedHeader.termsAndConditions ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, termsAndConditions: v })} />
+                  <TextArea label="Declaration" rows={3} value={editedHeader.declaration ?? ""} onChange={(v) => setEditedHeader({ ...editedHeader, declaration: v })} />
                 </div>
               </div>
             )}
@@ -529,11 +558,29 @@ export default function ProformaDetailPage() {
             </div>
           )}
 
-          {(proforma.paymentTerms || proforma.deliveryTerms || proforma.termsAndConditions) && (
-            <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-2 text-sm">
-              {proforma.paymentTerms && <p><span className="text-[var(--text-tertiary)]">Payment Terms:</span> {proforma.paymentTerms}</p>}
-              {proforma.deliveryTerms && <p><span className="text-[var(--text-tertiary)]">Delivery Terms:</span> {proforma.deliveryTerms}</p>}
-              {proforma.termsAndConditions && <p><span className="text-[var(--text-tertiary)]">Terms & Conditions:</span> {proforma.termsAndConditions}</p>}
+          {(proforma.paymentTerms || proforma.deliveryTerms || proforma.termsAndConditions || proforma.declaration) && (
+            <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)] space-y-4 text-sm">
+              <div className="space-y-2">
+                {proforma.paymentTerms && <p><span className="text-[var(--text-tertiary)] font-medium">Payment Terms:</span> {proforma.paymentTerms}</p>}
+                {proforma.deliveryTerms && <p><span className="text-[var(--text-tertiary)] font-medium">Delivery Terms:</span> {proforma.deliveryTerms}</p>}
+              </div>
+              {proforma.termsAndConditions && (
+                <div>
+                  <p className="text-[var(--text-tertiary)] font-medium mb-1">Terms & Conditions:</p>
+                  <ol className="list-decimal pl-4 space-y-1">
+                    {proforma.termsAndConditions.split("\n").filter((line: string) => line.trim() !== "").map((line: string, i: number) => {
+                      const cleanLine = line.replace(/^\d+[\.\)]\s*/, "").trim();
+                      return <li key={i} className="text-[var(--text-primary)]">{cleanLine}</li>;
+                    })}
+                  </ol>
+                </div>
+              )}
+              {proforma.declaration && (
+                <div>
+                  <p className="text-[var(--text-tertiary)] font-medium mb-1">Declaration:</p>
+                  <p className="whitespace-pre-wrap text-[var(--text-primary)]">{proforma.declaration}</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -553,9 +600,9 @@ export default function ProformaDetailPage() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <a href={`/api/proforma-invoices/${id}/pdf`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-[var(--primary)] hover:opacity-90">
-                <FileText size={15} /> PDF
-              </a>
+              <button onClick={handleDownloadPdf} disabled={downloadingPdf} className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-[var(--primary)] hover:opacity-90 disabled:opacity-60">
+                <FileText size={15} /> {downloadingPdf ? "Generating..." : "PDF"}
+              </button>
               <button onClick={handleSend} disabled={sending} className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60">
                 <Mail size={15} /> {sending ? "Sending..." : "Send"}
               </button>

@@ -22,7 +22,7 @@ export async function POST(
       deal: { select: { id: true, dealName: true, opportunityCode: true } },
       items: {
         include: {
-          product: { select: { id: true, name: true, productCode: true, unit: true, hsnCode: true } },
+          product: { select: { id: true, name: true, productCode: true, unit: true, hsnCode: true, productType: true } },
         },
       },
       company: { select: { id: true, name: true } },
@@ -62,12 +62,15 @@ export async function POST(
       customer: quotation.customer,
       contact: quotation.contact,
       company: quotation.company,
-      items: quotation.items,
+      items: quotation.items.map((it: any) => ({ ...it, productType: it.product?.productType || it.productType })),
       companyAddress: addrConfig?.value || "",
       companyGstin: gstinConfig?.value || "",
       companyPhone: phoneConfig?.value || "",
       companyEmail: emailConfig?.value || "",
       generatedByName,
+      placeOfSupply: (quotation as any).placeOfSupply || quotation.customer?.state || null,
+      shipState: (quotation as any).shipState || quotation.customer?.state || null,
+      shipGstNumber: (quotation as any).shipGstNumber || quotation.customer?.gstNumber || null,
     });
 
     const pdfBytes = doc.output("arraybuffer");
@@ -119,9 +122,10 @@ export async function POST(
 
     return NextResponse.json({ success: true, data: document });
   } catch (error: any) {
+    const isTaxError = error?.message?.includes("tax treatment") || error?.message?.includes("GST");
     return NextResponse.json(
       { success: false, message: `Failed to generate PDF: ${error.message}` },
-      { status: 500 }
+      { status: isTaxError ? 422 : 500 }
     );
   }
 }
