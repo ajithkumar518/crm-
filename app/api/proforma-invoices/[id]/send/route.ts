@@ -150,8 +150,11 @@ export async function POST(
     where: { id },
     data: { status },
     include: {
-      customer: { select: { id: true, name: true, customerCode: true } },
+      customer: { select: { id: true, name: true, customerCode: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true, email: true } },
+      contact: { select: { id: true, name: true, email: true, phone: true } },
+      company: { select: { id: true, name: true } },
       quotation: { select: { id: true, quotationCode: true } },
+      items: { include: { product: { select: { id: true, name: true, productCode: true } } } },
     },
   });
 
