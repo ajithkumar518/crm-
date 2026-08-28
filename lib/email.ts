@@ -1,14 +1,22 @@
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || process.env.EMAIL_HOST || "smtp.gmail.com",
-  port: Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 587,
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER || process.env.EMAIL_USER,
-    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
-  },
-});
+/** Create a fresh transporter at call time so dotenv has a chance to load first. */
+function getTransporter() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || process.env.EMAIL_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 587,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER || process.env.EMAIL_USER,
+      pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
+    },
+    tls: {
+      // Allow self-signed certificates only in dev/test environments (e.g.
+      // behind TLS-inspecting proxies). Never set to "false" in production.
+      rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== "false",
+    },
+  });
+}
 
 interface EmailAttachment {
   filename: string;
@@ -64,7 +72,7 @@ export async function sendEmail(
   // rejected recipients) and returned void, causing every caller to believe the email
   // was sent successfully. This was the root cause of the "quotation send shows success
   // but customer never receives email" silent-failure bug.
-  await transporter.sendMail({
+  await getTransporter().sendMail({
     from:
       process.env.SMTP_FROM ||
       process.env.EMAIL_FROM ||
