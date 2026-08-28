@@ -105,6 +105,22 @@ export interface ProformaPdfData {
   companyPhone?: string;
   companyEmail?: string;
   generatedByName?: string;
+  /** Explicit place of supply override. */
+  placeOfSupply?: string | null;
+  /** Ship-to party details (used for tax treatment & "SHIP TO" block). */
+  shipName?: string | null;
+  shipAddress?: string | null;
+  shipState?: string | null;
+  shipStateCode?: string | null;
+  shipGstNumber?: string | null;
+  shipPhone?: string | null;
+  /** Bill-to party details (used for tax treatment & "BILL TO" block). */
+  billName?: string | null;
+  billAddress?: string | null;
+  billState?: string | null;
+  billStateCode?: string | null;
+  billGstNumber?: string | null;
+  billPhone?: string | null;
 }
 
 const DEFAULT_TERMS = `Cutting Charges - Extra
@@ -230,18 +246,20 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   let y = margin + headerH + 5;
   const halfW = (contentW - 5) / 2;
   const billLines = [
-    data.customer?.name || "—",
+    data.billName || data.customer?.name || "—",
     data.customer?.customerCode ? `Code: ${data.customer.customerCode}` : "",
-    data.customer?.billingAddress || "",
-    data.customer?.city ? `${data.customer.city}, ${data.customer?.state || ""}` : "",
-    data.customer?.gstNumber ? `GSTIN: ${data.customer.gstNumber}` : "",
+    data.billAddress || data.customer?.billingAddress || "",
+    data.billState || data.customer?.city ? `${data.customer?.city ? `${data.customer.city}, ` : ""}${data.billState || data.customer?.state || ""}` : "",
+    data.billGstNumber || data.customer?.gstNumber ? `GSTIN: ${data.billGstNumber || data.customer?.gstNumber}` : "",
+    data.billPhone ? `Phone: ${data.billPhone}` : "",
   ].filter(Boolean);
   const shipLines = [
-    data.customer?.name || "—",
+    data.shipName || data.customer?.name || "—",
     data.customer?.customerCode ? `Code: ${data.customer.customerCode}` : "",
-    data.customer?.shippingAddress || data.customer?.billingAddress || "",
-    data.customer?.city ? `${data.customer.city}, ${data.customer?.state || ""}` : "",
-    data.customer?.gstNumber ? `GSTIN: ${data.customer.gstNumber}` : "",
+    data.shipAddress || data.customer?.shippingAddress || data.customer?.billingAddress || "",
+    data.customer?.city ? `${data.customer.city}, ${data.shipState || data.customer?.state || ""}` : "",
+    data.shipGstNumber || data.customer?.gstNumber ? `GSTIN: ${data.shipGstNumber || data.customer?.gstNumber}` : "",
+    data.shipPhone ? `Phone: ${data.shipPhone}` : "",
   ].filter(Boolean);
 
   const boxH = Math.max(28, Math.max(billLines.length, shipLines.length) * 3.6 + 10);
@@ -254,11 +272,11 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   // Compare Supplier State vs Place of Supply (ship-to state or explicit override)
   const gstResult = resolveTaxTreatment(
     data.companyGstin,
-    (data as any).placeOfSupply,
-    (data as any).shipGstNumber,
-    (data as any).shipState,
-    data.customer?.gstNumber,
-    data.customer?.state,
+    data.placeOfSupply,
+    data.shipGstNumber,
+    data.shipState,
+    data.billGstNumber ?? data.customer?.gstNumber,
+    data.billState ?? data.customer?.state,
   );
   const isInterState = gstResult.treatment === "inter_state";
   const isUnknown = gstResult.treatment === "unknown";

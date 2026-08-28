@@ -105,6 +105,10 @@ export function getStateCodeFromName(stateName: string | null | undefined): stri
   // Common abbreviations / partial matches
   const aliases: Record<string, string> = {
     "tamil nadu": "33",
+    "tamilnadu": "33",
+    "tamilnad": "33",
+    "taminadu": "33",
+    "taminad": "33",
     "tn": "33",
     "kerala": "32",
     "kl": "32",
