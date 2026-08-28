@@ -60,7 +60,7 @@ export async function sendOverdueSummaries() {
       const htmlContent = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
           <div style="background-color: #0D2137; padding: 20px; text-align: center;">
-            <h2 style="color: #ffffff; margin: 0;"> SUKI  Marketing CRM</h2>
+            <h2 style="color: #ffffff; margin: 0;"> Shahnaz CRM</h2>
           </div>
           <div style="padding: 24px;">
             <p>Hi <strong>${data.userName}</strong>,</p>
@@ -87,7 +87,7 @@ export async function sendOverdueSummaries() {
       `;
 
       await transporter.sendMail({
-        from: `"SUKI CRM" <${process.env.SMTP_USER}>`,
+        from: `"Shahnaz CRM" <${process.env.SMTP_USER}>`,
         to: email,
         subject: `Reminder: ${data.followUps.length} Overdue Follow-ups`,
         html: htmlContent,

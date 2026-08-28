@@ -22,8 +22,8 @@ const inter = { className: "font-sans" };
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: " SUKI  Marketing CRM",
-  description: "Internal CRM portal for  SUKI  Marketing teams",
+  title: "Shahnaz CRM",
+  description: "Internal CRM portal for Shahnaz CRM teams",
   icons: {
     icon: "/tick-mark.svg",
     shortcut: "/tick-mark.svg",

@@ -14,7 +14,7 @@ async function main() {
   const smtpPass = process.env.SMTP_PASS || process.env.EMAIL_PASS;
   const smtpHost = process.env.SMTP_HOST || process.env.EMAIL_HOST || "smtp.gmail.com";
   const smtpPort = Number(process.env.SMTP_PORT || process.env.EMAIL_PORT) || 587;
-  const smtpFrom = process.env.SMTP_FROM || process.env.EMAIL_FROM || '"SUKI CRM" <noreply@sukisoftware.com>';
+  const smtpFrom = process.env.SMTP_FROM || process.env.EMAIL_FROM || '"Shahnaz CRM" <noreply@sukisoftware.com>';
 
   console.log(`SMTP_HOST: ${smtpHost}`);
   console.log(`SMTP_PORT: ${smtpPort}`);
@@ -51,13 +51,13 @@ async function main() {
 
   // Test 2: Actually send a test email to the same Gmail account (self-send for checkability)
   console.log("\n--- Test 2: Real email send (self-send to testsuki66@gmail.com) ---");
-  const testSubject = `SUKI CRM Diagnostic Test — ${new Date().toISOString()}`;
+  const testSubject = `Shahnaz CRM Diagnostic Test — ${new Date().toISOString()}`;
   try {
     const info = await transporter.sendMail({
       from: smtpFrom,
       to: "testsuki66@gmail.com",
       subject: testSubject,
-      html: `<p>This is a diagnostic test email from SUKI CRM. Sent at ${new Date().toISOString()}.</p>`,
+      html: `<p>This is a diagnostic test email from Shahnaz CRM. Sent at ${new Date().toISOString()}.</p>`,
     });
     console.log("[PASS] Email sent successfully");
     console.log("  Message ID:", info.messageId);

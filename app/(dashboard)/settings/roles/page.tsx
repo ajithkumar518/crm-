@@ -42,7 +42,7 @@ const MODULES = [
 ];
 
 export const metadata = {
-  title: 'Roles & Permissions | Suki CRM',
+  title: 'Roles & Permissions | Shahnaz CRM',
 };
 
 export default async function RolesPermissionsPage() {

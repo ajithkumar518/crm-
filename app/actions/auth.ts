@@ -314,7 +314,7 @@ export async function sendPasswordResetLink(email: string) {
 
     await sendEmail(
       user.email,
-      "Reset Your Password —  SUKI  Marketing CRM",
+      "Reset Your Password —  Shahnaz CRM",
       buildResetEmail(user.name, resetUrl),
     );
 
@@ -1292,7 +1292,7 @@ export async function resendInvitation(userId: string) {
 
       await sendEmail(
         user.email,
-        "SUKI CRM — Set Your Password (resent)",
+        "Shahnaz CRM — Set Your Password (resent)",
         buildInternalActivationEmail(user.name, activationUrl, inviterName),
       );
     }

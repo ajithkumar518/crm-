@@ -76,7 +76,7 @@ export async function sendEmail(
     from:
       process.env.SMTP_FROM ||
       process.env.EMAIL_FROM ||
-      '"SUKI CRM" <noreply@sukisoftware.com>',
+      '"Shahnaz CRM" <noreply@sukisoftware.com>',
     to,
     subject: subjectText,
     html: htmlText,

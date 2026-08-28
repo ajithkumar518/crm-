@@ -355,7 +355,7 @@ export async function approveUserAction(id: string) {
 
     await sendEmail(
       user.email,
-      "Your SUKI CRM account has been approved!",
+      "Your Shahnaz CRM account has been approved!",
       buildOtpEmail(user.name, otp)
     );
 

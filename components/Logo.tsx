@@ -119,7 +119,7 @@ export default function Logo({
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
             className={className}
-            aria-label="SUKI CRM"
+            aria-label="Shahnaz CRM"
           >
             <image href="/crm black (3).svg" width="1282" height="445" />
           </svg>
@@ -131,7 +131,7 @@ export default function Logo({
       <div suppressHydrationWarning>
         <img
           src="/crm black (3).svg"
-          alt="SUKI CRM"
+          alt="Shahnaz CRM"
           width={Math.round(size * (1282 / 445))}
           height={size}
           className={className}
@@ -144,7 +144,7 @@ export default function Logo({
     <div suppressHydrationWarning>
       <img
         src={logoSrc}
-        alt="SUKI CRM"
+        alt="Shahnaz CRM"
         width={Math.round(size * aspectRatio)}
         height={size}
         className={className}

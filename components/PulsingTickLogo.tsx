@@ -58,7 +58,7 @@ export function PulsingTickLogo({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="SUKI CRM"
+      aria-label="Shahnaz CRM"
       style={{ color: accent, position: 'relative', zIndex: 2 }}
     >
       {TICK_PATHS}

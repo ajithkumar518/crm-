@@ -211,7 +211,7 @@ function ActivateForm() {
       <div className="mb-7">
         <h1 className="text-[24px] font-semibold text-[var(--text-primary)] mb-2 tracking-[-0.01em]">Activate your account</h1>
         <p className="text-[14px] text-[var(--text-secondary)] leading-[20px]">
-          Choose a strong password to secure your SUKI CRM account. You only need to do this once.
+          Choose a strong password to secure your Shahnaz CRM account. You only need to do this once.
         </p>
       </div>
 

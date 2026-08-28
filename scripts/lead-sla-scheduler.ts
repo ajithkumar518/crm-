@@ -53,7 +53,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     return;
   }
   await transporter.sendMail({
-    from: `"Suki CRM" <${process.env.SMTP_USER}>`,
+    from: `"Shahnaz CRM" <${process.env.SMTP_USER}>`,
     to,
     subject,
     html,
@@ -358,7 +358,7 @@ async function run72HourAutoReassignment() {
 // ─── Main runner ──────────────────────────────────────────────────────────────
 
 export async function runLeadSlaScheduler() {
-  console.log("\n🚀 Suki CRM Lead SLA Scheduler — Starting sweep at", new Date().toLocaleString("en-IN"));
+  console.log("\n🚀 Shahnaz CRM Lead SLA Scheduler — Starting sweep at", new Date().toLocaleString("en-IN"));
   try {
     await run24HourNotContactedCheck(); // 24h no contact
     await runSlaBreachDetection();    // Every 5 minutes
@@ -374,7 +374,7 @@ export async function runLeadSlaScheduler() {
 // ─── Entry point (run directly or schedule) ───────────────────────────────────
 
 if (require.main === module) {
-  console.log("Suki CRM Lead SLA Scheduler started.");
+  console.log("Shahnaz CRM Lead SLA Scheduler started.");
   console.log("Configured sweep: every 5 minutes.");
 
   // Run every 5 minutes

@@ -200,7 +200,7 @@ export function generateQuotationPdf(data: QuotationPdfData): jsPDF {
   const margin = 15;
   const contentW = pageW - 2 * margin;
 
-  const companyName = data.company?.name || "SUKI CRM";
+  const companyName = data.company?.name || "Shahnaz CRM";
 
   // ── Header ──
   let y = addDocumentHeader(doc, {

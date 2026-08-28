@@ -307,7 +307,7 @@ function drawFooterStatic(doc: jsPDF, margin: number, pageW: number, pageH: numb
   setFont(doc, "normal");
   doc.setTextColor(0, 0, 0);
   doc.text("Ref: SUKI-PF-01", margin + 2, footerY, { align: "left" });
-  doc.text("Suki CRM", pageW / 2, footerY, { align: "center" });
+  doc.text("Shahnaz CRM", pageW / 2, footerY, { align: "center" });
 }
 
 /** "Page X of Y" — written in a second pass once the true page count for the copy is known. */

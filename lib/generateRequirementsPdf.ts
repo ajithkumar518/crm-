@@ -325,7 +325,7 @@ export function generateRequirementsPdf(data: RequirementsPdfData): jsPDF {
   const contentW = pageW - 2 * margin;
   const safeBottom = pageH - 20; // leave room for footer line/text at pageH - 12 / -8
 
-  const companyName = data.company?.name || "SUKI CRM";
+  const companyName = data.company?.name || "Shahnaz CRM";
 
   // ── Header ──
   let y = addDocumentHeader(doc, {
