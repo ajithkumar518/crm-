@@ -1038,7 +1038,14 @@ export default function QuotationDetailPage() {
           <span className="text-xs text-slate-500">Valid Until: <strong className="text-slate-700">{validUntilDate.toLocaleDateString()}</strong></span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div><p className="text-xs font-semibold text-slate-500 uppercase mb-1">Customer</p><p className="text-sm font-bold text-slate-800">{quotation.customer?.name}</p><p className="text-xs text-slate-400">{quotation.customer?.customerCode}</p></div>
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Customer</p>
+            <p className="text-sm font-bold text-slate-800">{quotation.customer?.name}</p>
+            <p className="text-xs text-slate-400">{quotation.customer?.customerCode}</p>
+            {quotation.quantityWiseCategory && (
+              <p className="text-[10px] font-medium text-[var(--primary)] mt-1">Qty Category: {quotation.quantityWiseCategory}</p>
+            )}
+          </div>
           <div><p className="text-xs font-semibold text-slate-500 uppercase mb-1">Contact</p><p className="text-sm font-bold text-slate-800">{quotation.contact?.name || "—"}</p></div>
           <div><p className="text-xs font-semibold text-slate-500 uppercase mb-1">Created By</p><p className="text-sm font-bold text-slate-800">{quotation.createdBy?.name || "—"}</p></div>
           <div>

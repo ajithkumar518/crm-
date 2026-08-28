@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   const paymentTerms = searchParams.get("paymentTerms");
   const assignedUserId = searchParams.get("assignedUserId");
   const customerCategory = searchParams.get("customerCategory");
+  const quantityWiseCategory = searchParams.get("quantityWiseCategory");
   const page = parseInt(searchParams.get("page") || "1");
   const pageSize = 20;
 
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
   if (assignedUserId) where.assignedUserId = assignedUserId;
   if (paymentTerms) where.paymentTerms = { contains: paymentTerms };
   if (customerCategory) where.customer = { customerCategory };
+  if (quantityWiseCategory) where.quantityWiseCategory = quantityWiseCategory;
   if (dateFrom || dateTo) {
     where.createdAt = {};
     if (dateFrom) where.createdAt.gte = new Date(`${dateFrom}T00:00:00.000Z`);
@@ -97,6 +99,7 @@ export async function POST(request: NextRequest) {
   }
 
   const discountPercent = parseFloat(body.discountPercent) || 0;
+  const quantityWiseCategory = body.quantityWiseCategory || null;
 
   // If rfq_id provided, copy line items from RFQ with per-line-item costing
   let rfqLineItems: any[] = [];
@@ -317,6 +320,7 @@ export async function POST(request: NextRequest) {
           createdById: user.id,
           assignedUserId: body.assignedUserId || null,
           companyId: user.companyId,
+          quantityWiseCategory,
         },
       });
 

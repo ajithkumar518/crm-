@@ -77,6 +77,7 @@ export default function NewQuotationPage() {
   const [deliveryCharge, setDeliveryCharge] = useState("");
   const [testingCharge, setTestingCharge] = useState("");
   const [customerCategory, setCustomerCategory] = useState("");
+  const [quantityWiseCategory, setQuantityWiseCategory] = useState("");
 
   useEffect(() => {
     getCustomersAction().then(res => {
@@ -278,6 +279,7 @@ export default function NewQuotationPage() {
         body: JSON.stringify({
           ...submitForm, items, paymentTerms, deliveryTerms, freightTerms, leadTimeDays,
           transportCharge, otherCharges, weighingLoadingCharge, deliveryCharge, testingCharge,
+          quantityWiseCategory,
         }),
       });
       const data = await res.json();
@@ -347,6 +349,14 @@ export default function NewQuotationPage() {
                   <span>Linked to: <strong>{form.dealTitle}</strong> ({form.opportunityCode})</span>
                 </p>
               )}
+            </FormField>
+            <FormField label="Quantity Wise Category">
+              <Select value={quantityWiseCategory} onChange={(e) => setQuantityWiseCategory(e.target.value)}>
+                <option value="">-- Select Category --</option>
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+              </Select>
             </FormField>
             <FormField label="Customer Category">
               <Select value={customerCategory} disabled className="bg-[var(--surface-2)]">

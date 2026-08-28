@@ -85,6 +85,7 @@ function QuotationListContent() {
   const [paymentTermsFilter, setPaymentTermsFilter] = useState("");
   const [assignedUserFilter, setAssignedUserFilter] = useState("");
   const [customerCategoryFilter, setCustomerCategoryFilter] = useState("");
+  const [quantityWiseCategoryFilter, setQuantityWiseCategoryFilter] = useState("");
   const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -101,7 +102,7 @@ function QuotationListContent() {
     router.push(`/quotations?${params.toString()}`, { scroll: false });
   };
 
-  const hasActiveFilters = !!(statusFilter || dateFrom || dateTo || paymentTermsFilter || assignedUserFilter || customerCategoryFilter);
+  const hasActiveFilters = !!(statusFilter || dateFrom || dateTo || paymentTermsFilter || assignedUserFilter || customerCategoryFilter || quantityWiseCategoryFilter);
 
   const clearAllFilters = () => {
     setDateFrom("");
@@ -109,6 +110,7 @@ function QuotationListContent() {
     setPaymentTermsFilter("");
     setAssignedUserFilter("");
     setCustomerCategoryFilter("");
+    setQuantityWiseCategoryFilter("");
     router.push("/quotations", { scroll: false });
   };
 
@@ -131,6 +133,7 @@ function QuotationListContent() {
       if (paymentTermsFilter) params.paymentTerms = paymentTermsFilter;
       if (assignedUserFilter) params.assignedUserId = assignedUserFilter;
       if (customerCategoryFilter) params.customerCategory = customerCategoryFilter;
+      if (quantityWiseCategoryFilter) params.quantityWiseCategory = quantityWiseCategoryFilter;
       const res = await fetch(`/api/quotations?${new URLSearchParams(params)}`);
       const data = await res.json();
       if (data.success) {
@@ -161,7 +164,7 @@ function QuotationListContent() {
       loadQuotations();
     }, 350);
     return () => clearTimeout(handle);
-  }, [statusFilter, dateFrom, dateTo, paymentTermsFilter, assignedUserFilter, customerCategoryFilter]);
+  }, [statusFilter, dateFrom, dateTo, paymentTermsFilter, assignedUserFilter, customerCategoryFilter, quantityWiseCategoryFilter]);
 
   useEffect(() => {
     loadQuotations();
@@ -235,6 +238,17 @@ function QuotationListContent() {
         >
           <option value="">All Status</option>
           {quoteStatuses.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+        </select>
+
+        <select
+          value={quantityWiseCategoryFilter}
+          onChange={(e) => setQuantityWiseCategoryFilter(e.target.value)}
+          className="h-8 px-2 text-xs rounded-lg bg-slate-50 border border-slate-200 text-slate-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] cursor-pointer"
+        >
+          <option value="">All Qty Categories</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
         </select>
 
         <select
@@ -323,6 +337,7 @@ function QuotationListContent() {
                 <th className="crm-th text-right">Discount %</th>
                 <th className="crm-th text-right">Final Amount</th>
                 <th className="crm-th">Status</th>
+                <th className="crm-th text-center">Qty Category</th>
                 <th className="crm-th text-center">Customer Category</th>
                 <th className="crm-th text-center">Margin</th>
                 <th className="crm-th">Payment Terms</th>
@@ -333,16 +348,16 @@ function QuotationListContent() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={14} className="crm-td text-center py-12">
+                  <td colSpan={15} className="crm-td text-center py-12">
                     <div className="flex justify-center">
                       <CRMSpinner size={36} label="Loading quotations..." />
                     </div>
                   </td>
                 </tr>
               ) : error ? (
-                <tr><td colSpan={14} className="crm-td text-center py-8 text-red-500">{error}</td></tr>
+                <tr><td colSpan={15} className="crm-td text-center py-8 text-red-500">{error}</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={14} className="crm-td text-center py-12 text-muted-foreground">
+                <tr><td colSpan={15} className="crm-td text-center py-12 text-muted-foreground">
                   <div className="text-3xl mb-3">📄</div>
                   <p className="font-medium mb-1">No quotations found</p>
                   <p className="text-xs mb-4">
@@ -397,6 +412,7 @@ function QuotationListContent() {
                     <td className="crm-td text-right text-foreground">{q.discountPercent}%</td>
                     <td className="crm-td text-right font-medium text-foreground">{formatCurrency(q.finalAmount)}</td>
                     <td className="crm-td"><span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${(statusStyles[q.status] || statusStyles.Draft).badge}`}><span className={`w-1.5 h-1.5 rounded-full ${(statusStyles[q.status] || statusStyles.Draft).dot}`} />{q.status}</span></td>
+                    <td className="crm-td text-center text-foreground text-xs">{q.quantityWiseCategory || "—"}</td>
                     <td className="crm-td text-center"><span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${(customerCategoryStyles[q.customer?.customerCategory] || customerCategoryStyles["NON-80-20"]).badge}`}>{q.customer?.customerCategory || "—"}</span></td>
                     <td className="crm-td text-center">{q.overallMarginPercent != null ? <span className={`text-xs font-semibold ${Number(q.overallMarginPercent) >= 20 ? "text-emerald-600" : Number(q.overallMarginPercent) >= 15 ? "text-amber-600" : "text-rose-600"}`}>{Number(q.overallMarginPercent).toFixed(1)}%</span> : <span className="text-xs text-slate-400">—</span>}</td>
                     <td className="crm-td text-foreground text-sm whitespace-nowrap">{q.paymentTerms || "—"}</td>

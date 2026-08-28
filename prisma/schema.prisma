@@ -1470,6 +1470,7 @@ model Quotation {
   negotiationId            String?
   parentQuotationId        String?
   currentRound             Int                         @default(0)
+  quantityWiseCategory     String?
   holdReason               String?                     @db.NVarChar(Max)
   holdAt                   DateTime?
   negotiations             Negotiation[]

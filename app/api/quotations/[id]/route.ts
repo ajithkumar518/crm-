@@ -304,6 +304,7 @@ export async function PUT(
       if (body.leadTimeDays !== undefined) updateData.leadTimeDays = body.leadTimeDays ? parseInt(body.leadTimeDays) : null;
       if (body.contactId !== undefined) updateData.contactId = body.contactId || null;
       if (body.leadId !== undefined) updateData.leadId = body.leadId || null;
+      if (body.quantityWiseCategory !== undefined) updateData.quantityWiseCategory = body.quantityWiseCategory || null;
 
       // Update quotation
       const q = await tx.quotation.update({
