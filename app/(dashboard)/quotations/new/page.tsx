@@ -250,6 +250,7 @@ export default function NewQuotationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.customerId) { toast.error("Please select a customer"); return; }
+    if (!quantityWiseCategory) { toast.error("Please select a quantity wise category"); return; }
     if (!form.validUntil) { toast.error("Please set valid until date"); return; }
     if (items.length === 0) { toast.error("At least one line item is required"); return; }
     if (items.some(i => !i.description)) { toast.error("All items need a description"); return; }
@@ -350,8 +351,8 @@ export default function NewQuotationPage() {
                 </p>
               )}
             </FormField>
-            <FormField label="Quantity Wise Category">
-              <Select value={quantityWiseCategory} onChange={(e) => setQuantityWiseCategory(e.target.value)}>
+            <FormField label="Quantity Wise Category" required>
+              <Select value={quantityWiseCategory} onChange={(e) => setQuantityWiseCategory(e.target.value)} required>
                 <option value="">-- Select Category --</option>
                 <option value="Low">Low</option>
                 <option value="Medium">Medium</option>
