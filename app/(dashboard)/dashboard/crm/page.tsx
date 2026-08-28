@@ -80,6 +80,7 @@ export default function CrmDashboardPage() {
     setError("");
     try {
       const res = await fetch("/api/dashboard/suki");
+      if (!res.ok) { setError("Failed to load CRM dashboard"); return; }
       const json = await res.json();
       if (json.success) setData(json.data);
       else setError(json.message || "Failed to load");

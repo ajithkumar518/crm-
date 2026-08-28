@@ -174,7 +174,7 @@ export default function DashboardHeader({
     if (searchQuery.length < 2) { setSearchResults(null); return; }
     const t = setTimeout(() => {
       fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
-        .then(r => r.json())
+        .then(r => r.ok ? r.json() : { success: false })
         .then(d => { if (d.success) { setSearchResults(d.data); setIsSearchOpen(true); } })
         .catch(() => {});
     }, 300);
