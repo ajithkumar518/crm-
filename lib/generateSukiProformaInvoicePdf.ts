@@ -203,16 +203,11 @@ function computeTotals(data: SukiProformaInvoiceData) {
     data.billGstNumber,
     data.billState,
   );
-  const treatment = gstResult.treatment;
+  const isUnknown = gstResult.treatment === "unknown";
+  const treatment = isUnknown ? "intra_state" : gstResult.treatment;
   const isInterState = treatment === "inter_state";
 
-  // Block PDF generation if tax type cannot be determined — do NOT silently default
-  if (treatment === "unknown") {
-    throw new Error(
-      `Cannot generate Proforma Invoice PDF: ${gstResult.warning || "GST tax treatment could not be determined."} ` +
-      `Set the customer's Ship-To state, GSTIN, or Place of Supply field before generating the PDF.`
-    );
-  }
+  // Default to intra-state (CGST+SGST) if tax type cannot be determined and show a warning.
 
   const totalItemTaxable = data.items.reduce((s, it) => s + it.taxable, 0);
   const totalQty = data.items.reduce((s, it) => s + it.quantity, 0);

@@ -280,19 +280,15 @@ export function generateSukiQuotationPdf(data: SukiQuotationPdfData): jsPDF {
   const isInterState = gstResult.treatment === "inter_state";
   const isUnknown = gstResult.treatment === "unknown";
 
-  // Block PDF generation if tax type cannot be determined — do NOT silently default
-  if (isUnknown) {
-    throw new Error(
-      `Cannot generate Quotation PDF: ${gstResult.warning || "GST tax treatment could not be determined."} ` +
-      `Set the customer's Ship-To state, GSTIN, or Place of Supply field before generating the PDF.`
-    );
-  }
+  // Default to intra-state (CGST+SGST) if tax type cannot be determined and show a warning.
+  // The caller should set the customer/company GSTIN for accurate tax treatment.
+  const effectiveTreatment = isUnknown ? "intra_state" : gstResult.treatment;
 
   const computedItems = data.items.map((it) => {
     const cutting = it.cuttingCharge || 0;
     const taxable = it.quantity * it.unitPrice * (1 - (it.discountPercent || 0) / 100);
     const taxPct = it.taxPercent || 18;
-    const { cgst, sgst, igst, totalTax } = computeGstSplit(taxable, taxPct, gstResult.treatment);
+    const { cgst, sgst, igst, totalTax } = computeGstSplit(taxable, taxPct, effectiveTreatment);
     const total = taxable + totalTax + cutting;
     return { ...it, taxable, taxAmount: totalTax, cgst, sgst, igst, cutting, total };
   });
