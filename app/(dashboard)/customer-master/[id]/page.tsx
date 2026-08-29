@@ -525,6 +525,10 @@ export default function Customer360Page({ params: paramsPromise }: { params: Pro
                 <span className="text-slate-400 text-xs">Created:</span>
                 <span className="font-medium">{new Date(customer.createdAt).toLocaleDateString()}</span>
               </div>
+              <div>
+                <span className="text-slate-400 text-xs">Customer Category:</span>
+                <span className="font-medium">{customer.customerCategory || "—"}</span>
+              </div>
             </div>
           </div>
         </div>

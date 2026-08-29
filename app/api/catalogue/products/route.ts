@@ -21,6 +21,9 @@ export async function GET(request: Request) {
     const isActive = url.searchParams.get("isActive");
     const view = url.searchParams.get("view") || "";
     const productType = url.searchParams.get("productType") || "";
+    const materialGrade = url.searchParams.get("grade") || "";
+    const materialSize = url.searchParams.get("size") || "";
+    const description = url.searchParams.get("description") || "";
     const minPrice = url.searchParams.get("minPrice") || "";
     const maxPrice = url.searchParams.get("maxPrice") || "";
     const sortBy = url.searchParams.get("sortBy") || "createdAt";
@@ -46,6 +49,18 @@ export async function GET(request: Request) {
 
     if (productType) {
       where.productType = productType;
+    }
+
+    if (materialGrade) {
+      where.materialGrade = { contains: materialGrade };
+    }
+
+    if (materialSize) {
+      where.materialSize = { contains: materialSize };
+    }
+
+    if (description) {
+      where.description = { contains: description };
     }
 
     if (minPrice) {

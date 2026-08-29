@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
@@ -26,6 +26,84 @@ const icons = {
   plus: "M12 4v16m8-8H4",
   x: "M6 18L18 6M6 6l12 12",
 };
+
+function formatProductLabel(product: any) {
+  return product ? `${product.productCode ? product.productCode + " - " : ""}${product.name}` : "";
+}
+
+function ProductSearchableSelect({
+  products,
+  value,
+  onChange,
+  className,
+  placeholder = "Search product...",
+}: {
+  products: any[];
+  value: string;
+  onChange: (productId: string) => void;
+  className?: string;
+  placeholder?: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selected = products.find((p) => p.id === value);
+  const displayLabel = formatProductLabel(selected);
+
+  useEffect(() => {
+    setQuery(displayLabel);
+  }, [displayLabel]);
+
+  const filtered = useMemo(() => {
+    if (!query.trim()) return products;
+    const q = query.toLowerCase();
+    return products.filter((p) =>
+      [p.name, p.productCode, p.materialGrade, p.materialSize, p.productType, p.rmMake]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q))
+    );
+  }, [products, query]);
+
+  return (
+    <div className={cn("relative", className)}>
+      <input
+        ref={inputRef}
+        type="text"
+        className="input-field w-full text-xs py-1.5"
+        placeholder={placeholder}
+        value={query}
+        onFocus={() => { setOpen(true); inputRef.current?.select(); }}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onBlur={() => { setTimeout(() => setOpen(false), 120); }}
+      />
+      {open && (
+        <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-lg">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-[var(--text-tertiary)]">No products found</div>
+          ) : (
+            filtered.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onMouseDown={(e) => { e.preventDefault(); onChange(p.id); setOpen(false); }}
+                className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--surface-2)] text-[var(--text-primary)] border-b border-[var(--border-subtle)] last:border-0"
+              >
+                <div className="font-medium">{p.name}</div>
+                <div className="text-[10px] text-[var(--text-tertiary)]">
+                  {p.productCode}
+                  {p.materialGrade ? ` · ${p.materialGrade}` : ""}
+                  {p.materialSize ? ` · ${p.materialSize}` : ""}
+                  {p.productType ? ` · ${p.productType}` : ""}
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function NewQuotationPage() {
   const router = useRouter();
@@ -85,7 +163,7 @@ export default function NewQuotationPage() {
       else console.error("Failed to load customers:", res.message);
     }).catch(err => console.error("Error loading customers:", err));
     if (hasMod(MODULE_KEYS.PRODUCT_CATALOGUE)) {
-      fetch("/api/catalogue/products").then(res => res.json()).then(data => { if (data.success) setProducts(data.data || []); else console.error("Failed to load products:", data.message); }).catch(err => console.error("Error loading products:", err));
+      fetch("/api/catalogue/products?pageSize=1000").then(res => res.json()).then(data => { if (data.success) setProducts(data.data || []); else console.error("Failed to load products:", data.message); }).catch(err => console.error("Error loading products:", err));
     }
     if (hasMod(MODULE_KEYS.RFQ)) {
       fetch("/api/rfq").then(res => res.json()).then(data => { if (data.success) setRfqs(data.data || []); else console.error("Failed to load RFQs:", data.message); }).catch(err => console.error("Error loading RFQs:", err));
@@ -361,9 +439,9 @@ export default function NewQuotationPage() {
             </FormField>
             <FormField label="Customer Category">
               <Select value={customerCategory} disabled className="bg-[var(--surface-2)]">
-                <option value="">{form.customerId ? "(not set in Customer Master)" : "Select customer first"}</option>
+                <option value="">{form.customerId ? (customerCategory || "(not set in Customer Master)") : "Select customer first"}</option>
                 <option value="80-20">80-20</option>
-                <option value="Non 80-20">Non 80-20</option>
+                <option value="NON-80-20">NON-80-20</option>
               </Select>
             </FormField>
             <FormField label="Contact">
@@ -429,10 +507,13 @@ export default function NewQuotationPage() {
                   <div className="col-span-3">
                     <label className="block text-[10px] font-semibold text-[var(--text-tertiary)] mb-0.5">Product</label>
                     {hasMod(MODULE_KEYS.PRODUCT_CATALOGUE) ? (
-                      <Select value={item.productId} onChange={(e) => selectProduct(idx, e.target.value)} className="text-xs py-1.5">
-                        <option value="">-- Product --</option>
-                        {products.map((p: any) => <option key={p.id} value={p.id}>{p.productCode} - {p.name}</option>)}
-                      </Select>
+                      <ProductSearchableSelect
+                        products={products}
+                        value={item.productId}
+                        onChange={(productId) => selectProduct(idx, productId)}
+                        placeholder="-- Product --"
+                        className="text-xs"
+                      />
                     ) : (
                       <p className="text-[11px] text-[var(--text-tertiary)] py-1.5">Enter in Description →</p>
                     )}
