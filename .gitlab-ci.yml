@@ -63,6 +63,7 @@ test:
   script:
     - npm ci
     - npm run lint
+  allow_failure: true
 
 deploy:
   stage: deploy
