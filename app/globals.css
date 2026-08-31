@@ -1,0 +1,1944 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Typography overrides: no 600/700 weights ─────────────────────────────── */
+/* Map font-bold (700) and font-semibold (600) to font-weight 500 globally */
+.font-bold {
+  font-weight: 500 !important;
+}
+.font-semibold {
+  font-weight: 500 !important;
+}
+.font-extrabold {
+  font-weight: 500 !important;
+}
+.font-black {
+  font-weight: 500 !important;
+}
+
+/* ─── Design Tokens ──────────────────────────────────────────────────────────── */
+@theme {
+  /* Primary Brand — exposed as Tailwind utilities */
+  --color-brand: var(--brand-primary, #2090ff);
+  --color-brand-hover: var(--brand-primary-hover, #ff6901);
+  --color-brand-light: var(--brand-primary-light, #e8f7fc);
+  --color-brand-border: var(--brand-primary-border, #6cd3fe);
+  --color-brand-text: var(--brand-primary-text, #061953);
+
+  /* Sidebar — premium dark gradient */
+  --color-sidebar-bg: #000000;
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+
+  /* Surface */
+  --color-page-bg: var(--bg, #f5f6f8);
+  --color-card: var(--surface, #ffffff);
+  --color-border: var(--border, #e8eaed);
+  --color-border-subtle: var(--border-subtle, #f1f3f5);
+
+  /* Text */
+  --color-text-primary: var(--text-primary, #111827);
+  --color-text-secondary: var(--text-secondary, #6b7280);
+  --color-text-muted: var(--text-muted, #9ca3af);
+
+  /* Semantic — fixed status colors */
+  --color-success-bg: var(--status-success-bg, #e8f7ef);
+  --color-success-text: var(--status-success-text, #15803d);
+  --color-success-border: var(--status-success-border, #bbf7d0);
+
+  --color-warning-bg: var(--status-warning-bg, #fff4db);
+  --color-warning-text: var(--status-warning-text, #b45309);
+  --color-warning-border: var(--status-warning-border, #fde68a);
+
+  --color-danger-bg: var(--status-danger-bg, #fdecec);
+  --color-danger-text: var(--status-danger-text, #b91c1c);
+  --color-danger-border: var(--status-danger-border, #fecaca);
+
+  --color-info-bg: var(--status-info-bg, #eff6ff);
+  --color-info-text: var(--status-info-text, #1d4ed8);
+  --color-info-border: var(--status-info-border, #bfdbfe);
+
+  /* KPI Card Backgrounds */
+  --color-kpi-total-bg: var(--kpi-total-bg, #eff6ff);
+  --color-kpi-total-border: var(--kpi-total-border, #bfdbfe);
+  --color-kpi-done-bg: var(--kpi-done-bg, #e8f7ef);
+  --color-kpi-done-border: var(--kpi-done-border, #bbf7d0);
+  --color-kpi-pending-bg: var(--kpi-pending-bg, #fff4db);
+  --color-kpi-pending-border: var(--kpi-pending-border, #fde68a);
+  --color-kpi-overdue-bg: var(--kpi-overdue-bg, #fdecec);
+  --color-kpi-overdue-border: var(--kpi-overdue-border, #fecaca);
+
+  /* Slate Palette */
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+
+  /* Strict Theme Variables Bridge */
+  --color-theme-accent: var(--theme-accent);
+  --color-theme-accent-hover: var(--theme-accent-hover);
+  --color-theme-accent-light: var(--theme-accent-light);
+  --color-theme-table-header: var(--theme-table-header);
+  --color-theme-sidebar-accent: var(--theme-sidebar-accent);
+}
+
+/* ─── CSS Custom Properties ──────────────────────────────────────────────────── */
+:root {
+  /* Layout Base */
+  --sidebar-width: 220px;
+  --sidebar-collapsed: 52px;
+  --topbar-height: 52px;
+
+  /* Card and General */
+  --card-radius: 16px;
+  --primary-shadow: 0 4px 14px var(--accent-soft);
+  --primary-ring: var(--accent-soft);
+
+  /* Legacy aliases — mapped from theme tokens */
+  --primary: var(--accent, #2090ff);
+  --primary-hover: var(--accent-hover, #1a78d4);
+  --primary-light: var(--accent-soft, rgba(32, 144, 255, 0.1));
+  --background: var(--bg, #f9fafb);
+  --foreground: var(--text-primary, #111827);
+  --card-bg: var(--surface, #ffffff);
+
+  /* Strict Theme Mapping */
+  --theme-accent: var(--accent, #2090ff);
+  --theme-accent-hover: var(--accent-hover, #1a78d4);
+  --theme-accent-light: var(--accent-soft, rgba(32, 144, 255, 0.1));
+  --theme-table-header: var(--table-header-bg, #f3f8fc);
+  --theme-table-header-text: var(--table-header-text, #6b7280);
+  --theme-sidebar-accent: var(--sidebar-active, #2090ff);
+  --theme-progress-bar: var(--accent, #2090ff);
+  --theme-badge-active: var(--accent, #2090ff);
+  --theme-badge-active-text: var(--accent-contrast, #ffffff);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01";
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ─── KPI / Summary Cards ────────────────────────────────────────────────────── */
+@utility kpi-total {
+  background: var(--kpi-total-bg);
+  border: 1px solid var(--kpi-total-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  &:hover {
+    box-shadow: 0 4px 16px rgba(29, 78, 216, 0.08);
+    transform: translateY(-1px);
+  }
+}
+
+@utility kpi-completed {
+  background: var(--kpi-done-bg);
+  border: 1px solid var(--kpi-done-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  &:hover {
+    box-shadow: 0 4px 16px rgba(21, 128, 61, 0.08);
+    transform: translateY(-1px);
+  }
+}
+
+@utility kpi-pending {
+  background: var(--kpi-pending-bg);
+  border: 1px solid var(--kpi-pending-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  &:hover {
+    box-shadow: 0 4px 16px rgba(180, 83, 9, 0.08);
+    transform: translateY(-1px);
+  }
+}
+
+@utility kpi-overdue {
+  background: var(--kpi-overdue-bg);
+  border: 1px solid var(--kpi-overdue-border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  min-height: 130px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  &:hover {
+    box-shadow: 0 4px 16px rgba(185, 28, 28, 0.08);
+    transform: translateY(-1px);
+  }
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────────── */
+@utility btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background-color: var(--primary);
+  color: var(--accent-contrast) !important;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 200ms ease;
+  box-shadow: var(--primary-shadow);
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: var(--primary-hover);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 28%, transparent);
+    transform: translateY(-1px);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* Purple/Obsidian-dark: force contrast text/svgs in primary backgrounds */
+[data-theme="purple"][data-mode="dark"] .btn-primary,
+[data-theme="purple"][data-mode="dark"] [class*="bg-[var(--primary)]"],
+[data-theme="obsidian-dark"] .btn-primary,
+[data-theme="obsidian-dark"] [class*="bg-[var(--primary)]"] {
+  color: var(--accent-contrast) !important;
+}
+[data-theme="purple"][data-mode="dark"] [class*="bg-[var(--primary)]"] svg,
+[data-theme="purple"][data-mode="dark"] [class*="bg-[var(--primary)]"] span,
+[data-theme="obsidian-dark"] [class*="bg-[var(--primary)]"] svg,
+[data-theme="obsidian-dark"] [class*="bg-[var(--primary)]"] span {
+  color: var(--accent-contrast) !important;
+  stroke: var(--accent-contrast) !important;
+}
+
+@utility btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 200ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: var(--surface-2);
+    border-color: var(--border-subtle);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+@utility btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 150ms ease;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--surface-2);
+    color: var(--text-primary);
+  }
+}
+
+@utility btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  background-color: var(--status-danger);
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 200ms ease;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: var(--status-danger-text);
+    box-shadow: 0 4px 14px rgba(185, 28, 28, 0.25);
+    transform: translateY(-1px);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* ─── Action icon button (table row actions) ─────────────────────────────────── */
+@utility action-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 150ms ease;
+
+  &:hover {
+    background-color: var(--surface-2);
+    color: var(--text-primary);
+  }
+}
+
+/* ─── Input / Select ─────────────────────────────────────────────────────────── */
+@utility input-field {
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background-color: var(--surface-2);
+  border: 1.5px solid var(--border);
+  font-size: 13.5px;
+  color: var(--text-primary);
+  font-weight: 400;
+  transition: all 200ms ease;
+  letter-spacing: -0.01em;
+  outline: none;
+
+  &::placeholder {
+    color: var(--text-muted);
+  }
+
+  &:focus {
+    background-color: var(--surface);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-ring);
+  }
+  &:disabled {
+    background-color: var(--surface-offset);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+}
+
+@utility select-field {
+  width: 100%;
+  padding: 9px 36px 9px 14px;
+  border-radius: 10px;
+  background-color: var(--surface-2);
+  border: 1.5px solid var(--border);
+  font-size: 13.5px;
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 200ms ease;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+
+  &:focus {
+    background-color: var(--surface);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-ring);
+  }
+}
+
+select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 14px !important;
+  padding-right: 38px !important;
+  min-width: 140px;
+}
+
+/* Exclude tiny inline dashboard/widget selects from the min-width rule */
+select.text-\[10px\],
+select.text-\[11px\],
+select[class*="w-12"],
+select[class*="w-16"],
+select[class*="w-20"],
+select[class*="w-auto"] {
+  min-width: unset !important;
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────────────────── */
+@utility crm-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+@utility crm-card-md {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow-md);
+}
+
+/* ─── Table ──────────────────────────────────────────────────────────────────── */
+@utility crm-table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+  font-size: 14px;
+  table-layout: auto;
+}
+
+@utility crm-th {
+  padding: 12px 20px;
+  height: 48px;
+  background: var(--table-header-bg);
+  color: var(--table-header-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+@utility crm-td {
+  padding: 14px 20px;
+  height: 56px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+
+@utility crm-tr {
+  transition: background-color 100ms ease;
+  background-color: var(--surface);
+  &:hover {
+    background-color: var(--table-hover-bg) !important;
+  }
+  &:last-child td {
+    border-bottom: none;
+  }
+}
+
+/* Helper alignments for headers and cells */
+.crm-table th.text-center,
+.crm-table td.text-center {
+  text-align: center !important;
+}
+.crm-table th.text-center > div {
+  justify-content: center !important;
+}
+.crm-table th.text-right,
+.crm-table td.text-right {
+  text-align: right !important;
+}
+.crm-table th.text-right > div {
+  justify-content: flex-end !important;
+}
+
+/* ─── Date Picker / Calendar Theming (light + dark mode) ─────────────────── */
+/* Ensure the native date input calendar popup is visible and themed in both modes */
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Dark mode: invert the calendar icon so it's visible on dark backgrounds */
+html.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) !important;
+  opacity: 0.8;
+}
+html.dark input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Ensure date input text is visible in both modes */
+input[type="date"] {
+  color-scheme: light;
+}
+html.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+/* Style the date input placeholder text when empty */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: inherit;
+}
+
+/* Dark mode: ensure date fields don't show white-on-white calendar */
+html.dark input[type="date"] {
+  background-color: var(--surface-2) !important;
+  color: var(--text-primary) !important;
+}
+html.dark input[type="date"]::-webkit-datetime-edit {
+  color: var(--text-primary) !important;
+}
+
+/* Clickable table rows */
+.table-row-clickable {
+  cursor: pointer;
+}
+.table-row-clickable:hover td {
+  background-color: var(--table-hover-bg);
+}
+.table-row-clickable td:first-child {
+  border-radius: 8px 0 0 8px;
+}
+.table-row-clickable td:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+/* Selected row state — stands out above hover */
+.table-row-selected {
+  background-color: var(--table-selected-bg) !important;
+}
+.table-row-selected:hover td {
+  background-color: var(--table-selected-bg) !important;
+}
+
+/* Cell-specific typography and alignments */
+.crm-td-primary {
+  font-weight: 600;
+  color: var(--text-primary) !important;
+}
+.crm-td-secondary {
+  color: var(--text-secondary) !important;
+  font-size: 12.5px;
+}
+.crm-td-muted {
+  color: var(--text-muted) !important;
+  font-size: 12px;
+}
+.crm-action-cell {
+  width: 48px;
+  text-align: center;
+}
+.crm-avatar-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Primary name link styling inside clickable rows */
+.row-primary-link {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Standard icon action buttons */
+.row-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 0.5px solid var(--border-default);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 15px;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+.row-action-btn:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+.row-action-btn-danger {
+  color: var(--text-danger);
+}
+.row-action-btn-danger:hover {
+  background: var(--surface-2);
+  color: var(--text-danger);
+}
+
+/* Table cell truncation helper */
+@utility td-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hide scrollbar for filter toolbars */
+@utility scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ─── Status Badges ──────────────────────────────────────────────────────────── */
+@utility badge-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+@utility badge-contacted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+@utility badge-qualified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #faf5ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+}
+@utility badge-converted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e8f7ef;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+@utility badge-lost {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fdecec;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+@utility badge-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fff4db;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+@utility badge-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e8f7ef;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+@utility badge-inactive {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+@utility badge-overdue {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fdecec;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* Deal stage badges */
+@utility badge-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+@utility badge-won {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e8f7ef;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+@utility badge-negotiation {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fff4db;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+/* Priority badges */
+@utility badge-priority-low {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e8f7ef;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+@utility badge-priority-medium {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fff4db;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+@utility badge-priority-high {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #fdecec;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* ─── Sidebar ─────────────────────────────────────────────────────────────────── */
+@utility sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  transition: all 150ms ease;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.9);
+  }
+}
+
+@utility sidebar-item-active {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--accent-soft);
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background: var(--primary);
+    border-radius: 0 3px 3px 0;
+  }
+}
+
+/* ─── Page Shell ─────────────────────────────────────────────────────────────── */
+@utility page-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ─── Spinner ────────────────────────────────────────────────────────────────── */
+@utility spinner-brand {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  border-top-color: var(--primary);
+  border-right-color: var(--primary);
+  animation: spin 0.7s linear infinite;
+}
+
+/* ─── Form ───────────────────────────────────────────────────────────────────── */
+@utility form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+
+@utility form-error {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--status-danger-text);
+  margin-top: 4px;
+}
+
+/* ─── Form Layout System ────────────────────────────────────────────────────── */
+@utility form-section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+@utility form-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+@utility form-section-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@utility form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+}
+
+@utility form-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 200ms ease;
+  border: none;
+  outline: none;
+  white-space: nowrap;
+}
+
+@utility form-btn-primary {
+  background: var(--primary);
+  color: var(--accent-contrast);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  &:hover {
+    background: var(--primary-hover);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+@utility form-btn-secondary {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  &:hover {
+    background: var(--surface-1);
+    color: var(--text-primary);
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+@utility form-btn-danger {
+  background: var(--status-danger);
+  color: #ffffff;
+  &:hover {
+    opacity: 0.9;
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+/* ─── Avatar ─────────────────────────────────────────────────────────────────── */
+@utility avatar-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+@utility avatar-md {
+  width: 36px;
+  height: 36px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+@utility avatar-lg {
+  width: 48px;
+  height: 48px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 800;
+  flex-shrink: 0;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease forwards;
+}
+.animate-slide-right {
+  animation: slideInRight 0.25s ease forwards;
+}
+.animate-scale-in {
+  animation: scaleIn 0.18s ease forwards;
+}
+
+/* ─── Collapsible Section Animations ────────────────────────────────────────── */
+@keyframes collapseFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.collapsible-body-enter {
+  animation: collapseFadeIn 0.25s ease forwards;
+}
+
+/* ─── Steppers ───────────────────────────────────────────────────────────────── */
+@utility stepper-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  border-radius: 99px;
+}
+
+@utility stepper-line-done {
+  flex: 1;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 99px;
+}
+
+/* ─── Search Input ───────────────────────────────────────────────────────────── */
+@utility search-input {
+  width: 100%;
+  padding: 9px 14px 9px 38px;
+  border-radius: 10px;
+  background-color: var(--surface-2);
+  border: 1.5px solid var(--border);
+  font-size: 13.5px;
+  color: var(--text-primary);
+  transition: all 200ms ease;
+  outline: none;
+
+  &::placeholder {
+    color: var(--text-muted);
+  }
+
+  &:focus {
+    background: var(--surface);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-ring);
+  }
+}
+
+/* ─── Dividers ───────────────────────────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+}
+.divider-subtle {
+  height: 1px;
+  background: var(--border-subtle);
+}
+
+/* ─── Focus Ring ─────────────────────────────────────────────────────────────── */
+.focus-ring {
+  outline: none;
+  &:focus-visible {
+    box-shadow: 0 0 0 3px var(--primary-ring);
+  }
+}
+
+/* ─── Sidebar Collapsed State ────────────────────────────────────────────────── */
+/* Full width: 240px, Collapsed: 72px */
+.collapsed .nav-label {
+  opacity: 0;
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    opacity 0.2s ease,
+    width 0.25s ease;
+}
+.collapsed .nav-icon {
+  margin: 0 auto;
+  transition: margin 0.25s ease;
+}
+
+/* Tooltip for collapsed sidebar items */
+.sidebar-tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%) scale(0.95);
+  padding: 6px 12px;
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  z-index: 50;
+  box-shadow: var(--card-shadow-md);
+}
+
+.sidebar-tooltip::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 4px 4px 4px 0;
+  border-color: transparent var(--surface-2) transparent transparent;
+}
+
+.group:hover .sidebar-tooltip {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+/* Ensure collapsed menu items are centered */
+aside.collapsed nav a,
+aside.collapsed nav button {
+  justify-content: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Smooth width transition on sidebar */
+aside.sidebar-container {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus ring for toggle button */
+.sidebar-toggle:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--primary),
+    0 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Explicit Theme Utilities ──────────────────────────────────────────────── */
+.bg-surface {
+  background-color: var(--surface);
+}
+.bg-surface-2 {
+  background-color: var(--surface-2);
+}
+.bg-surface-offset {
+  background-color: var(--surface-offset);
+}
+.border-theme {
+  border-color: var(--border);
+}
+.border-theme-subtle {
+  border-color: var(--border-subtle);
+}
+.text-theme-primary {
+  color: var(--text-primary);
+}
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+.text-theme-muted {
+  color: var(--text-muted);
+}
+
+/* ─── Global Dark Mode Fallbacks & Safety Nets ─────────────────────────────── */
+html.dark input[type="text"],
+html.dark input[type="date"],
+html.dark input[type="email"],
+html.dark input[type="password"],
+html.dark input[type="number"],
+html.dark select,
+html.dark textarea {
+  background-color: var(--surface-2) !important;
+  border-color: #475569 !important; /* clearly visible border (slate-600) for contrast */
+  color: var(--text-primary) !important;
+}
+
+/* Brighten border on hover in dark mode */
+html.dark input[type="text"]:hover,
+html.dark input[type="date"]:hover,
+html.dark input[type="email"]:hover,
+html.dark input[type="password"]:hover,
+html.dark input[type="number"]:hover,
+html.dark select:hover,
+html.dark textarea:hover {
+  border-color: var(--primary) !important;
+}
+
+/* Distinct glowing focus states using the active theme color in dark mode */
+html.dark input[type="text"]:focus,
+html.dark input[type="date"]:focus,
+html.dark input[type="email"]:focus,
+html.dark input[type="password"]:focus,
+html.dark input[type="number"]:focus,
+html.dark select:focus,
+html.dark textarea:focus {
+  border-color: var(--primary) !important;
+  background-color: var(--surface) !important;
+  box-shadow: 0 0 0 3px var(--primary-ring) !important;
+}
+
+/* Dropdown list items styling in dark mode */
+html.dark select option {
+  background-color: #1a1a1a !important;
+  color: var(--text-primary) !important;
+}
+
+/* Clearly readable validation error messages in dark mode */
+html.dark .form-error {
+  color: #f87171 !important; /* bright rose/red */
+}
+
+/* Clearly visible borders and field boundaries in dark mode */
+html.dark .input-field,
+html.dark .select-field {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background-color: #121212 !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .input-field::placeholder {
+  color: #8b8b8b !important; /* clearly muted placeholder */
+}
+
+html.dark .input-field:hover,
+html.dark .select-field:hover {
+  border-color: var(--brand-primary) !important;
+}
+
+html.dark .input-field:focus,
+html.dark .select-field:focus {
+  border-color: var(--brand-primary) !important;
+  background-color: #0c0c0c !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
+}
+
+/* Brighter chevron for select in dark mode */
+html.dark .select-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23E2E8F0'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Backgrounds */
+html.dark .bg-white {
+  background-color: var(--surface) !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/80,
+html.dark .bg-slate-50\/60,
+html.dark .bg-slate-50\/50,
+html.dark .bg-slate-50\/30,
+html.dark .bg-slate-55\/30,
+html.dark .bg-slate-100,
+html.dark .bg-slate-200 {
+  background-color: var(--surface-2) !important;
+}
+
+html.dark .bg-white\/80 {
+  background-color: var(--surface-2) !important;
+}
+
+/* Modal header gradients override */
+html.dark .from-orange-50,
+html.dark .from-red-50,
+html.dark .to-slate-50,
+html.dark .to-white {
+  --tw-gradient-from: var(--surface-2) !important;
+  --tw-gradient-stops: var(--surface-2), var(--surface-2) !important;
+  --tw-gradient-to: var(--surface-2) !important;
+  background-image: none !important;
+  background-color: var(--surface-2) !important;
+}
+
+/* Alerts / Warning blocks dark styling override */
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/60 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+html.dark .border-amber-100,
+html.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .bg-red-50,
+html.dark .bg-red-50\/40,
+html.dark .bg-red-50\/60 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+html.dark .border-red-150,
+html.dark .border-red-100,
+html.dark .border-red-200 {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-50\/60 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+html.dark .border-emerald-100,
+html.dark .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+html.dark .bg-blue-50,
+html.dark .bg-blue-50\/60 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+}
+html.dark .border-blue-100,
+html.dark .border-blue-200 {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* ─── Sidebar nav hover: left-border accent + brightened background ─────────── */
+/* Applied via JS inline style in layout.tsx on onMouseEnter/Leave                */
+/* The --sidebar-hover value was bumped to rgba(255,255,255,0.22) in themes.css   */
+.sidebar-nav-link-hover {
+  background: var(--sidebar-hover) !important;
+  border-left: 2px solid var(--brand-primary) !important;
+  color: var(--sidebar-text-act) !important;
+}
+
+/* ─── Shared Table Wrapper ─────────────────────────────────────────────────── */
+
+.crm-table-wrapper {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+.crm-table-wrapper .overflow-x-auto {
+  overflow-x: auto;
+}
+
+/* ─── Borders, Dividers & Tables ───────────────────────────────────────────── */
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-200\/60,
+html.dark .border-slate-200\/80,
+html.dark .border-gray-200,
+html.dark .border-gray-100 {
+  border-color: var(--border) !important;
+}
+
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border) !important;
+}
+
+html.dark .divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border) !important;
+}
+
+/* ─── Table Header Normalization ─────────────────────────────────── */
+/* Force all table header backgrounds to the shared --table-header-bg token so  */
+/* every table (crm-table or custom) gets the same clean themed header strip.   */
+/* Scoped to thead to avoid breaking non-table uses of bg-slate-50/100.         */
+thead .bg-slate-50,
+thead .bg-slate-50\/50,
+thead .bg-slate-50\/60,
+thead .bg-slate-50\/80,
+thead .bg-slate-100,
+thead .bg-gray-50,
+thead .bg-gray-100,
+thead[class*="bg-slate-50"],
+thead[class*="bg-gray-50"] {
+  background-color: var(--table-header-bg) !important;
+}
+
+/* Also handle tr-based headers (some tables put bg on tr inside thead) */
+thead tr.bg-slate-50,
+thead tr.bg-slate-50\/50,
+thead tr.bg-slate-50\/80,
+thead tr.bg-gray-50 {
+  background-color: var(--table-header-bg) !important;
+}
+
+/* Table header text color */
+thead th,
+thead .text-slate-600,
+thead .text-slate-500,
+thead .text-gray-700,
+thead .text-gray-600 {
+  color: var(--table-header-text) !important;
+}
+
+/* ─── Dark Mode Table Row Hover Normalization ──────────────────────────────── */
+/* Ensure data table row hover states use the shared --table-hover-bg token.    */
+/* Scoped to .crm-table and .table-row-clickable to avoid affecting form/layout  */
+/* tables.                                                                       */
+html.dark .crm-table tbody tr:hover,
+html.dark .crm-table tbody tr:hover td,
+html.dark .table-row-clickable:hover,
+html.dark .table-row-clickable:hover td {
+  background-color: var(--table-hover-bg) !important;
+}
+
+/* Row dividers in dark mode — use --border-subtle for subtle separation */
+html.dark .crm-table tbody tr td {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* ─── Dark Mode Catch-All Table Normalization ──────────────────────────────── */
+/* Force ALL tables inside .crm-card (or .crm-table-wrapper) to use the shared   */
+/* dark table tokens — regardless of whether they use crm-table class or not.   */
+/* This is the single shared base that makes every table inherit the same clean  */
+/* dark behavior as the Leads table.                                            */
+
+/* Table background */
+html.dark .crm-card table,
+html.dark .crm-table-wrapper table {
+  background-color: var(--surface);
+}
+
+/* Header: background + text color for ALL thead elements */
+html.dark .crm-card thead,
+html.dark .crm-table-wrapper thead,
+html.dark .crm-card thead tr,
+html.dark .crm-table-wrapper thead tr {
+  background-color: var(--table-header-bg) !important;
+}
+
+html.dark .crm-card thead th,
+html.dark .crm-table-wrapper thead th {
+  background-color: var(--table-header-bg) !important;
+  color: var(--table-header-text) !important;
+  border-bottom: 1px solid var(--border) !important;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  padding: 8px 16px;
+  vertical-align: middle;
+}
+
+/* Body rows: consistent background + hover */
+html.dark .crm-card tbody tr,
+html.dark .crm-table-wrapper tbody tr {
+  background-color: var(--surface) !important;
+  transition: background-color 100ms ease;
+}
+
+html.dark .crm-card tbody tr:hover,
+html.dark .crm-table-wrapper tbody tr:hover,
+html.dark .crm-card tbody tr:hover td,
+html.dark .crm-table-wrapper tbody tr:hover td {
+  background-color: var(--table-hover-bg) !important;
+}
+
+/* Row dividers */
+html.dark .crm-card tbody tr td,
+html.dark .crm-table-wrapper tbody tr td {
+  border-bottom: 1px solid var(--border-subtle) !important;
+  color: var(--text-primary) !important;
+  padding: 10px 16px;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+html.dark .crm-card tbody tr:last-child td,
+html.dark .crm-table-wrapper tbody tr:last-child td {
+  border-bottom: none !important;
+}
+
+/* Header text color overrides for common Tailwind classes used in th */
+html.dark .crm-card thead .text-slate-600,
+html.dark .crm-card thead .text-slate-500,
+html.dark .crm-card thead .text-slate-400,
+html.dark .crm-card thead .text-gray-700,
+html.dark .crm-card thead .text-gray-600,
+html.dark .crm-card thead .text-gray-500 {
+  color: var(--table-header-text) !important;
+}
+
+/* ─── Dark Mode Status Pill Catch-All ──────────────────────────────────────── */
+/* Ensure all inline status pills (bg-*-50 text-*-700 border-*-200) get proper  */
+/* dark treatment even when the StatusBadge component is not used.              */
+
+/* Cyan pills (Contacted, etc.) */
+html.dark .bg-cyan-50,
+html.dark .bg-cyan-50\/60 {
+  background-color: rgba(6, 182, 212, 0.15) !important;
+  color: #22d3ee !important;
+}
+html.dark .border-cyan-200,
+html.dark .border-cyan-100 {
+  border-color: rgba(6, 182, 212, 0.3) !important;
+}
+html.dark .text-cyan-600,
+html.dark .text-cyan-700 {
+  color: #22d3ee !important;
+}
+
+/* Rose pills (Lost, High, etc.) */
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/60 {
+  background-color: rgba(244, 63, 94, 0.15) !important;
+  color: #fb7185 !important;
+}
+html.dark .border-rose-200,
+html.dark .border-rose-100 {
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+html.dark .text-rose-600,
+html.dark .text-rose-700 {
+  color: #fb7185 !important;
+}
+
+/* Indigo pills (SQL, etc.) */
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-50\/60 {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+  color: #818cf8 !important;
+}
+html.dark .border-indigo-200,
+html.dark .border-indigo-100 {
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+html.dark .text-indigo-600,
+html.dark .text-indigo-700 {
+  color: #818cf8 !important;
+}
+
+/* Slate pills (Inactive, Draft, Cancelled, etc.) */
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/60 {
+  background-color: rgba(148, 163, 184, 0.12) !important;
+  color: #94a3b8 !important;
+}
+html.dark .border-slate-300 {
+  border-color: rgba(148, 163, 184, 0.25) !important;
+}
+
+/* ─── Dark Mode Action Cell Consistency ────────────────────────────────────── */
+/* Ensure action buttons in table rows have consistent styling in dark mode.    */
+html.dark .crm-card .row-action-btn,
+html.dark .crm-table-wrapper .row-action-btn {
+  border-color: var(--border-default);
+  color: var(--text-secondary);
+}
+html.dark .crm-card .row-action-btn:hover,
+html.dark .crm-table-wrapper .row-action-btn:hover {
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+/* ─── Dark Mode Table Container Normalization ──────────────────────────────── */
+/* Force table containers to use --surface background in dark mode */
+html.dark .bg-white.rounded-2xl.border.border-slate-200\/60,
+html.dark .bg-white.rounded-xl.border.border-gray-200,
+html.dark .bg-white.rounded-lg.border.border-slate-200 {
+  background-color: var(--surface) !important;
+  border-color: var(--border) !important;
+}
+
+/* Text elements */
+html.dark .text-slate-800,
+html.dark .text-slate-900,
+html.dark .text-slate-700 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .text-slate-400 {
+  color: var(--text-muted) !important;
+}
+
+/* Hover and active states */
+html.dark .hover\:bg-slate-50\/80:hover,
+html.dark .hover\:bg-slate-50\/50:hover,
+html.dark .hover\:bg-slate-50\/40:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-slate-200:hover {
+  background-color: var(--surface-2) !important;
+}
+
+/* Table row hover — use --table-hover-bg for consistent subtle hover */
+html.dark tbody tr.hover\:bg-slate-50:hover,
+html.dark tbody tr.hover\:bg-slate-50\/80:hover,
+html.dark tbody tr.hover\:bg-slate-50\/50:hover,
+html.dark tbody tr.hover\:bg-slate-100:hover,
+html.dark tbody tr.hover\:bg-white:hover {
+  background-color: var(--table-hover-bg) !important;
+}
+
+html.dark .hover\:bg-emerald-50:hover {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+html.dark .hover\:bg-blue-50:hover {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+html.dark .hover\:bg-rose-50:hover {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Purple-themed elements (SQL qualification) */
+html.dark .bg-purple-50,
+html.dark .bg-purple-50\/60 {
+  background-color: rgba(168, 85, 247, 0.15) !important;
+  color: #c084fc !important;
+}
+html.dark .border-purple-100,
+html.dark .border-purple-200 {
+  border-color: rgba(168, 85, 247, 0.3) !important;
+}
+html.dark .text-purple-600,
+html.dark .text-purple-700,
+html.dark .text-purple-800 {
+  color: #c084fc !important;
+}
+html.dark .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.2) !important;
+}
+html.dark .hover\:bg-purple-100:hover {
+  background-color: rgba(168, 85, 247, 0.25) !important;
+}
+
+/* Slate-300 text — brighter in dark mode for better contrast */
+html.dark .text-slate-300 {
+  color: var(--text-secondary) !important;
+}
+html.dark .text-slate-200 {
+  color: var(--text-secondary) !important;
+}
+
+/* Disabled buttons — higher opacity in dark mode for visibility */
+html.dark .disabled\:opacity-40:disabled {
+  opacity: 0.6 !important;
+}
+html.dark .disabled\:opacity-50:disabled {
+  opacity: 0.65 !important;
+}
+
+/* Modal close button — ensure visibility in dark mode */
+html.dark .bg-white\/80 {
+  background-color: var(--surface-2) !important;
+}
+
+/* Warning banner text — ensure readability in dark mode */
+html.dark .text-amber-600,
+html.dark .text-amber-700,
+html.dark .text-amber-800 {
+  color: #fbbf24 !important;
+}
+html.dark .text-amber-500 {
+  color: #fcd34d !important;
+}
+
+/* Indigo elements */
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-50\/60 {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+  color: #818cf8 !important;
+}
+html.dark .border-indigo-100,
+html.dark .border-indigo-200 {
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+html.dark .text-indigo-500,
+html.dark .text-indigo-600,
+html.dark .text-indigo-700 {
+  color: #818cf8 !important;
+}
+
+/* Teal elements */
+html.dark .bg-teal-50,
+html.dark .bg-teal-50\/60 {
+  background-color: rgba(20, 184, 166, 0.15) !important;
+}
+html.dark .text-teal-500,
+html.dark .text-teal-600 {
+  color: #2dd4bf !important;
+}
+
+/* ─── Competitor Analytics — Chart Palette ─────────────────────────────────── */
+:root {
+  --chart-1: #2090ff;
+  --chart-2: #ff6901;
+  --chart-3: #10b981;
+  --chart-4: #f59e0b;
+  --chart-5: #ef4444;
+  --chart-6: #8b5cf6;
+  --chart-7: #ec4899;
+  --chart-8: #14b8a6;
+}
+
+/* Threat-level badges */
+@utility badge-threat-low {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
+  border: 1px solid var(--status-success-border);
+}
+@utility badge-threat-medium {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
+  border: 1px solid var(--status-warning-border);
+}
+@utility badge-threat-high {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--status-danger-bg);
+  color: var(--status-danger-text);
+  border: 1px solid var(--status-danger-border);
+}
+
+/* Analytics KPI card — neutral variant for competitor module */
+@utility analytics-kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+  &:hover {
+    box-shadow: var(--card-shadow-md);
+    transform: translateY(-1px);
+  }
+}
+
+/* Analytics chart container */
+@utility analytics-chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--card-shadow);
+}
+
+/* Competitor card (grid view) */
+@utility competitor-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+  &:hover {
+    box-shadow: var(--card-shadow-md);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+}
+
+/* Price range mini bar */
+@utility price-range-track {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+@utility price-range-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+}

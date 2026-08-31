@@ -1,0 +1,137 @@
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { computeEscalations } from "@/lib/escalationService";
+import { verifyAuth } from "@/lib/auth";
+import { enforceServiceEntitlement } from "@/lib/serviceEntitlement";
+
+export async function GET(request: Request) {
+  try {
+    const user = await verifyAuth();
+    const _svcGuard = await enforceServiceEntitlement(user);
+    if (_svcGuard) return _svcGuard;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const customerId = searchParams.get("customerId");
+    const statusId = searchParams.get("statusId");
+    
+    let whereClause: any = {};
+    if (customerId) whereClause.customerId = customerId;
+    if (statusId) whereClause.statusId = statusId;
+
+    const defects = await prisma.defect.findMany({
+      where: whereClause,
+      include: {
+        customer: true,
+        customerAsset: { include: { AMCContract: { orderBy: { createdAt: "desc" }, take: 1 } } },
+        priority: true,
+        status: true,
+        category: true,
+        defectType: true,
+        assignedTeam: true,
+        assignedEngineer: {
+          include: { user: true }
+        },
+        createdBy: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const defectsWithEscalations = await computeEscalations(defects);
+    return NextResponse.json(defectsWithEscalations);
+  } catch (error: any) {
+    console.error("Error fetching defects:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const user = await verifyAuth();
+    const _svcGuard2 = await enforceServiceEntitlement(user);
+    if (_svcGuard2) return _svcGuard2;
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const body = await request.json();
+    const {
+      title,
+      description,
+      categoryId,
+      defectTypeId,
+      priorityId,
+      statusId,
+      customerId,
+      customerAssetId,
+      assignedTeamId,
+      assignedEngineerId,
+      createdById,
+    } = body;
+
+    if (!title || !categoryId || !defectTypeId || !priorityId || !statusId || !customerId) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Use authenticated user, or fall back to provided createdById
+    let finalCreatedById = createdById;
+    if (!finalCreatedById || finalCreatedById === "user-1") {
+      finalCreatedById = user.id;
+    }
+
+    // Auto-assignment logic: derive team from category via TeamToCategory mapping
+    let actualTeamId = assignedTeamId;
+    let actualEngineerId = assignedEngineerId;
+    
+    if (!actualTeamId && categoryId) {
+      const categoryWithTeams = await prisma.serviceCategory.findUnique({
+        where: { id: categoryId },
+        include: { teams: { where: { isActive: true } } },
+      });
+      if (categoryWithTeams && categoryWithTeams.teams.length > 0) {
+        actualTeamId = categoryWithTeams.teams[0].id;
+      }
+    }
+
+    if (actualTeamId && !actualEngineerId) {
+      const firstEngineer = await prisma.serviceEngineer.findFirst({
+        where: { teamId: actualTeamId, isActive: true },
+      });
+      if (firstEngineer) {
+        actualEngineerId = firstEngineer.id;
+      }
+    }
+
+    const newDefect = await prisma.defect.create({
+      data: {
+        title,
+        description,
+        categoryId,
+        defectTypeId,
+        priorityId,
+        statusId,
+        customerId,
+        customerAssetId,
+        assignedTeamId: actualTeamId,
+        assignedEngineerId: actualEngineerId,
+        createdById: finalCreatedById,
+      },
+      include: {
+        customer: true,
+        customerAsset: { include: { AMCContract: { orderBy: { createdAt: "desc" }, take: 1 } } },
+        priority: true,
+        status: true,
+        category: true,
+        defectType: true,
+        assignedTeam: true,
+        assignedEngineer: {
+          include: { user: true }
+        },
+        createdBy: true,
+      }
+    });
+
+    return NextResponse.json(newDefect);
+  } catch (error: any) {
+    console.error("Error creating defect:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

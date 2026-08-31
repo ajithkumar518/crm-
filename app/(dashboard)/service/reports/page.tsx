@@ -1,0 +1,320 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { DataTable, type ColumnDef } from "@/components/shared/DataTable";
+import { 
+  FileSpreadsheet, Filter, Search, Download, RefreshCw, 
+  BarChart, PieChart, Users, Settings, Wrench, HardDrive 
+} from "lucide-react";
+import { cn } from "@/lib/ui-utils";
+import { StatusFilterBar } from "@/components/shared/StatusFilterBar";
+
+type ReportType = 
+  | "requests" 
+  | "complaints" 
+  | "defects" 
+  | "installations" 
+  | "warranty" 
+  | "engineer";
+
+export default function ServiceReportsPage() {
+  const searchParams = useSearchParams();
+  const reportParam = searchParams?.get("report");
+  
+  const [reportType, setReportType] = useState<ReportType>("requests");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("All");
+
+  const [data, setData] = useState<Record<ReportType, any[]>>({
+    requests: [],
+    complaints: [],
+    defects: [],
+    installations: [],
+    warranty: [],
+    engineer: [] // Keep empty or mock if backend isn't ready for engineer aggregation
+  });
+  const [loading, setLoading] = useState(false);
+
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      const [reqs, comps, defs, insts, wars, amcs, engPerf] = await Promise.all([
+        fetch("/api/service/requests").then(r => r.ok ? r.json() : []),
+        fetch("/api/service/complaints").then(r => r.ok ? r.json() : []),
+        fetch("/api/service/defects").then(r => r.ok ? r.json() : []),
+        fetch("/api/service/installations").then(r => r.ok ? r.json() : []),
+        fetch("/api/service/warranty-claims").then(r => r.ok ? r.json() : []),
+        fetch("/api/service/amc-contracts").then(r => r.ok ? r.json() : []),
+        fetch("/api/service/reports/engineer-performance").then(r => r.ok ? r.json() : []),
+      ]);
+
+      const mappedWarranty = [
+        ...wars.map((w: any) => ({
+          type: "Warranty",
+          serial: w.customerAsset?.serialNumber || "-",
+          product: w.customerAsset?.productName || "-",
+          customer: w.customer?.name || "-",
+          status: w.status?.name || "-",
+          endDate: w.customerAsset?.warrantyExpiryDate
+        })),
+        ...amcs.map((a: any) => ({
+          type: "AMC",
+          serial: a.customerAsset?.serialNumber || "-",
+          product: a.customerAsset?.productName || "-",
+          customer: a.customer?.name || "-",
+          status: a.status?.name || "-",
+          endDate: a.endDate
+        }))
+      ];
+
+      setData({
+        requests: reqs.map((r: any) => ({
+          code: r.id.split("-")[0],
+          subject: r.title,
+          customer: r.customer?.name,
+          status: r.status?.name,
+          date: r.createdAt?.substring(0, 10),
+          priority: r.priority?.name || "Medium"
+        })),
+        complaints: comps.map((c: any) => ({
+          code: c.id.split("-")[0],
+          type: c.complaintType?.name || "-",
+          customer: c.customer?.name,
+          status: c.status?.name,
+          date: c.createdAt?.substring(0, 10),
+          severity: c.priority?.name || "Medium"
+        })),
+        defects: defs.map((d: any) => ({
+          code: d.id.split("-")[0],
+          defect: d.title,
+          asset: d.customerAsset?.productName || "-",
+          status: d.status?.name,
+          date: d.createdAt?.substring(0, 10)
+        })),
+        installations: insts.map((i: any) => ({
+          code: i.id.split("-")[0],
+          customer: i.customer?.name,
+          asset: i.customerAsset?.productName || "-",
+          status: i.status?.name,
+          date: i.createdAt?.substring(0, 10)
+        })),
+        warranty: mappedWarranty,
+        engineer: engPerf
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  useEffect(() => {
+    if (reportParam && ["requests", "complaints", "defects", "installations", "warranty", "engineer"].includes(reportParam)) {
+      setReportType(reportParam as ReportType);
+    }
+  }, [reportParam]);
+
+  const handleExport = () => {
+    const rows = filteredData;
+    if (rows.length === 0) return;
+
+    const cols = getColumns();
+    const headers = cols.map((c: any) => c.header);
+
+    const csvLines: string[] = [headers.join(",")];
+
+    for (const row of rows) {
+      const values = cols.map((c: any) => {
+        const val = row[c.accessorKey as string];
+        const cellStr = val !== undefined && val !== null ? String(val) : "";
+        // Escape quotes and wrap in quotes if contains comma or quote
+        if (cellStr.includes(",") || cellStr.includes('"') || cellStr.includes("\n")) {
+          return `"${cellStr.replace(/"/g, '""')}"`;
+        }
+        return cellStr;
+      });
+      csvLines.push(values.join(","));
+    }
+
+    const csv = csvLines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `service-${reportType}-report-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const getColumns = (): ColumnDef<any>[] => {
+    switch (reportType) {
+      case "requests":
+        return [
+          { header: "Request Code", accessorKey: "code", cell: (r) => <span className="font-mono text-[10px]">{r.code}</span> },
+          { header: "Subject", accessorKey: "subject" },
+          { header: "Customer", accessorKey: "customer" },
+          { header: "Date", accessorKey: "date" },
+          { header: "Priority", accessorKey: "priority" },
+          { header: "Status", accessorKey: "status" }
+        ];
+      case "complaints":
+        return [
+          { header: "Complaint Code", accessorKey: "code", cell: (r) => <span className="font-mono text-[10px]">{r.code}</span> },
+          { header: "Type", accessorKey: "type" },
+          { header: "Customer", accessorKey: "customer" },
+          { header: "Severity", accessorKey: "severity" },
+          { header: "Date", accessorKey: "date" },
+          { header: "Status", accessorKey: "status" }
+        ];
+      case "defects":
+        return [
+          { header: "Defect Code", accessorKey: "code", cell: (r) => <span className="font-mono text-[10px]">{r.code}</span> },
+          { header: "Defect", accessorKey: "defect" },
+          { header: "Asset", accessorKey: "asset" },
+          { header: "Date", accessorKey: "date" },
+          { header: "Status", accessorKey: "status" }
+        ];
+      case "installations":
+        return [
+          { header: "Installation Code", accessorKey: "code", cell: (r) => <span className="font-mono text-[10px]">{r.code}</span> },
+          { header: "Customer", accessorKey: "customer" },
+          { header: "Asset", accessorKey: "asset" },
+          { header: "Date", accessorKey: "date" },
+          { header: "Status", accessorKey: "status" }
+        ];
+      case "warranty":
+        return [
+          { header: "Type", accessorKey: "type" },
+          { header: "Serial Number", accessorKey: "serial", cell: (r) => <span className="font-mono text-[10px]">{r.serial}</span> },
+          { header: "Product", accessorKey: "product" },
+          { header: "Customer", accessorKey: "customer" },
+          { header: "End Date", accessorKey: "endDate", cell: (r) => <span>{r.endDate ? new Date(r.endDate).toLocaleDateString() : "-"}</span> },
+          { header: "Status", accessorKey: "status" }
+        ];
+      case "engineer":
+        return [
+          { header: "Engineer Name", accessorKey: "name" },
+          { header: "Team", accessorKey: "team" },
+          { header: "Assigned Tickets", accessorKey: "assigned" },
+          { header: "Resolved Tickets", accessorKey: "resolved" },
+          { header: "Completed Visits", accessorKey: "completedVisits" },
+          { header: "SLA Met Rate", accessorKey: "slaMet" },
+          { header: "Avg Rating", accessorKey: "avgRating" },
+          { header: "Total Reviews", accessorKey: "totalReviews" }
+        ];
+    }
+  };
+
+  const currentData = data[reportType] || [];
+  
+  const filteredData = currentData.filter(item => {
+    let matchesSearch = true;
+    let matchesStatus = true;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      matchesSearch = Object.values(item).some(val => 
+        String(val).toLowerCase().includes(q)
+      );
+    }
+
+    if (selectedStatus !== "All") {
+      matchesStatus = item.status === selectedStatus;
+    }
+
+    return matchesSearch && matchesStatus;
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-black text-[var(--text-primary)]">Service Reports & Analytics</h1>
+          <p className="text-xs text-[var(--text-muted)]">Generate cross-module insights, SLA tracking, and engineer performance metrics.</p>
+        </div>
+        <button 
+          onClick={handleExport}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs font-bold transition-colors shadow-sm"
+        >
+          <Download size={14} /> Export Report
+        </button>
+      </div>
+
+      <StatusFilterBar
+        statuses={[
+          { value: "requests", label: "Service Request Report" },
+          { value: "complaints", label: "Complaint Report" },
+          { value: "defects", label: "Defect Report" },
+          { value: "installations", label: "Installation Report" },
+          { value: "warranty", label: "Warranty & AMC Report" },
+          { value: "engineer", label: "Engineer Performance Report" },
+        ]}
+        paramKey="report"
+        basePath="/service/reports"
+      />
+
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <div className="flex-1 min-w-0 space-y-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4 backdrop-blur-md flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className="relative flex-1 md:w-64">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+                <input 
+                  type="text" 
+                  placeholder="Search in report..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors placeholder-[var(--text-muted)]"
+                />
+              </div>
+              <div className="relative">
+                <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="pl-9 pr-8 py-2 text-xs rounded-lg border border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-primary)] focus:outline-none focus:border-blue-500 transition-colors appearance-none cursor-pointer"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="New">New</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="Active">Active</option>
+                  <option value="Expired">Expired</option>
+                </select>
+              </div>
+            </div>
+            
+            <button 
+              onClick={fetchReports}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface)] border border-[var(--border)] text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors whitespace-nowrap"
+            >
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh Data
+            </button>
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden backdrop-blur-md">
+            {loading ? (
+              <div className="p-12 flex flex-col items-center justify-center text-[var(--text-muted)] gap-3">
+                <RefreshCw size={24} className="animate-spin text-blue-500" />
+                <span className="text-sm font-semibold">Generating Report...</span>
+              </div>
+            ) : filteredData.length > 0 ? (
+              <DataTable data={filteredData} columns={getColumns()} />
+            ) : (
+              <div className="p-12 text-center text-sm font-semibold text-[var(--text-muted)] border-t border-[var(--border)]">
+                No data found for this report with current filters.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

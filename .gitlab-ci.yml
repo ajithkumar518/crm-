@@ -1,0 +1,79 @@
+# GitLab CI/CD pipeline for suki_crm (Next.js 16 + Prisma)
+# This file must be at the root of the repository.
+#
+# GitLab variables you may need to set (Settings > CI/CD > Variables):
+#   - DATABASE_URL              # only if the build or runtime needs it
+#   - NEXT_PUBLIC_CRM_VARIANT   # optional, defaults to "1" if not set
+#   - OPENAI_API_KEY            # only if build/runtime needs it
+# Add any other secrets your app requires as masked/protected variables.
+
+# This runner is a shell executor, so we install Node locally.
+# If you switch to a Docker runner later, replace the before_script with `image: node:20`.
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  NODE_VERSION: "20.15.1"
+  NODE_HOME: "$CI_PROJECT_DIR/tools/node"
+  NEXT_TELEMETRY_DISABLED: "1"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  JWT_SECRET: "suki-crm-ci-placeholder-jwt-secret-replace-in-gitlab-ci-cd-variables"
+
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - tools/node/
+    - .npm/
+
+before_script:
+  - mkdir -p tools/node
+  - if [ ! -f "$NODE_HOME/bin/node" ]; then curl -fsSL "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" -o node.tar.xz && tar -xJf node.tar.xz --strip-components=1 -C tools/node; fi
+  - export PATH="$NODE_HOME/bin:$PATH"
+  - node -v && npm -v
+
+build:
+  stage: build
+  script:
+    - npm ci
+    - npx prisma generate
+    - npm install dommatrix --no-save
+    - |
+      cat > dommatrix-polyfill.js <<'EOF'
+      const dommatrix = require('dommatrix');
+      if (typeof global.DOMMatrix === 'undefined') global.DOMMatrix = dommatrix.DOMMatrix || dommatrix;
+      if (typeof global.DOMMatrixReadOnly === 'undefined') global.DOMMatrixReadOnly = dommatrix.DOMMatrixReadOnly || dommatrix.DOMMatrix || dommatrix;
+      EOF
+    - NODE_OPTIONS="--require $CI_PROJECT_DIR/dommatrix-polyfill.js" npm run build
+  artifacts:
+    paths:
+      - .next/
+      - public/
+      - package.json
+      - package-lock.json
+      - next.config.ts
+      - tsconfig.json
+      - prisma/
+    expire_in: 1 day
+
+test:
+  stage: test
+  script:
+    - npm ci
+    - ESLINT_USE_FLAT_CONFIG=false npx eslint . --ext .js,.jsx,.ts,.tsx || true
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploy step is not configured yet."
+    - echo "Add your production deployment commands here (SSH, Docker, Kubernetes, GitLab Pages, etc.)."
+  dependencies:
+    - build
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    url: https://your-domain.com
