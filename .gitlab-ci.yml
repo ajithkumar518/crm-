@@ -1,5 +1,5 @@
 # GitLab CI/CD pipeline for suki_crm (Next.js 16 + Prisma)
-# This file must be at the root of the repository on the `main` branch.
+# This file must be at the root of the repository.
 #
 # GitLab variables you may need to set (Settings > CI/CD > Variables):
 #   - DATABASE_URL              # only if the build or runtime needs it
@@ -7,7 +7,8 @@
 #   - OPENAI_API_KEY            # only if build/runtime needs it
 # Add any other secrets your app requires as masked/protected variables.
 
-image: node:20
+# This runner is a shell executor, so we install Node locally.
+# If you switch to a Docker runner later, replace the before_script with `image: node:20`.
 
 stages:
   - install
@@ -16,13 +17,22 @@ stages:
   - deploy
 
 variables:
+  NODE_VERSION: "20.15.1"
+  NODE_HOME: "$CI_PROJECT_DIR/tools/node"
   NEXT_TELEMETRY_DISABLED: "1"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
 
 cache:
   key: "${CI_COMMIT_REF_SLUG}"
   paths:
+    - tools/node/
     - .npm/
+
+before_script:
+  - mkdir -p tools/node
+  - if [ ! -f "$NODE_HOME/bin/node" ]; then curl -fsSL "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" -o node.tar.xz && tar -xJf node.tar.xz --strip-components=1 -C tools/node; fi
+  - export PATH="$NODE_HOME/bin:$PATH"
+  - node -v && npm -v
 
 install:
   stage: install
