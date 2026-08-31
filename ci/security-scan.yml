@@ -1,0 +1,96 @@
+# Vendored copy of ops/ci-templates -> security-scan.yml
+# Source of truth: https://git.sukierp.com/ops/ci-templates (project 15),
+# commit 97dc64f (2026-08-29). Copied here 2026-08-31.
+#
+# WHY A COPY INSTEAD OF `include: project: ops/ci-templates`:
+# GitLab resolves a cross-project include with the permissions of the USER who
+# triggers the pipeline — not the project's, not the runner's. `ops` is a
+# private group, so only a member of `ops` could start a pipeline in this
+# project. For everyone else the whole pipeline failed at config resolution,
+# before a single job was created, with:
+#   Project `ops/ci-templates` not found or access denied!
+# The group can't be made internal, so the dependency is removed by vendoring.
+#
+# KEEPING IT IN SYNC (manual, whenever ops/ci-templates changes):
+#   git clone https://git.sukierp.com/ops/ci-templates.git
+#   cp ci-templates/security-scan.yml ci/security-scan.yml   # re-add this header
+#
+# ---------------------------------------------------------------------------
+# ops/ci-templates: shared security-scan + registry-publish jobs.
+# Added 2026-08-29 (devsecops rollout).
+#
+# Consumer contract:
+#   1. add `scan` to your stages list (after build)
+#   2. define SCAN_IMAGES in variables: space-separated local image:tag list
+#   3. include this file
+#   4. if your runner requires tags, override per job, e.g.
+#        trivy:image: {tags: [cadence]}
+#
+# All jobs are allow_failure: findings are surfaced, not (yet) blocking.
+# Flip allow_failure to false per-project once the baseline is clean.
+
+trivy:image:
+  stage: scan
+  allow_failure: true
+  script:
+    - |
+      rc=0
+      for img in $SCAN_IMAGES; do
+        echo "===== trivy image: $img ====="
+        docker run --rm \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v trivy-cache:/root/.cache \
+          aquasec/trivy:latest image \
+          --exit-code 1 --severity CRITICAL --ignore-unfixed \
+          --timeout 15m "$img" || rc=1
+      done
+      exit $rc
+
+trivy:fs:
+  stage: scan
+  allow_failure: true
+  script:
+    - docker run --rm
+      -v "$CI_PROJECT_DIR:/src"
+      -v trivy-cache:/root/.cache
+      aquasec/trivy:latest fs
+      --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed
+      --scanners vuln,secret,misconfig /src
+
+gitleaks:
+  stage: scan
+  allow_failure: true
+  script:
+    - docker run --rm -v "$CI_PROJECT_DIR:/repo"
+      zricethezav/gitleaks:latest detect --source /repo --no-git --redact
+
+# Pushes the locally-built images to the instance container registry for
+# provenance/rollback. Manual by design: deploys still use local images.
+publish:
+  stage: scan
+  when: manual
+  allow_failure: true
+  script:
+    - REG=registry.sukierp.com
+    - PROJ=$(echo "$CI_PROJECT_PATH" | tr '[:upper:]' '[:lower:]')
+    - docker login "$REG" -u gitlab-ci-token -p "$CI_JOB_TOKEN"
+    - |
+      for img in $SCAN_IMAGES; do
+        name="${img%%:*}"
+        dest="$REG/$PROJ/$name"
+        docker tag "$img" "$dest:$CI_COMMIT_SHORT_SHA"
+        docker tag "$img" "$dest:latest"
+        # docker 29 (containerd store) can PUT the OCI index before its
+        # child manifest lands; GitLab registry then 400s with
+        # MANIFEST_BLOB_UNKNOWN. The child IS uploaded moments later, so a
+        # short retry converges. Seen and diagnosed 2026-08-29.
+        for tag in "$CI_COMMIT_SHORT_SHA" latest; do
+          ok=""
+          for attempt in 1 2 3; do
+            if docker push "$dest:$tag"; then ok=1; break; fi
+            echo "push $dest:$tag failed (attempt $attempt), retrying in 5s"; sleep 5
+          done
+          [ -n "$ok" ] || { echo "push $dest:$tag failed after 3 attempts"; exit 1; }
+        done
+      done
+    - docker logout "$REG"

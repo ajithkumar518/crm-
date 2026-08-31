@@ -1,79 +1,210 @@
-# GitLab CI/CD pipeline for suki_crm (Next.js 16 + Prisma)
-# This file must be at the root of the repository.
+# CI/CD for shahnaz-crm on 202-cloud-server.
 #
-# GitLab variables you may need to set (Settings > CI/CD > Variables):
-#   - DATABASE_URL              # only if the build or runtime needs it
-#   - NEXT_PUBLIC_CRM_VARIANT   # optional, defaults to "1" if not set
-#   - OPENAI_API_KEY            # only if build/runtime needs it
-# Add any other secrets your app requires as masked/protected variables.
+# Ported from suki_crm (this app is a fork of it) so the two pipelines stay
+# recognisably the same. Replaces the original scaffold pipeline, which
+# installed Node by hand on the shell runner and whose `deploy` job was a
+# placeholder echo -- the real containerised pipeline lived on the
+# `initial-import` branch, which no longer exists on the remote.
+#
+# The runner (`202-vm-shahnaz-crm`, project-scoped, untagged) is a `shell`
+# executor living inside the Hyper-V VM, so it builds straight into the same
+# Docker engine that runs the stack. Images never cross the network -- no
+# registry push/pull, which is both faster and sidesteps the known registry
+# defect on this GitLab instance.
+#
+# Deploys are MANUAL. Pushing to main does not create a pipeline; someone has
+# to press Run pipeline. Same policy as Cadence and suki_crm.
 
-# This runner is a shell executor, so we install Node locally.
-# If you switch to a Docker runner later, replace the before_script with `image: node:20`.
+variables:
+  SCAN_IMAGES: "shahnaz-crm:latest"
+  APP: "shahnaz-crm"
+  STACK_DIR: "/opt/stacks/shahnaz-crm"
+  HEALTH_URL: "http://172.31.0.10:3003/"
+  GIT_DEPTH: "1"
+
+  # Shown as a dropdown on the Run pipeline page. Consumed ONLY by the manual
+  # db-task job -- a normal deploy never touches the schema.
+  DB_SCRIPT:
+    value: "prisma:status"
+    options:
+      - "prisma:status"
+      - "prisma:validate"
+      - "prisma:generate"
+      - "prisma:migrate-deploy"
+      - "prisma:db-push"
+      - "seed:superadmin"
+      - "seed:suki-masters"
+    description: >-
+      Database command for the manual db-task job, run against PRODUCTION.
+      prisma:status = read-only, shows pending migrations (safe default).
+      prisma:migrate-deploy = apply committed migrations (safe, idempotent).
+      prisma:db-push = sync schema straight from code with NO migration
+      history and --accept-data-loss; it can drop columns without asking --
+      only for fixing drift. seed:* run the deployment_seeding scripts.
+
+.deploy_rules: &deploy_rules
+  - if: $CI_PIPELINE_SOURCE == "web"
+  - if: $CI_PIPELINE_SOURCE == "api"
+  - if: $CI_PIPELINE_SOURCE == "trigger"
+  - if: $CI_PIPELINE_SOURCE == "schedule"
 
 stages:
   - build
-  - test
+  - scan
   - deploy
+  - verify
+  - cleanup
 
-variables:
-  NODE_VERSION: "20.15.1"
-  NODE_HOME: "$CI_PROJECT_DIR/tools/node"
-  NEXT_TELEMETRY_DISABLED: "1"
-  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
-  JWT_SECRET: "suki-crm-ci-placeholder-jwt-secret-replace-in-gitlab-ci-cd-variables"
-
-cache:
-  key: "${CI_COMMIT_REF_SLUG}"
-  paths:
-    - tools/node/
-    - .npm/
-
-before_script:
-  - mkdir -p tools/node
-  - if [ ! -f "$NODE_HOME/bin/node" ]; then curl -fsSL "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" -o node.tar.xz && tar -xJf node.tar.xz --strip-components=1 -C tools/node; fi
-  - export PATH="$NODE_HOME/bin:$PATH"
-  - node -v && npm -v
-
+# ---------------------------------------------------------------------------
+# BUILD - tag the current :latest as :previous first, so rollback has a target.
+# ---------------------------------------------------------------------------
 build:
   stage: build
+  rules:
+    - *deploy_rules
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"   # build only, no deploy
   script:
-    - npm ci
-    - npx prisma generate
-    - npm install dommatrix --no-save
+    - set -euo pipefail
     - |
-      cat > dommatrix-polyfill.js <<'EOF'
-      const dommatrix = require('dommatrix');
-      if (typeof global.DOMMatrix === 'undefined') global.DOMMatrix = dommatrix.DOMMatrix || dommatrix;
-      if (typeof global.DOMMatrixReadOnly === 'undefined') global.DOMMatrixReadOnly = dommatrix.DOMMatrixReadOnly || dommatrix.DOMMatrix || dommatrix;
-      EOF
-    - NODE_OPTIONS="--require $CI_PROJECT_DIR/dommatrix-polyfill.js" npm run build
-  artifacts:
-    paths:
-      - .next/
-      - public/
-      - package.json
-      - package-lock.json
-      - next.config.ts
-      - tsconfig.json
-      - prisma/
-    expire_in: 1 day
+      if docker image inspect "$APP:latest" >/dev/null 2>&1; then
+        docker tag "$APP:latest" "$APP:previous"
+        echo "tagged current :latest as :previous"
+      else
+        echo "no existing :latest - first build, nothing to preserve"
+      fi
+    - docker build -t "$APP:$CI_COMMIT_SHA" -t "$APP:latest" .
+    - docker image inspect "$APP:$CI_COMMIT_SHA" --format 'built {{.Id}} ({{.Size}} bytes)'
 
-test:
-  stage: test
-  script:
-    - npm ci
-    - ESLINT_USE_FLAT_CONFIG=false npx eslint . --ext .js,.jsx,.ts,.tsx || true
-
+# ---------------------------------------------------------------------------
+# DEPLOY - compose recreates the container from the image built above.
+# ---------------------------------------------------------------------------
 deploy:
   stage: deploy
-  script:
-    - echo "Deploy step is not configured yet."
-    - echo "Add your production deployment commands here (SSH, Docker, Kubernetes, GitLab Pages, etc.)."
-  dependencies:
-    - build
-  only:
-    - main
-  when: manual
+  needs: [build]
+  rules:
+    - *deploy_rules
   environment:
     name: production
-    url: https://your-domain.com
+    url: https://shahnazcrm.sukierp.com
+  script:
+    - set -euo pipefail
+    - cd "$STACK_DIR"
+    - docker compose up -d --no-build --remove-orphans
+    - docker compose ps
+
+# ---------------------------------------------------------------------------
+# VERIFY - fail the pipeline if the app does not actually come back up.
+# A deploy that silently leaves a dead container is worse than a failed one.
+# ---------------------------------------------------------------------------
+verify:
+  stage: verify
+  needs: [deploy]
+  rules:
+    - *deploy_rules
+  script:
+    - set -euo pipefail
+    - |
+      for i in $(seq 1 30); do
+        code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$HEALTH_URL" || echo 000)
+        echo "attempt $i: $code"
+        case "$code" in
+          2*|3*) echo "healthy"; exit 0 ;;
+        esac
+        sleep 10
+      done
+      echo "did not become healthy in 5 minutes - container logs follow:"
+      docker logs --tail 100 "$APP"
+      exit 1
+
+# ---------------------------------------------------------------------------
+# CLEANUP - image retention. Each build tags a large image set with the commit
+# SHA. Without this the VM disk fills and takes every stack on it down.
+# Keeps the newest 3 SHA tags plus :latest and :previous (rollback needs both).
+# allow_failure so it can never block a release.
+# ---------------------------------------------------------------------------
+cleanup:
+  stage: cleanup
+  needs: [verify]
+  rules:
+    - *deploy_rules
+  allow_failure: true
+  script:
+    - set -euo pipefail
+    - |
+      keep=$(docker images "$APP" --format '{{.Tag}}' \
+             | grep -Ev '^(latest|previous)$' | head -3 | tr '\n' ' ')
+      echo "keeping: $keep latest previous"
+      for tag in $(docker images "$APP" --format '{{.Tag}}' | grep -Ev '^(latest|previous)$'); do
+        case " $keep " in
+          *" $tag "*) ;;
+          *) echo "removing $APP:$tag"; docker image rm "$APP:$tag" || true ;;
+        esac
+      done
+    - docker image prune -f
+    - df -h / | tail -1
+
+# ---------------------------------------------------------------------------
+# ROLLBACK - manual. Retags :previous back to :latest and redeploys.
+# Goes exactly one step back, and is not repeatable (afterwards :previous and
+# :latest point at the same image). To go further back, deploy a specific SHA.
+# ---------------------------------------------------------------------------
+rollback:
+  stage: deploy
+  needs: []
+  when: manual
+  rules:
+    - *deploy_rules
+  environment:
+    name: production
+  script:
+    - set -euo pipefail
+    - docker image inspect "$APP:previous" >/dev/null
+    - docker tag "$APP:previous" "$APP:latest"
+    - cd "$STACK_DIR"
+    - docker compose up -d --no-build
+    - docker compose ps
+
+# ---------------------------------------------------------------------------
+# DB-TASK - manual, standalone, independent of any code deploy.
+#
+# Runs ONE database command inside a throwaway container built from the same
+# image as the app, so it uses the same Prisma client and the same .env.
+# Nothing here runs automatically: `deploy` never touches the schema.
+#
+# Pick the command with the DB_SCRIPT variable on the Run pipeline screen.
+# ---------------------------------------------------------------------------
+db-task:
+  stage: deploy
+  needs: []
+  when: manual
+  rules:
+    - *deploy_rules
+  allow_failure: true
+  environment:
+    name: production
+  script:
+    - set -euo pipefail
+    - cd "$STACK_DIR"
+    - |
+      case "$DB_SCRIPT" in
+        prisma:status)         CMD="./node_modules/.bin/prisma migrate status" ;;
+        prisma:validate)       CMD="./node_modules/.bin/prisma validate" ;;
+        prisma:generate)       CMD="./node_modules/.bin/prisma generate" ;;
+        prisma:migrate-deploy) CMD="./node_modules/.bin/prisma migrate deploy" ;;
+        prisma:db-push)        CMD="./node_modules/.bin/prisma db push --accept-data-loss" ;;
+        seed:superadmin)       CMD="./node_modules/.bin/tsx deployment_seeding/seed-superadmin.ts" ;;
+        seed:suki-masters)     CMD="./node_modules/.bin/tsx deployment_seeding/seed-suki-masters.ts" ;;
+        *) echo "unknown DB_SCRIPT: $DB_SCRIPT"; exit 1 ;;
+      esac
+      echo "running against PRODUCTION: $CMD"
+      docker compose run --rm --no-deps --entrypoint sh app -c "$CMD"
+
+# --- security scanning, added 2026-08-31 ---
+# Vendored from ops/ci-templates instead of included across projects: GitLab
+# resolves `include: project:` with the permissions of whoever TRIGGERS the
+# pipeline, and `ops` is a private group, so any pipeline started by a
+# non-member died before job creation with
+#   "Project `ops/ci-templates` not found or access denied!"
+# See the header of ci/security-scan.yml for how to re-sync it with upstream.
+include:
+  - local: ci/security-scan.yml

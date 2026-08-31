@@ -1,0 +1,53 @@
+# Build context hygiene. node_modules and .next are excluded so the image is
+# built from source rather than inheriting whatever the Windows host had --
+# this also avoids copying in native binaries built for a different platform.
+node_modules
+.next
+out
+build
+
+# Secrets: .env is injected at runtime via compose env_file, never baked in.
+.env
+.env.*
+!.env.example
+
+.git
+.gitignore
+.github
+.gitlab-ci.yml
+
+Dockerfile
+.dockerignore
+docker-compose*.yml
+compose*.yaml
+
+# Tests and tooling that the runtime image has no use for
+tests
+playwright.config.ts
+vitest.config.ts
+**/*.test.ts
+**/*.spec.ts
+
+# Windows-host leftovers from the pre-container deployment
+poll-emails.bat
+setup-task-scheduler.ps1
+vercel.json
+
+# Editor / OS noise
+.vscode
+.idea
+.DS_Store
+*.swp
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+
+# Docs and binary artefacts that bloat the context
+docs
+*.docx
+*.xlsx
+*.pdf
+WORKLOG-*.md
