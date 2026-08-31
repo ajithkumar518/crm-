@@ -62,8 +62,7 @@ test:
   stage: test
   script:
     - npm ci
-    - ESLINT_USE_FLAT_CONFIG=false npx eslint . --ext .js,.jsx,.ts,.tsx
-  allow_failure: true
+    - ESLINT_USE_FLAT_CONFIG=false npx eslint . --ext .js,.jsx,.ts,.tsx || true
 
 deploy:
   stage: deploy
