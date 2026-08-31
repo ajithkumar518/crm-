@@ -11,7 +11,6 @@
 # If you switch to a Docker runner later, replace the before_script with `image: node:20`.
 
 stages:
-  - install
   - build
   - test
   - deploy
@@ -34,18 +33,10 @@ before_script:
   - export PATH="$NODE_HOME/bin:$PATH"
   - node -v && npm -v
 
-install:
-  stage: install
-  script:
-    - npm ci
-  artifacts:
-    paths:
-      - node_modules/
-    expire_in: 1 hour
-
 build:
   stage: build
   script:
+    - npm ci
     - npx prisma generate
     - npm run build
   artifacts:
@@ -58,15 +49,12 @@ build:
       - tsconfig.json
       - prisma/
     expire_in: 1 day
-  dependencies:
-    - install
 
 test:
   stage: test
   script:
+    - npm ci
     - npm run lint
-  dependencies:
-    - install
 
 deploy:
   stage: deploy
