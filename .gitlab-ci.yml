@@ -1,0 +1,73 @@
+# GitLab CI/CD pipeline for suki_crm (Next.js 16 + Prisma)
+# This file must be at the root of the repository on the `main` branch.
+#
+# GitLab variables you may need to set (Settings > CI/CD > Variables):
+#   - DATABASE_URL              # only if the build or runtime needs it
+#   - NEXT_PUBLIC_CRM_VARIANT   # optional, defaults to "1" if not set
+#   - OPENAI_API_KEY            # only if build/runtime needs it
+# Add any other secrets your app requires as masked/protected variables.
+
+image: node:20
+
+stages:
+  - install
+  - build
+  - test
+  - deploy
+
+variables:
+  NEXT_TELEMETRY_DISABLED: "1"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+
+cache:
+  key: "${CI_COMMIT_REF_SLUG}"
+  paths:
+    - .npm/
+
+install:
+  stage: install
+  script:
+    - npm ci
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+build:
+  stage: build
+  script:
+    - npx prisma generate
+    - npm run build
+  artifacts:
+    paths:
+      - .next/
+      - public/
+      - package.json
+      - package-lock.json
+      - next.config.ts
+      - tsconfig.json
+      - prisma/
+    expire_in: 1 day
+  dependencies:
+    - install
+
+test:
+  stage: test
+  script:
+    - npm run lint
+  dependencies:
+    - install
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploy step is not configured yet."
+    - echo "Add your production deployment commands here (SSH, Docker, Kubernetes, GitLab Pages, etc.)."
+  dependencies:
+    - build
+  only:
+    - main
+  when: manual
+  environment:
+    name: production
+    url: https://your-domain.com
