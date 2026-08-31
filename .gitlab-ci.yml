@@ -39,7 +39,14 @@ build:
   script:
     - npm ci
     - npx prisma generate
-    - npm run build
+    - npm install dommatrix --no-save
+    - |
+      cat > dommatrix-polyfill.js <<'EOF'
+      const dommatrix = require('dommatrix');
+      if (typeof global.DOMMatrix === 'undefined') global.DOMMatrix = dommatrix.DOMMatrix || dommatrix;
+      if (typeof global.DOMMatrixReadOnly === 'undefined') global.DOMMatrixReadOnly = dommatrix.DOMMatrixReadOnly || dommatrix.DOMMatrix || dommatrix;
+      EOF
+    - NODE_OPTIONS="--require $CI_PROJECT_DIR/dommatrix-polyfill.js" npm run build
   artifacts:
     paths:
       - .next/
