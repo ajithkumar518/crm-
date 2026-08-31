@@ -20,6 +20,7 @@ variables:
   NODE_HOME: "$CI_PROJECT_DIR/tools/node"
   NEXT_TELEMETRY_DISABLED: "1"
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  JWT_SECRET: "suki-crm-ci-placeholder-jwt-secret-replace-in-gitlab-ci-cd-variables"
 
 cache:
   key: "${CI_COMMIT_REF_SLUG}"
