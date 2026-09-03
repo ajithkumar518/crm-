@@ -41,11 +41,12 @@ export async function GET(request: Request) {
       where.categoryId = categoryId;
     }
     
-    if (isActive !== null) {
-      where.isActive = isActive === "true";
-    } else {
-      where.isActive = true; // Default to active only
+    if (isActive === "true") {
+      where.isActive = true;
+    } else if (isActive === "false") {
+      where.isActive = false;
     }
+    // If isActive is absent or empty, no status filter is applied (Any Status)
 
     if (productType) {
       where.productType = productType;
@@ -71,10 +72,12 @@ export async function GET(request: Request) {
       where.basePrice = { lte: parseFloat(maxPrice) }
     }
 
-    if (search) {
+    const trimmedSearch = search.trim();
+    if (trimmedSearch) {
       where.OR = [
-        { name: { contains: search } },
-        { productCode: { contains: search } },
+        { name: { contains: trimmedSearch } },
+        { productCode: { contains: trimmedSearch } },
+        { description: { contains: trimmedSearch } },
       ];
     }
 

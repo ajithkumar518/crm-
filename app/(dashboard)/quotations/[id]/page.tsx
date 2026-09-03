@@ -9,6 +9,7 @@ import { CURRENCY_SYMBOLS } from "@/lib/currency";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { useToast } from "@/components/ToastProvider";
 import PageContainer from "@/components/PageContainer";
+import { PdfPreviewModal } from "@/components/PdfPreviewModal";
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 import EntityDocumentTab from "@/components/documents/EntityDocumentTab";
 import { EntityTimeline } from "@/components/entity-timeline";
@@ -568,26 +569,10 @@ export default function QuotationDetailPage() {
     }
   };
 
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+
   const handleDownloadPdf = async () => {
-    try {
-      const res = await fetch(`/api/quotations/${id}/pdf`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.message || "Failed to generate PDF. The customer's state or GSTIN may be missing — required for CGST/SGST vs IGST tax determination.");
-        return;
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${quotation?.quotationCode || "quotation"}-R${quotation?.revisionNumber || 1}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Failed to download PDF");
-    }
+    setPdfPreviewUrl(`/api/quotations/${id}/pdf`);
   };
 
   const handleGenerateProforma = async () => {
@@ -1867,6 +1852,14 @@ export default function QuotationDetailPage() {
           }}
           user={user}
           users={users}
+        />
+      )}
+      {pdfPreviewUrl && (
+        <PdfPreviewModal
+          url={pdfPreviewUrl}
+          fileName={`${quotation?.quotationCode || "quotation"}-R${quotation?.revisionNumber || 1}.pdf`}
+          title={`Quotation ${quotation?.quotationCode || ""}`}
+          onClose={() => setPdfPreviewUrl(null)}
         />
       )}
     </PageContainer>

@@ -506,9 +506,8 @@ export default function UserMasterPage() {
               {modalMode === "create_internal" && (
                 <form id="modal-form" onSubmit={handleCreateInternal} className="p-6 space-y-4">
                   {/* Info note */}
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-xs text-red-800">
+                  <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-800">
                     <strong>Internal Employee</strong> — role options are Marketing Lead or Marketing Executive only.
-                    Email must use an approved company domain (e.g. <code className="font-mono">@sukisoftware.com</code>, <code className="font-mono">@apexindustries.com</code>).
                     An <strong>activation link</strong> (not OTP) will be sent to set their password.
                   </div>
 
@@ -527,7 +526,7 @@ export default function UserMasterPage() {
                     <input
                       type="email" required value={intEmail}
                       onChange={e => setIntEmail(e.target.value)}
-                      placeholder="priya@sukisoftware.com"
+                      placeholder="priya@example.com"
                       className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all text-slate-700"
                     />
                   </div>

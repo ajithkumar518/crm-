@@ -5,6 +5,7 @@ import PageContainer from "@/components/PageContainer";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { useToast } from "@/components/ToastProvider";
 import { CRMSpinner } from "@/components/CRMSpinner";
+import { PdfPreviewModal } from "@/components/PdfPreviewModal";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Trash2, Search } from "lucide-react";
@@ -133,30 +134,12 @@ export default function ProformaListPage() {
     }
   };
 
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfPreviewName, setPdfPreviewName] = useState("proforma.pdf");
+
   const handleDownloadPdf = async (p: any) => {
-    if (downloadingId) return;
-    setDownloadingId(p.id);
-    try {
-      const res = await fetch(`/api/proforma-invoices/${p.id}/pdf`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.message || "Failed to generate PDF. The customer state or GSTIN may be missing.");
-        return;
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${p.proformaNumber || "proforma"}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Failed to download PDF");
-    } finally {
-      setDownloadingId(null);
-    }
+    setPdfPreviewName(`${p.proformaNumber || "proforma"}.pdf`);
+    setPdfPreviewUrl(`/api/proforma-invoices/${p.id}/pdf`);
   };
 
   const filteredQuotations = eligibleQuotations.filter((q: any) => {
@@ -320,6 +303,14 @@ export default function ProformaListPage() {
             </div>
           </div>
         </div>
+      )}
+      {pdfPreviewUrl && (
+        <PdfPreviewModal
+          url={pdfPreviewUrl}
+          fileName={pdfPreviewName}
+          title={`Proforma Invoice`}
+          onClose={() => setPdfPreviewUrl(null)}
+        />
       )}
     </PageContainer>
   );

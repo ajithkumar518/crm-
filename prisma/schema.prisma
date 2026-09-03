@@ -1298,6 +1298,8 @@ model Product {
   rmMake              String? // raw material make
   productType         String? // Black Bar | Bright Bar
   productImageUrl     String?                @db.NVarChar(Max)
+  currentStock        Float?                 @default(0) // synced from ERP stock table
+  stockUpdatedAt      DateTime?              // last stock sync timestamp
   category            ProductCategory?       @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   company             Company?               @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   specifications      ProductSpecification[]

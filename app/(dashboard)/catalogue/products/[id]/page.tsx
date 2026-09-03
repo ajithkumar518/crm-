@@ -36,6 +36,8 @@ export default function ProductDetailPage() {
     materialSize: "",
     partNumber: "",
     rmMake: "",
+    hsnCode: "",
+    currentStock: 0 as number | null,
     minOrderQuantity: "",
     isActive: true,
     productImageUrl: "",
@@ -66,6 +68,8 @@ export default function ProductDetailPage() {
           materialSize: data.data.materialSize || "",
           partNumber: data.data.partNumber || "",
           rmMake: data.data.rmMake || "",
+          hsnCode: data.data.hsnCode || "",
+          currentStock: data.data.currentStock ?? 0,
           minOrderQuantity: data.data.minOrderQuantity?.toString() || "",
           isActive: data.data.isActive,
           productImageUrl: data.data.productImageUrl || "",
@@ -452,6 +456,26 @@ export default function ProductDetailPage() {
             </FormField>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField label="HSN Code">
+              <Input
+                type="text"
+                value={formData.hsnCode}
+                onChange={(e) => setFormData({ ...formData, hsnCode: e.target.value })}
+                placeholder="e.g. 7218"
+              />
+            </FormField>
+            <FormField label="Current Stock (read-only — synced from ERP)">
+              <Input
+                type="number"
+                value={formData.currentStock ?? 0}
+                onChange={(e) => setFormData({ ...formData, currentStock: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                disabled
+              />
+            </FormField>
+          </div>
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -530,6 +554,25 @@ export default function ProductDetailPage() {
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">RM Make</p>
                 <p className="text-sm font-medium text-[var(--text-primary)]">{product.rmMake || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">HSN Code</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">{product.hsnCode || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1">Current Stock</p>
+                <p className="text-sm font-medium text-[var(--text-primary)]">
+                  {product.currentStock != null && product.currentStock > 0
+                    ? `${product.currentStock.toLocaleString("en-IN", { maximumFractionDigits: 3 })} ${product.unit || "kgs"}`
+                    : product.currentStock === 0
+                      ? <span className="text-[var(--status-danger)]">Out of Stock</span>
+                      : "—"}
+                  {product.stockUpdatedAt && (
+                    <span className="block text-xs text-[var(--text-muted)] mt-0.5">
+                      Updated: {new Date(product.stockUpdatedAt).toLocaleString("en-IN")}
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
             {product.description && (

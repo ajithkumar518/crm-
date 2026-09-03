@@ -6,6 +6,7 @@ import PageContainer from "@/components/PageContainer";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { useToast } from "@/components/ToastProvider";
 import { CRMSpinner } from "@/components/CRMSpinner";
+import { PdfPreviewModal } from "@/components/PdfPreviewModal";
 import { ChevronLeft, Mail, FileText, Package, IndianRupee, Trash2 } from "lucide-react";
 
 function Input({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
@@ -103,29 +104,10 @@ export default function ProformaDetailPage() {
     }
   };
 
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+
   const handleDownloadPdf = async () => {
-    setDownloadingPdf(true);
-    try {
-      const res = await fetch(`/api/proforma-invoices/${id}/pdf`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.message || "Failed to generate PDF. The customer's state or GSTIN may be missing — required for CGST/SGST vs IGST tax determination.");
-        return;
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${proforma?.proformaNumber || "proforma"}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch {
-      toast.error("Failed to download PDF");
-    } finally {
-      setDownloadingPdf(false);
-    }
+    setPdfPreviewUrl(`/api/proforma-invoices/${id}/pdf`);
   };
 
   const handleSend = async () => {
@@ -138,7 +120,15 @@ export default function ProformaDetailPage() {
       const res = await fetch(`/api/proforma-invoices/${id}/send`, { method: "POST" });
       const data = await res.json();
       if (data.success) {
-        toast.success(data.message || "Proforma sent");
+        // Distinguish email delivery result from workflow status — same pattern as quotation send
+        if (data.emailSent === false) {
+          toast.error(`Proforma status updated, but email was NOT sent: ${data.emailWarning || "Unknown error"}`);
+        } else if (data.emailWarning) {
+          toast.success("Proforma sent to customer");
+          toast.error(`Email warning: ${data.emailWarning}`);
+        } else {
+          toast.success(data.message || "Proforma sent to customer");
+        }
         setProforma(data.data);
       } else {
         toast.error(data.message || "Failed to send proforma");
@@ -345,6 +335,7 @@ export default function ProformaDetailPage() {
 
   const statusOptions = ["Draft", "Sent", "Approved", "PO Received", "Cancelled"];
   const canCreateSo = proforma.status === "Approved" || proforma.status === "PO Received";
+  const canSendProforma = ["Draft", "Sent"].includes(proforma.status);
 
   return (
     <PageContainer className="space-y-4">
@@ -603,9 +594,12 @@ export default function ProformaDetailPage() {
               <button onClick={handleDownloadPdf} disabled={downloadingPdf} className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-[var(--primary)] hover:opacity-90 disabled:opacity-60">
                 <FileText size={15} /> {downloadingPdf ? "Generating..." : "PDF"}
               </button>
-              <button onClick={handleSend} disabled={sending} className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60">
+              <button onClick={handleSend} disabled={sending || !canSendProforma} title={!canSendProforma ? "Only Draft or Sent proformas can be emailed" : "Send proforma to customer via email"} className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed">
                 <Mail size={15} /> {sending ? "Sending..." : "Send"}
               </button>
+              {!canSendProforma && (
+                <p className="text-xs text-[var(--text-tertiary)]">Only Draft or Sent proformas can be emailed.</p>
+              )}
               <button onClick={handleCreateSalesOrder} disabled={creatingSo || !canCreateSo} className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60">
                 <Package size={15} /> {creatingSo ? "Creating..." : "Create Sales Order"}
               </button>
@@ -648,6 +642,14 @@ export default function ProformaDetailPage() {
           </div>
         </div>
       </div>
+      {pdfPreviewUrl && (
+        <PdfPreviewModal
+          url={pdfPreviewUrl}
+          fileName={`${proforma?.proformaNumber || "proforma"}.pdf`}
+          title={`Proforma Invoice ${proforma?.proformaNumber || ""}`}
+          onClose={() => setPdfPreviewUrl(null)}
+        />
+      )}
     </PageContainer>
   );
 }

@@ -116,7 +116,7 @@ export async function GET(
     return new NextResponse(pdfBytes, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${fileName}"`,
+        "Content-Disposition": `inline; filename="${fileName}"`,
         "Content-Length": String(pdfBytes.byteLength),
       },
     });

@@ -210,12 +210,24 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
                         <span>•</span>
                         <span className="truncate">{product.category?.name || "Uncategorized"}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn(
-                          "inline-block w-2 h-2 rounded-full",
-                          product.isActive ? "bg-success-text" : "bg-text-muted"
-                        )} />
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted">{product.isActive ? "Active" : "Inactive"}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn(
+                            "inline-block w-2 h-2 rounded-full",
+                            product.isActive ? "bg-success-text" : "bg-text-muted"
+                          )} />
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted">{product.isActive ? "Active" : "Inactive"}</span>
+                        </div>
+                        {product.currentStock != null && product.currentStock > 0 && (
+                          <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                            Stock: {Number(product.currentStock).toLocaleString("en-IN", { maximumFractionDigits: 3 })} {product.unit || "kgs"}
+                          </span>
+                        )}
+                        {product.currentStock === 0 && (
+                          <span className="text-[10px] font-medium text-rose-500">
+                            Out of Stock
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>

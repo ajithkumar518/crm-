@@ -102,6 +102,7 @@ export async function PUT(
         materialSize: body.materialSize?.trim() || null,
         partNumber: body.partNumber?.trim() || null,
         rmMake: body.rmMake?.trim() || null,
+        hsnCode: body.hsnCode?.trim() || null,
         minOrderQuantity: body.minOrderQuantity ? parseFloat(body.minOrderQuantity) : null,
       },
     });

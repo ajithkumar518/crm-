@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { logAudit, extractAuditContext } from "@/lib/audit";
 import { generateProformaPdf } from "@/lib/generateProformaPdf";
 import { sendEmail } from "@/lib/email";
 
@@ -10,6 +11,7 @@ export async function POST(
 ) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+  if (user.role === "Customer") return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
 
   const { id } = await params;
 
@@ -25,6 +27,18 @@ export async function POST(
   });
 
   if (!proforma) return NextResponse.json({ success: false, message: "Proforma not found" }, { status: 404 });
+
+  // Only Draft (initial send) and Sent (re-send) proformas can be emailed
+  if (!["Draft", "Sent"].includes(proforma.status)) {
+    return NextResponse.json(
+      { success: false, message: `Cannot send proforma in "${proforma.status}" status. Only Draft or Sent proformas can be emailed.` },
+      { status: 400 },
+    );
+  }
+
+  if (proforma.items.length === 0) {
+    return NextResponse.json({ success: false, message: "Cannot send proforma without line items" }, { status: 400 });
+  }
 
   const recipientEmail = proforma.contact?.email || proforma.customer?.email;
   if (!recipientEmail) {
@@ -132,7 +146,7 @@ export async function POST(
   `;
 
   let emailSent = false;
-  let emailWarning = "";
+  let emailWarning: string | null = null;
   try {
     await sendEmail({
       to: recipientEmail,
@@ -145,6 +159,9 @@ export async function POST(
     emailWarning = `Email delivery failed: ${e.message}`;
   }
 
+  // Only transition Draft → Sent when email actually goes out.
+  // If email fails on a Draft, keep it as Draft so user can retry.
+  // If email fails on a re-send (already Sent), status stays Sent.
   const status = emailSent && proforma.status === "Draft" ? "Sent" : proforma.status;
   const updated = await prisma.proformaInvoice.update({
     where: { id },
@@ -163,7 +180,7 @@ export async function POST(
       channel: "Email",
       direction: "Outbound",
       status: emailSent ? "Sent" : "Failed",
-      content: `Proforma ${proforma.proformaNumber} emailed to ${recipientEmail}. ${emailWarning}`.trim(),
+      content: `Proforma ${proforma.proformaNumber} emailed to ${recipientEmail}. ${emailWarning || ""}`.trim(),
       customerId: proforma.customerId || null,
       sentByUserId: user.id,
       sentAt: new Date(),
@@ -171,9 +188,18 @@ export async function POST(
     },
   }).catch(() => {});
 
+  await logAudit(user.id, "ProformaInvoice", "Send", `Sent proforma ${proforma.proformaNumber} to customer`, {
+    resourceId: id,
+    newState: { status: updated.status, emailSent, emailedTo: recipientEmail },
+    context: extractAuditContext(request),
+  }).catch(() => undefined);
+
   return NextResponse.json({
     success: true,
     data: updated,
-    message: emailSent ? "Proforma sent successfully" : `PDF ready, but ${emailWarning}`,
+    emailSent,
+    emailedTo: emailSent ? recipientEmail : undefined,
+    ...(emailWarning ? { emailWarning } : {}),
+    message: emailSent ? "Proforma sent successfully" : `PDF generated, but ${emailWarning}`,
   });
 }
