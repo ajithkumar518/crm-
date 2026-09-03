@@ -24,6 +24,7 @@ import { SummaryCard } from "@/components/ui/SummaryCard";
 import { StatusBadge, PriorityBadge } from "@/components/ui/StatusBadge";
 import { useHasModule } from "@/components/ModuleGate";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
+import { isQuotationFollowupAllowed } from "@/lib/feature-allowlist";
 
 // Helpers for visual alignment
 function getCompanyName(customerName: string) {
@@ -311,6 +312,7 @@ export default function FollowUpsPage() {
         const res = await createFollowUpAction({
           customerId: selectedEntityType === "account" ? selectedCustomerId : null,
           leadId: selectedEntityType === "lead" ? selectedLeadId : null,
+          quotationId: null,
           nextMeetingDate: combinedDateTime,
           remarks: discussionNotes,
           notes: discussionNotes,
@@ -328,6 +330,7 @@ export default function FollowUpsPage() {
             await createFollowUpAction({
               customerId: selectedEntityType === "account" ? selectedCustomerId : null,
               leadId: selectedEntityType === "lead" ? selectedLeadId : null,
+              quotationId: null,
               nextMeetingDate: nextDateTime,
               remarks: `Next scheduled meeting details. Type: ${nextFollowUpType}`,
               notes: `Next scheduled meeting details. Type: ${nextFollowUpType}`,
@@ -406,7 +409,7 @@ export default function FollowUpsPage() {
     const followUpId = activeFollowUp.id;
     const leadId = activeFollowUp.leadId || "";
     const customerId = activeFollowUp.customerId || "";
-    const params = new URLSearchParams({ followUpId });
+    const params = new URLSearchParams({ followUpId, returnTo: "/follow-up" });
     if (leadId) params.set("leadId", leadId);
     if (customerId) params.set("customerId", customerId);
     setIsCompleteModalOpen(false);
@@ -432,8 +435,8 @@ export default function FollowUpsPage() {
   };
 
   // Client Filtering logic
-  // Client Filtering logic
   const [entityTypeFilter, setEntityTypeFilter] = useState<"All" | "Leads" | "Accounts">("All");
+  const isFeatureUser = isQuotationFollowupAllowed(user?.email);
 
   const filtered = followUps.filter((f) => {
     const custName = (f.customerName || f.leadName || "").toLowerCase();
@@ -494,6 +497,26 @@ export default function FollowUpsPage() {
       }
     >
       <PageContainer className="space-y">
+      {/* ── Sub-Module Navigation Tabs ── */}
+      <div className="flex gap-1 border-b border-slate-200 dark:border-slate-800 mb-2">
+        <Link
+          href="/follow-up"
+          className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-[var(--primary)] text-[var(--primary)] font-semibold transition-colors cursor-pointer"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          All Follow-Ups
+        </Link>
+        {isFeatureUser && (
+          <Link
+            href="/follow-up/quotation"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            Quotation Follow-Ups
+          </Link>
+        )}
+      </div>
+
       {/* ── KPI Cards Section ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <SummaryCard 
@@ -792,8 +815,7 @@ export default function FollowUpsPage() {
                     <h3 className="text-xs font-black text-[#B3592D] uppercase tracking-wider border-b border-slate-100 pb-1.5">
                       Lead Information
                     </h3>
-                    
-                    {/* Entity Type Toggle & Selector */}
+
                     <div className="grid grid-cols-2 gap-3 mb-3">
                       <div>
                         <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">

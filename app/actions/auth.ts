@@ -19,8 +19,6 @@ import {
 import { z } from "zod";
 import {
   verifyAuth,
-  isInternalEmail,
-  requiresInternalEmail,
   getRoleRedirect,
 } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
@@ -35,12 +33,6 @@ function getJwtSecret(): string {
   return secret;
 }
 const JWT_SECRET: string = getJwtSecret();
-const ALLOWED_DOMAINS = (
-  process.env.ALLOWED_DOMAIN ||
-  "sukisoftware.com,sukisoft.com,apexindustries.com,bharatmetalworks.com"
-)
-  .split(",")
-  .map((d) => d.trim());
 const RESET_EXPIRY_MIN = Number(process.env.RESET_TOKEN_EXPIRY_MINUTES) || 15;
 const ACTIVATION_EXPIRY_HRS =
   Number(process.env.ACTIVATION_TOKEN_EXPIRY_HOURS) || 24;
@@ -120,14 +112,6 @@ export async function checkLoginType(email: string) {
       return { success: false, message: "No account found with this email." };
     }
 
-    // Domain validation for internal roles
-    if (requiresInternalEmail(user.role) && !isInternalEmail(normalizedEmail)) {
-      return {
-        success: false,
-        message: `Only approved email domains (${ALLOWED_DOMAINS.join(", ")}) are allowed for internal accounts.`,
-      };
-    }
-
     // Bypass first-time setup flow for all internal users.
     // They will login with email and password directly, and use "Forgot Password" if they need to set their initial password.
     const isFirstLogin = false;
@@ -159,20 +143,6 @@ export async function loginWithPassword(
 
     if (!user) {
       return { success: false, message: "Invalid email or password." };
-    }
-
-    // Domain validation for internal roles
-    if (requiresInternalEmail(user.role) && !isInternalEmail(normalizedEmail)) {
-      await logAudit(
-        user.id,
-        "AUTH",
-        "LOGIN_DOMAIN_REJECTED",
-        `Domain check failed for ${normalizedEmail}`,
-      );
-      return {
-        success: false,
-        message: `Only approved email domains (${ALLOWED_DOMAINS.join(", ")}) are allowed for internal accounts.`,
-      };
     }
 
     // Block if isFirstLogin=true removed as per request to bypass OTP setup for all roles.
@@ -314,7 +284,7 @@ export async function sendPasswordResetLink(email: string) {
 
     await sendEmail(
       user.email,
-      "Reset Your Password —  SUKI  Marketing CRM",
+      "Reset Your Password —  Shahnaz CRM",
       buildResetEmail(user.name, resetUrl),
     );
 
@@ -1047,14 +1017,6 @@ export async function createInternalUserByAdmin(data: {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Domain check: internal users MUST use company email
-    if (!isInternalEmail(normalizedEmail)) {
-      return {
-        success: false,
-        message: `Internal employees must use an approved email domain (${ALLOWED_DOMAINS.join(", ")}).`,
-      };
-    }
-
     const existing = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
@@ -1292,7 +1254,7 @@ export async function resendInvitation(userId: string) {
 
       await sendEmail(
         user.email,
-        "SUKI CRM — Set Your Password (resent)",
+        "Shahnaz CRM — Set Your Password (resent)",
         buildInternalActivationEmail(user.name, activationUrl, inviterName),
       );
     }

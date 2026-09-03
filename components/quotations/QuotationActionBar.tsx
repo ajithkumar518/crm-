@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, FileCode, Copy, Download, X, XCircle, Check, FileText, MoreVertical, Trophy } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, FileCode, Copy, Download, X, XCircle, Check, FileText, MoreVertical, Trophy, CalendarClock } from "lucide-react";
 import { useHasModule } from "@/components/ModuleGate";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
+import { isQuotationFollowupAllowed } from "@/lib/feature-allowlist";
 
 interface QuotationActionBarProps {
   quotation: any;
@@ -14,6 +15,7 @@ interface QuotationActionBarProps {
   markingWon: boolean;
   generatingPdf: boolean;
   needsApproval: boolean;
+  creatingDraftProforma?: boolean;
   onStartEdit: () => void;
   onSave: () => void;
   onCancel: () => void;
@@ -23,11 +25,14 @@ interface QuotationActionBarProps {
   onAccept: () => void;
   onReject: () => void;
   onCreatePo: () => void;
+  onCreateDraftProforma?: () => void;
   onMarkWon: () => void;
   onClone: () => void;
   onDownloadPdf: () => void;
   onGeneratePdf: () => void;
   onDelete: () => void;
+  onFollowUp?: () => void;
+  featureUserEmail?: string | null;
 }
 
 function actionButtonClass(
@@ -58,6 +63,7 @@ export default function QuotationActionBar({
   savingItems,
   creatingPo,
   markingWon,
+  creatingDraftProforma,
   generatingPdf,
   needsApproval,
   onStartEdit,
@@ -69,22 +75,27 @@ export default function QuotationActionBar({
   onAccept,
   onReject,
   onCreatePo,
+  onCreateDraftProforma,
   onMarkWon,
   onClone,
   onDownloadPdf,
   onGeneratePdf,
   onDelete,
+  onFollowUp,
+  featureUserEmail,
 }: QuotationActionBarProps) {
   const hasMod = useHasModule();
   const canEdit = quotation.status === "Draft";
   const canRequestApproval = quotation.status === "Draft" && needsApproval;
   const canSend = ["Draft", "Approved"].includes(quotation.status);
-  const canNegotiate = ["Sent", "UnderReview"].includes(quotation.status);
-  const canAcceptReject = ["Sent", "UnderReview"].includes(quotation.status);
+  const canNegotiate = ["Quotation Sent", "UnderReview"].includes(quotation.status);
+  const canAcceptReject = ["Quotation Sent", "UnderReview"].includes(quotation.status);
+  const canFollowUp = quotation.status === "Quotation Sent" && onFollowUp && isQuotationFollowupAllowed(featureUserEmail);
   
   const hasDealsOrPO = hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS);
   const canCreatePo = quotation.status === "Accepted" && hasDealsOrPO;
   const canMarkWon = quotation.status === "Accepted" && !hasDealsOrPO;
+  const canCreateDraftProforma = quotation.status === "Approved" && onCreateDraftProforma;
 
   const hasChild = quotation.childRevisions && quotation.childRevisions.length > 0;
   const isNegotiationPriceRevision = quotation.negotiation && quotation.negotiation.status === "PriceRevision";
@@ -94,7 +105,7 @@ export default function QuotationActionBar({
   const primaryAction: "send" | "accept" | "createPo" | "markWon" | null =
     quotation.status === "Draft" && !needsApproval ? "send"
     : quotation.status === "Approved" ? "send"
-    : ["Sent", "UnderReview"].includes(quotation.status) ? "accept"
+    : ["Quotation Sent", "UnderReview"].includes(quotation.status) ? "accept"
     : canCreatePo ? "createPo"
     : canMarkWon ? "markWon"
     : null;
@@ -264,11 +275,23 @@ export default function QuotationActionBar({
                 </button>
               )}
 
+              {canCreateDraftProforma && (
+                <button onClick={onCreateDraftProforma} disabled={creatingDraftProforma} title="Create a draft proforma from this approved quotation" className={actionButtonClass("primary", !creatingDraftProforma)}>
+                  <FileText size={15} /> {creatingDraftProforma ? "Creating..." : "Create Draft Proforma"}
+                </button>
+              )}
+
               <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block" />
 
               <button onClick={onDownloadPdf} title="Open printable quotation view" className={actionButtonClass("secondary", true)}>
                 <Download size={15} /> PDF
               </button>
+
+              {canFollowUp && (
+                <button onClick={onFollowUp} title="View and create follow-ups for this quotation" className={actionButtonClass("secondary", true)}>
+                  <CalendarClock size={15} /> Follow Up
+                </button>
+              )}
 
               <button onClick={onGeneratePdf} disabled={generatingPdf} title="Generate and store a PDF document for this revision" className={actionButtonClass("secondary", !generatingPdf)}>
                 <FileText size={15} /> {generatingPdf ? "Generating..." : "Generate PDF"}

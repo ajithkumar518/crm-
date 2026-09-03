@@ -26,7 +26,7 @@ import {
 
 const statusColors: Record<string, string> = {
   Draft: "bg-slate-100 text-slate-600 border border-slate-200/50",
-  Sent: "bg-blue-100 text-blue-700 border border-blue-200/50",
+  "Quotation Sent": "bg-blue-100 text-blue-700 border border-blue-200/50",
   UnderReview: "bg-amber-100 text-amber-700 border border-amber-200/50",
   Accepted: "bg-green-100 text-green-700 border border-green-200/50",
   Rejected: "bg-red-100 text-red-700 border border-red-200/50",
@@ -114,8 +114,8 @@ export default function QuotationDetailPageV2() {
   const canEdit = quotation.status === "Draft";
   const canRequestApproval = quotation.status === "Draft" && q.needsApproval;
   const canSend = ["Draft", "Approved"].includes(quotation.status);
-  const canNegotiate = ["Sent", "UnderReview"].includes(quotation.status);
-  const canAcceptReject = ["Sent", "UnderReview"].includes(quotation.status);
+  const canNegotiate = ["Quotation Sent", "UnderReview"].includes(quotation.status);
+  const canAcceptReject = ["Quotation Sent", "UnderReview"].includes(quotation.status);
   const canCreatePo = quotation.status === "Accepted" && !q.creatingPo;
 
   const hasChild = quotation.childRevisions && quotation.childRevisions.length > 0;
@@ -295,7 +295,7 @@ export default function QuotationDetailPageV2() {
             {quotation.status === "Draft" && (q.needsApproval ? "Manager approval required before sending to customer" : "Review line items and send to customer")}
             {quotation.status === "PendingApproval" && "Awaiting approval from manager — check Approval Center"}
             {quotation.status === "Approved" && "Quotation approved — ready to send to customer"}
-            {quotation.status === "Sent" && "Customer reviewing — start negotiation if they request changes"}
+            {quotation.status === "Quotation Sent" && "Customer reviewing — start negotiation if they request changes"}
             {quotation.status === "UnderReview" && "In negotiation — propose revisions or mark accepted/rejected"}
             {quotation.status === "Accepted" && "Customer accepted — create a Deal or Purchase Order"}
             {quotation.status === "Rejected" && "Quotation rejected — clone & revise to create a new version"}
@@ -362,14 +362,14 @@ export default function QuotationDetailPageV2() {
       <section className="crm-card p-5">
         <StatusStepper
           compact
-          steps={["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"].map((key, idx) => {
-            const order = ["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"];
+          steps={["Draft", "Approved", "Quotation Sent", "UnderReview", "Accepted", "Deal/PO"].map((key, idx) => {
+            const order = ["Draft", "Approved", "Quotation Sent", "UnderReview", "Accepted", "Deal/PO"];
             const currentIdx = order.indexOf(quotation.status === "Rejected" || quotation.status === "Expired" ? "Accepted" : quotation.status);
             const stageIdx = idx;
             const isDone = stageIdx < currentIdx;
             const isCurrent = key === quotation.status || (key === "Deal/PO" && quotation.status === "Accepted" && quotation.dealId);
             const isRejected = quotation.status === "Rejected";
-            const labelMap: Record<string, string> = { Draft: "Draft", Approved: "Approved", Sent: "Sent", UnderReview: "Negotiation", Accepted: "Accepted", "Deal/PO": "Deal / PO" };
+            const labelMap: Record<string, string> = { Draft: "Draft", Approved: "Approved", "Quotation Sent": "Quotation Sent", UnderReview: "Negotiation", Accepted: "Accepted", "Deal/PO": "Deal / PO" };
             return {
               label: labelMap[key],
               key,
@@ -391,7 +391,7 @@ export default function QuotationDetailPageV2() {
       <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-6">
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusColors[quotation.status]}`}>{quotation.status}</span>
-          {quotation.status === "Sent" && q.daysRemaining !== null && (
+          {quotation.status === "Quotation Sent" && q.daysRemaining !== null && (
             <>
               {q.daysRemaining >= 0 ? (
                 <span className={`text-xs font-medium ${q.validityColor}`}><Ico d={icons.clock} size={14} className="inline mr-1" />Expires in {q.daysRemaining} day{q.daysRemaining !== 1 ? "s" : ""}</span>

@@ -100,7 +100,7 @@ async function runSecurityVerification() {
   console.log("\n--- TEST SECTION 3: Quotation Stepper Runtime Filtering ---");
   function getFilteredSteps(tenant: any) {
     const hasMod = (key: ModuleKey) => hasModule(tenant, key);
-    return ["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"].filter(key => {
+    return ["Draft", "Approved", "Quotation Sent", "UnderReview", "Accepted", "Deal/PO"].filter(key => {
       if (key === "UnderReview" && !hasMod(MODULE_KEYS.NEGOTIATION)) return false;
       if (key === "Deal/PO" && !(hasMod(MODULE_KEYS.DEALS) || hasMod(MODULE_KEYS.PURCHASE_ORDERS))) return false;
       return true;
@@ -109,27 +109,27 @@ async function runSecurityVerification() {
 
   const stepsV1 = getFilteredSteps(v1Tenant);
   assert(
-    JSON.stringify(stepsV1) === JSON.stringify(["Draft", "Approved", "Sent", "Accepted"]),
+    JSON.stringify(stepsV1) === JSON.stringify(["Draft", "Approved", "Quotation Sent", "Accepted"]),
     `[V1 Starter] Stepper steps: ${JSON.stringify(stepsV1)} (Negotiation & Deal/PO absent)`
   );
 
   // V2 Boundary Case: Negotiation (V3) and Deal/PO (V3/V4) should still be absent on V2
   const stepsV2 = getFilteredSteps(v2Tenant);
   assert(
-    JSON.stringify(stepsV2) === JSON.stringify(["Draft", "Approved", "Sent", "Accepted"]),
+    JSON.stringify(stepsV2) === JSON.stringify(["Draft", "Approved", "Quotation Sent", "Accepted"]),
     `[V2 Growth Boundary] Stepper steps: ${JSON.stringify(stepsV2)} (Negotiation & Deal/PO still absent on V2)`
   );
 
   const stepsV3 = getFilteredSteps(v3Tenant);
   assert(
-    JSON.stringify(stepsV3) === JSON.stringify(["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"]),
+    JSON.stringify(stepsV3) === JSON.stringify(["Draft", "Approved", "Quotation Sent", "UnderReview", "Accepted", "Deal/PO"]),
     `[V3 Pro] Stepper steps: ${JSON.stringify(stepsV3)} (All stages present)`
   );
 
   // V4 Superset Sanity Check
   const stepsV4 = getFilteredSteps(v4Tenant);
   assert(
-    JSON.stringify(stepsV4) === JSON.stringify(["Draft", "Approved", "Sent", "UnderReview", "Accepted", "Deal/PO"]),
+    JSON.stringify(stepsV4) === JSON.stringify(["Draft", "Approved", "Quotation Sent", "UnderReview", "Accepted", "Deal/PO"]),
     `[V4 Enterprise Superset] Stepper steps: ${JSON.stringify(stepsV4)} (All stages present)`
   );
 

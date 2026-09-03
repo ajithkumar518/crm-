@@ -184,7 +184,7 @@ export default function SettingsPage() {
       : "http://localhost:3000";
   const apiUrl = `${origin}/api/leads`;
 
-  const codeSnippet = `<!-- Suki CRM Lead Ingestion Snippet -->
+  const codeSnippet = `<!-- Shahnaz CRM Lead Ingestion Snippet -->
 <form id="suki-lead-form" style="max-width: 400px; font-family: sans-serif; display: flex; flex-direction: column; gap: 12px;">
   <div>
     <label style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px;">Full Name *</label>

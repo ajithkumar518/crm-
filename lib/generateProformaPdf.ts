@@ -1,5 +1,7 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import fs from "fs";
+import path from "path";
 import {
   setupPdfFonts,
   setFont,
@@ -8,6 +10,7 @@ import {
   addPageFooter,
   PdfColors,
 } from "./pdf-shared";
+import { resolveTaxTreatment, computeGstSplit } from "./gstState";
 
 const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
 const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
@@ -88,6 +91,11 @@ export interface ProformaPdfData {
   taxAmount: number;
   discountPercent: number;
   grandTotal: number;
+  transportCharge?: number | null;
+  otherCharges?: number | null;
+  weighingLoadingCharge?: number | null;
+  deliveryCharge?: number | null;
+  testingCharge?: number | null;
   paymentTerms?: string | null;
   deliveryTerms?: string | null;
   termsAndConditions?: string | null;
@@ -97,6 +105,22 @@ export interface ProformaPdfData {
   companyPhone?: string;
   companyEmail?: string;
   generatedByName?: string;
+  /** Explicit place of supply override. */
+  placeOfSupply?: string | null;
+  /** Ship-to party details (used for tax treatment & "SHIP TO" block). */
+  shipName?: string | null;
+  shipAddress?: string | null;
+  shipState?: string | null;
+  shipStateCode?: string | null;
+  shipGstNumber?: string | null;
+  shipPhone?: string | null;
+  /** Bill-to party details (used for tax treatment & "BILL TO" block). */
+  billName?: string | null;
+  billAddress?: string | null;
+  billState?: string | null;
+  billStateCode?: string | null;
+  billGstNumber?: string | null;
+  billPhone?: string | null;
 }
 
 const DEFAULT_TERMS = `Cutting Charges - Extra
@@ -143,51 +167,66 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   const margin = 10;
   const contentW = pageW - 2 * margin;
 
-  const companyName = data.company?.name || "SHAHNAZ BRIGHT STEEL INDUSTRIES PRIVATE LIMITED";
+  const companyName = "SHAHNAZ BRIGHT STEEL INDUSTRIES PRIVATE LIMITED";
 
-  const headerH = 30;
+  const headerH = 45;
   doc.setFillColor(255, 255, 255);
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.5);
   doc.rect(margin, margin, contentW, headerH);
 
-  doc.setFillColor(...PdfColors.primary);
-  doc.rect(margin + 2, margin + 2, 18, 18, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(7);
-  setFont(doc, "bold");
-  doc.text("SBS", margin + 4, margin + 12);
+  // Left: logo image + company
+  const logoWidth = 38;
+  const logoHeight = 24;
+  const textX = margin + logoWidth + 8;
+  try {
+    const logoPath = path.join(process.cwd(), "public", "shahnaz-logo.png");
+    if (fs.existsSync(logoPath)) {
+      const logoData = fs.readFileSync(logoPath).toString("base64");
+      doc.addImage(`data:image/png;base64,${logoData}`, "PNG", margin + 2, margin + 3, logoWidth, logoHeight);
+    }
+  } catch {
+    // Fallback placeholder if logo fails to load
+    doc.setFillColor(...PdfColors.primary);
+    doc.rect(margin + 2, margin + 2, 18, 18, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    setFont(doc, "bold");
+    doc.text("SBS", margin + 4, margin + 12);
+  }
 
+  // Company name (bold, large)
   doc.setTextColor(...PdfColors.primary);
   doc.setFontSize(14);
   setFont(doc, "bold");
-  doc.text(companyName, margin + 24, margin + 8);
+  doc.text(companyName, textX, margin + 8);
 
+  // Address and contact details (black, smaller)
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(8);
+  doc.setFontSize(8.5);
   setFont(doc, "normal");
-  const addr = data.companyAddress || "";
-  const addrLines = doc.splitTextToSize(addr, 110);
+  const companyDetails = [
+    "SHAHNAZ BRIGHT STEEL INDUSTRIES PRIVATE LIMITED PLANT 2",
+    "No:1, Plot No.52A, 52B, No.102, Mugappair Road",
+    "Padi, Chennai",
+    "Tamil nadu, Pincode : 600050, India",
+    "Phone : 9363331766, 7845517678",
+    "sales@saajsteel.com, quotation@saajsteel.com",
+  ];
   let ay = margin + 13;
-  for (const line of addrLines) {
-    doc.text(line, margin + 24, ay);
-    ay += 3.5;
-  }
-  const contactParts: string[] = [
-    data.companyPhone ? `Phone: ${data.companyPhone}` : "",
-    data.companyEmail ? data.companyEmail : "",
-    data.companyGstin ? `GSTIN: ${data.companyGstin}` : "",
-  ].filter(Boolean);
-  if (contactParts.length > 0) {
-    doc.text(contactParts.join(" | "), margin + 24, ay);
+  for (const line of companyDetails) {
+    if (ay < margin + headerH - 4) {
+      doc.text(line, textX, ay);
+      ay += 4;
+    }
   }
 
   const detailX = pageW - margin - 95;
-  doc.setFontSize(9);
+  doc.setFontSize(11);
   setFont(doc, "bold");
   doc.setTextColor(0, 0, 0);
-  doc.text(`Proforma No : ${data.proformaNumber}`, detailX, margin + 6);
-  doc.setFontSize(8);
+  doc.text(`Proforma No : ${data.proformaNumber}`, detailX, margin + 7);
+  doc.setFontSize(9.5);
   setFont(doc, "normal");
   const details = [
     `Proforma Date : ${formatPdfDate(data.proformaDate)}`,
@@ -198,27 +237,29 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
     `Payment Terms : ${data.paymentTerms || "-"}`,
     `Delivery Terms : ${data.deliveryTerms || "-"}`,
   ];
-  let dy = margin + 10;
+  let dy = margin + 12;
   for (const line of details) {
     doc.text(line, detailX, dy);
-    dy += 4;
+    dy += 4.5;
   }
 
   let y = margin + headerH + 5;
   const halfW = (contentW - 5) / 2;
   const billLines = [
-    data.customer?.name || "—",
+    data.billName || data.customer?.name || "—",
     data.customer?.customerCode ? `Code: ${data.customer.customerCode}` : "",
-    data.customer?.billingAddress || "",
-    data.customer?.city ? `${data.customer.city}, ${data.customer?.state || ""}` : "",
-    data.customer?.gstNumber ? `GSTIN: ${data.customer.gstNumber}` : "",
+    data.billAddress || data.customer?.billingAddress || "",
+    data.billState || data.customer?.city ? `${data.customer?.city ? `${data.customer.city}, ` : ""}${data.billState || data.customer?.state || ""}` : "",
+    data.billGstNumber || data.customer?.gstNumber ? `GSTIN: ${data.billGstNumber || data.customer?.gstNumber}` : "",
+    data.billPhone ? `Phone: ${data.billPhone}` : "",
   ].filter(Boolean);
   const shipLines = [
-    data.customer?.name || "—",
+    data.shipName || data.customer?.name || "—",
     data.customer?.customerCode ? `Code: ${data.customer.customerCode}` : "",
-    data.customer?.shippingAddress || data.customer?.billingAddress || "",
-    data.customer?.city ? `${data.customer.city}, ${data.customer?.state || ""}` : "",
-    data.customer?.gstNumber ? `GSTIN: ${data.customer.gstNumber}` : "",
+    data.shipAddress || data.customer?.shippingAddress || data.customer?.billingAddress || "",
+    data.customer?.city ? `${data.customer.city}, ${data.shipState || data.customer?.state || ""}` : "",
+    data.shipGstNumber || data.customer?.gstNumber ? `GSTIN: ${data.shipGstNumber || data.customer?.gstNumber}` : "",
+    data.shipPhone ? `Phone: ${data.shipPhone}` : "",
   ].filter(Boolean);
 
   const boxH = Math.max(28, Math.max(billLines.length, shipLines.length) * 3.6 + 10);
@@ -227,15 +268,34 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
 
   y += boxH + 4;
 
+  // Determine GST tax treatment (intra-state → CGST+SGST, inter-state → IGST)
+  // Compare Supplier State vs Place of Supply (ship-to state or explicit override)
+  const gstResult = resolveTaxTreatment(
+    data.companyGstin,
+    data.placeOfSupply,
+    data.shipGstNumber,
+    data.shipState,
+    data.billGstNumber ?? data.customer?.gstNumber,
+    data.billState ?? data.customer?.state,
+  );
+  const isInterState = gstResult.treatment === "inter_state";
+  const isUnknown = gstResult.treatment === "unknown";
+
+  // Block PDF generation if tax type cannot be determined — do NOT silently default
+  if (isUnknown) {
+    throw new Error(
+      `Cannot generate Proforma PDF: ${gstResult.warning || "GST tax treatment could not be determined."} ` +
+      `Set the customer's Ship-To state, GSTIN, or Place of Supply field before generating the PDF.`
+    );
+  }
+
   const computedItems = data.items.map((it) => {
     const cutting = it.cuttingCharge || 0;
     const taxable = it.quantity * it.unitPrice * (1 - (it.discountPercent || 0) / 100);
     const taxPct = it.taxPercent || 18;
-    const taxAmount = taxable * (taxPct / 100);
-    const cgst = taxAmount / 2;
-    const sgst = taxAmount / 2;
-    const total = taxable + taxAmount + cutting;
-    return { ...it, taxable, taxAmount, cgst, sgst, cutting, total };
+    const { cgst, sgst, igst, totalTax } = computeGstSplit(taxable, taxPct, gstResult.treatment);
+    const total = taxable + totalTax + cutting;
+    return { ...it, taxable, taxAmount: totalTax, cgst, sgst, igst, cutting, total };
   });
 
   const totalTaxable = computedItems.reduce((s, it) => s + it.taxable, 0);
@@ -243,30 +303,63 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   const totalCutting = computedItems.reduce((s, it) => s + it.cutting, 0);
   const totalQty = computedItems.reduce((s, it) => s + it.quantity, 0);
   const totalPcs = computedItems.reduce((s, it) => s + (it.numberOfPieces || 0), 0);
-  const grandTotal = totalTaxable + totalTax + totalCutting;
+  const transportCharge = data.transportCharge || 0;
+  const otherCharges = data.otherCharges || 0;
+  const weighingLoadingCharge = data.weighingLoadingCharge || 0;
+  const deliveryCharge = data.deliveryCharge || 0;
+  const testingCharge = data.testingCharge || 0;
+  const extraCharges = transportCharge + otherCharges + weighingLoadingCharge + deliveryCharge + testingCharge;
+  const itemTotal = totalTaxable + totalTax + totalCutting;
+  const grandTotal = itemTotal + extraCharges;
 
-  const head = [["S.No", "Material\nDescription", "Item\nCode", "Make", "Length\n(mm)", "No of\nPcs", "Qty", "UOM", "Price", "Tax Val", "CGST Val", "SGST Val", "Cutting\nCharge", "Total\nAmount", "Delivery\n(Days)", "Remarks"]];
-  const body = computedItems.map((it, idx) => [
-    String(idx + 1).padStart(2, "0"),
-    it.description || "—",
-    it.productType || "—",
-    it.rmMake || "—",
-    it.lengthMm != null ? String(it.lengthMm) : "—",
-    it.numberOfPieces != null ? String(it.numberOfPieces) : "—",
-    String(it.quantity),
-    it.unit || "Kgs",
-    formatCurrency(it.unitPrice),
-    formatCurrency(it.taxable),
-    formatCurrency(it.cgst),
-    formatCurrency(it.sgst),
-    formatCurrency(it.cuttingCharge || 0),
-    formatCurrency(it.total),
-    it.deliveryDays != null ? String(it.deliveryDays) : "—",
-    it.remarks || "",
-  ]);
-  body.push([
-    "", "", "", "", "", "Total", totalPcs ? String(totalPcs) : "0", totalQty ? String(totalQty) : "0", "", "", "", "", "", "", formatCurrency(grandTotal), "", "",
-  ]);
+  // Build table head — for inter-state, replace CGST Val + SGST Val with a single IGST Val column
+  const head = isInterState
+    ? [["S.No", "Material\nDescription", "Item\nCode", "Make", "Length\n(mm)", "No of\nPcs", "Qty", "UOM", "Price", "Tax Val", "IGST Val", "Cutting\nCharge", "Total\nAmount", "Delivery\n(Days)", "Remarks"]]
+    : [["S.No", "Material\nDescription", "Item\nCode", "Make", "Length\n(mm)", "No of\nPcs", "Qty", "UOM", "Price", "Tax Val", "CGST Val", "SGST Val", "Cutting\nCharge", "Total\nAmount", "Delivery\n(Days)", "Remarks"]];
+
+  const body = computedItems.map((it, idx) => {
+    const base = [
+      String(idx + 1).padStart(2, "0"),
+      it.description || "—",
+      it.productType || "—",
+      it.rmMake || "—",
+      it.lengthMm != null ? String(it.lengthMm) : "—",
+      it.numberOfPieces != null ? String(it.numberOfPieces) : "—",
+      String(it.quantity),
+      it.unit || "Kgs",
+      formatCurrency(it.unitPrice),
+      formatCurrency(it.taxable),
+    ];
+    if (isInterState) {
+      return [
+        ...base,
+        formatCurrency(it.igst),
+        formatCurrency(it.cuttingCharge || 0),
+        formatCurrency(it.total),
+        it.deliveryDays != null ? String(it.deliveryDays) : "—",
+        it.remarks || "",
+      ];
+    }
+    return [
+      ...base,
+      formatCurrency(it.cgst),
+      formatCurrency(it.sgst),
+      formatCurrency(it.cuttingCharge || 0),
+      formatCurrency(it.total),
+      it.deliveryDays != null ? String(it.deliveryDays) : "—",
+      it.remarks || "",
+    ];
+  });
+
+  if (isInterState) {
+    body.push([
+      "", "Total", "", "", "", totalPcs ? String(totalPcs) : "0", totalQty ? String(totalQty) : "0", "", "", "", "", "", formatCurrency(itemTotal), "", "",
+    ]);
+  } else {
+    body.push([
+      "", "Total", "", "", "", totalPcs ? String(totalPcs) : "0", totalQty ? String(totalQty) : "0", "", "", "", "", "", "", formatCurrency(itemTotal), "", "",
+    ]);
+  }
 
   autoTable(doc, {
     startY: y,
@@ -275,7 +368,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
     body,
     styles: {
       font: "NotoSans",
-      fontSize: 6,
+      fontSize: 7,
       cellPadding: 0.6,
       overflow: "linebreak",
       lineColor: [0, 0, 0],
@@ -288,21 +381,32 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
       fillColor: [220, 220, 220],
       textColor: 0,
       fontStyle: "bold",
-      fontSize: 6,
+      fontSize: 7,
       halign: "center",
       valign: "middle",
     },
-    columnStyles: {
-      0: { halign: "center" },
-      1: { halign: "left" },
-      3: { halign: "left" },
-      8: { halign: "right" },
-      9: { halign: "right" },
-      10: { halign: "right" },
-      11: { halign: "right" },
-      12: { halign: "right" },
-      13: { halign: "right" },
-    },
+    columnStyles: isInterState
+      ? {
+          0: { halign: "center" },
+          1: { halign: "left" },
+          3: { halign: "left" },
+          8: { halign: "right" },
+          9: { halign: "right" },
+          10: { halign: "right" },
+          11: { halign: "right" },
+          12: { halign: "right" },
+        }
+      : {
+          0: { halign: "center" },
+          1: { halign: "left" },
+          3: { halign: "left" },
+          8: { halign: "right" },
+          9: { halign: "right" },
+          10: { halign: "right" },
+          11: { halign: "right" },
+          12: { halign: "right" },
+          13: { halign: "right" },
+        },
     didDrawPage: () => {
       addPageFooter(doc, { left: "This is a computer-generated proforma invoice.", page: doc.getNumberOfPages() });
     },
@@ -336,6 +440,37 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
     cy += 3.5;
   }
 
+  // Tax treatment warning (unknown state) — shown in red below comments
+  if (isUnknown && gstResult.warning) {
+    doc.setFontSize(8);
+    setFont(doc, "bold");
+    doc.setTextColor(200, 0, 0);
+    const warnLines = doc.splitTextToSize(`TAX WARNING: ${gstResult.warning}`, leftW - 6);
+    for (const wl of warnLines) {
+      if (cy > y + 22) break;
+      doc.text(wl, margin + 3, cy);
+      cy += 3.2;
+    }
+    doc.setTextColor(0, 0, 0);
+  }
+
+  // State field mismatch warning (GSTIN state code != state field)
+  if (gstResult.stateFieldMismatch) {
+    doc.setFontSize(8);
+    setFont(doc, "bold");
+    doc.setTextColor(200, 0, 0);
+    const mismatchLines = doc.splitTextToSize(
+      `DATA WARNING: Customer's GSTIN state code does not match the state field. Using GSTIN state code for tax treatment.`,
+      leftW - 6,
+    );
+    for (const wl of mismatchLines) {
+      if (cy > y + 22) break;
+      doc.text(wl, margin + 3, cy);
+      cy += 3.2;
+    }
+    doc.setTextColor(0, 0, 0);
+  }
+
   doc.setFontSize(8);
   setFont(doc, "bold");
   doc.text("Amount In Words :", margin + 3, y + 25);
@@ -346,7 +481,7 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
   doc.setFontSize(8);
   setFont(doc, "bold");
   doc.text("Terms & Condition :", margin + 3, y + 38);
-  doc.setFontSize(7);
+  doc.setFontSize(8);
   setFont(doc, "normal");
   const tnc = data.termsAndConditions || DEFAULT_TERMS;
   const tncLines = doc.splitTextToSize(tnc, leftW - 6);
@@ -362,12 +497,12 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
 
   const summary = [
     { label: "Taxable Val", value: totalTaxable },
-    { label: "Tax Charges", value: totalTax },
-    { label: "Transport Charges", value: 0 },
-    { label: "Other Charges", value: 0 },
-    { label: "Weighing/Loading Charge", value: 0 },
-    { label: "Delivery Charge", value: 0 },
-    { label: "Testing Charge", value: 0 },
+    { label: isInterState ? "IGST" : "Tax Charges", value: totalTax },
+    { label: "Cutting Charges", value: transportCharge },
+    { label: "Other Charges", value: otherCharges },
+    { label: "Weighing/Loading Charge", value: weighingLoadingCharge },
+    { label: "Delivery Charge", value: deliveryCharge },
+    { label: "Testing Charge", value: testingCharge },
     { label: "Total Amount", value: grandTotal, bold: true },
   ];
 
@@ -396,8 +531,9 @@ export function generateProformaPdf(data: ProformaPdfData): jsPDF {
     doc.setFontSize(8);
     setFont(doc, "bold");
     doc.text("For", sigX + 3, sigY + 5);
-    doc.text(companyName, sigX + 3, sigY + 10);
-    doc.setFontSize(7);
+    doc.setFontSize(8);
+    doc.text("SHAHNAZ BRIGHT STEEL", sigX + 3, sigY + 10);
+    doc.setFontSize(8);
     setFont(doc, "normal");
     doc.line(sigX + 3, sigY + 13, sigX + sigW - 3, sigY + 13);
     doc.text("Authorized Signature", sigX + 3, sigY + 17);

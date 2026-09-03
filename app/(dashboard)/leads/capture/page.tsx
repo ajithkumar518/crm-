@@ -15,6 +15,7 @@ const SUKI_LEAD_SOURCES = [
   "Door-to-Door Marketing",
   "Direct Visit",
   "Telephonic Conversation",
+  "Email",
 ];
 
 const LEAD_STATUSES = ["New", "Contacted", "Qualified", "Lost"];

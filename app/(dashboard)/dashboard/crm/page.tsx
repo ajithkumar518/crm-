@@ -80,6 +80,7 @@ export default function CrmDashboardPage() {
     setError("");
     try {
       const res = await fetch("/api/dashboard/suki");
+      if (!res.ok) { setError("Failed to load CRM dashboard"); return; }
       const json = await res.json();
       if (json.success) setData(json.data);
       else setError(json.message || "Failed to load");
@@ -117,20 +118,38 @@ export default function CrmDashboardPage() {
 
   const execChart = {
     labels: execData.map((e: any) => e.name),
-    datasets: [{
-      label: "Customers",
-      data: execData.map((e: any) => e.count),
-      backgroundColor: accentColor,
-      borderRadius: 6,
-      barThickness: 28,
-      maxBarThickness: 40,
-    }],
+    datasets: [
+      {
+        label: "Leads Handled",
+        data: execData.map((e: any) => e.leadsHandled),
+        backgroundColor: "#3b82f6",
+        borderRadius: 6,
+        barThickness: 18,
+        maxBarThickness: 30,
+      },
+      {
+        label: "Quotations Sent",
+        data: execData.map((e: any) => e.quotationsSent),
+        backgroundColor: "#8b5cf6",
+        borderRadius: 6,
+        barThickness: 18,
+        maxBarThickness: 30,
+      },
+      {
+        label: "Deals Won",
+        data: execData.map((e: any) => e.dealsWon),
+        backgroundColor: "#10b981",
+        borderRadius: 6,
+        barThickness: 18,
+        maxBarThickness: 30,
+      },
+    ],
   };
 
   const execOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    plugins: { legend: { display: true, position: "bottom" as const, labels: { boxWidth: 12, font: { size: 10 } } } },
     scales: {
       x: { grid: { display: false }, ticks: { font: { size: 10 } } },
       y: { beginAtZero: true, grid: { color: "rgba(148,163,184,0.12)" }, ticks: { precision: 0, font: { size: 10 } } },

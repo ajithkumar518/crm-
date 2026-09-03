@@ -14,6 +14,7 @@ import { useToast } from "@/components/ToastProvider";
 import { FieldGrid } from "@/components/shared/FieldGrid";
 import { CompactUserAvatar } from "@/components/shared/UserAvatar";
 import { StatusPill } from "@/components/shared/StatusPill";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useHasModule } from "@/components/ModuleGate";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
@@ -47,13 +48,14 @@ const STATUS_OPTIONS = [
 
 const LEAD_SOURCES = [
   "Website",
-  "Facebook",
-  "Instagram",
-  "LinkedIn",
-  "Referral",
-  "WalkIn",
-  "ColdCall",
-  "Partner"
+  "IndiaMART",
+  "Justdial",
+  "TradeIndia",
+  "WhatsApp",
+  "Door-to-Door Marketing",
+  "Direct Visit",
+  "Telephonic Conversation",
+  "Email"
 ];
 
 const DEAL_STATUSES = ["Open", "ProposalSent", "Negotiation", "Won", "Lost"];
@@ -479,17 +481,7 @@ export default function Customer360Page({ params: paramsPromise }: { params: Pro
             <div className="flex flex-wrap items-center gap-2.5">
               <h1 className="text-lg font-extrabold text-slate-900 dark:text-slate-100">{customer.name}</h1>
               <span className="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-2 py-0.5 rounded">{customer.customerCode}</span>
-              <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold border ${
-                customer.status === "Active" || customer.status === "ActiveCustomer"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : customer.status === "Prospect"
-                  ? "bg-amber-50 text-amber-700 border-amber-200"
-                  : customer.status === "Lost" || customer.status === "Churned"
-                  ? "bg-rose-50 text-rose-700 border-rose-200"
-                  : "bg-slate-100 text-slate-700 border-slate-200"
-              }`}>
-                {customer.status}
-              </span>
+              <StatusBadge status={customer.status} showDot size="md" />
               {hasMod(MODULE_KEYS.KEY_ACCOUNTS) && customer.isKeyAccountV2 && (
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border-amber-200">
                   <span>⭐</span> Key Account
@@ -510,6 +502,10 @@ export default function Customer360Page({ params: paramsPromise }: { params: Pro
                 <span className="font-medium">{customer.city || "—"}</span>
               </div>
               <div>
+                <span className="text-slate-400 text-xs">Location:</span>
+                <span className="font-medium truncate">{customer.location || "—"}</span>
+              </div>
+              <div>
                 <span className="text-slate-400 text-xs">Type:</span>
                 <span className="font-medium">{customer.accountType || "—"}</span>
               </div>
@@ -528,6 +524,10 @@ export default function Customer360Page({ params: paramsPromise }: { params: Pro
               <div>
                 <span className="text-slate-400 text-xs">Created:</span>
                 <span className="font-medium">{new Date(customer.createdAt).toLocaleDateString()}</span>
+              </div>
+              <div>
+                <span className="text-slate-400 text-xs">Customer Category:</span>
+                <span className="font-medium">{customer.customerCategory || "—"}</span>
               </div>
             </div>
           </div>
@@ -576,6 +576,7 @@ export default function Customer360Page({ params: paramsPromise }: { params: Pro
                   { label: "Email", value: customer.email || "-", truncate: true },
                   { label: "Phone", value: customer.phone || "-" },
                   { label: "City", value: customer.city || "-" },
+                  { label: "Location", value: customer.location || "-" },
                   { label: "Account Type", value: customer.accountType || "-" },
                   { label: "Industry", value: customer.industryType || "-" },
                   { label: "GSTIN", value: customer.gstNumber || "-" },

@@ -20,6 +20,7 @@ export interface Customer {
   email: string | null;
   phone: string | null;
   city: string | null;
+  location?: string | null;
   state?: string | null;
   status: "Prospect" | "ActiveCustomer" | "Renewed" | "Churned";
   assignedUserId: string | null;
@@ -56,6 +57,7 @@ export interface Lead {
   companyName?: string | null;
   designation?: string | null;
   industryType?: string | null;
+  customerCategory?: string | null;
   estimatedValue?: number | null;
   leadScore?: number;
   isDuplicateOf?: string | null;

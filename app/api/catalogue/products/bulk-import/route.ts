@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { nanoid } from "nanoid";
 
+const VALID_PRODUCT_TYPES = ["Black Bar", "Bright Bar", "Bright Ground Bar"];
+
 // POST /api/catalogue/products/bulk-import
 import { enforceModuleGuard } from "@/lib/moduleGuard";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
@@ -32,6 +34,13 @@ export async function POST(request: Request) {
 
     for (const product of products) {
       try {
+        const productType = product.productType?.trim();
+        if (!productType || !VALID_PRODUCT_TYPES.includes(productType)) {
+          results.failed++;
+          results.errors.push(`Failed to import ${product.name || "Unnamed"}: Product Type must be one of ${VALID_PRODUCT_TYPES.join(", ")}`);
+          continue;
+        }
+
         // Auto-generate productCode per company
         const prefix = "PRD";
         const count = await prisma.product.count({
@@ -50,7 +59,7 @@ export async function POST(request: Request) {
             basePrice: product.basePrice ? parseFloat(product.basePrice) : null,
             isActive: product.isActive ?? true,
             productImageUrl: product.productImageUrl ?? null,
-            productType: product.productType ?? null,
+            productType,
             minOrderQuantity: product.minOrderQuantity ? parseFloat(product.minOrderQuantity) : null,
             companyId: user.companyId ?? null,
           },

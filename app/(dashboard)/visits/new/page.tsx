@@ -227,6 +227,7 @@ export default function NewVisitPage() {
       title="Plan Visit"
       subtitle="Schedule a customer visit with attendees and location"
       breadcrumb={[{ label: "Visits", href: "/visits" }]}
+      onBack={() => router.push("/visits")}
     >
       <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
         {/* Account Search */}

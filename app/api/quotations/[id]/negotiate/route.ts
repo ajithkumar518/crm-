@@ -47,9 +47,9 @@ export async function POST(
     }
   }
 
-  if (!["Sent", "UnderReview"].includes(existing.status)) {
+  if (!["Quotation Sent", "UnderReview", "Follow-up", "Revised Rate"].includes(existing.status)) {
     return NextResponse.json(
-      { success: false, message: "Only Sent or already UnderReview quotations can be moved to negotiation" },
+      { success: false, message: "Only Quotation Sent, Follow-up, Revised Rate, or already UnderReview quotations can be moved to negotiation" },
       { status: 400 }
     );
   }

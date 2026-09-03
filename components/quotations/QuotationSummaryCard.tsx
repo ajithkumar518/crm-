@@ -33,7 +33,7 @@ export default function QuotationSummaryCard({ quotation, overallMargin, overall
     <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 shadow-sm p-6">
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${statusColors[quotation.status]}`}>{quotation.status}</span>
-        {quotation.status === "Sent" && daysRemaining !== null && (
+        {quotation.status === "Quotation Sent" && daysRemaining !== null && (
           <>
             {daysRemaining >= 0 ? (
               <span className={`text-xs font-medium ${validityColor}`}><Ico d={icons.clock} size={14} className="inline mr-1" />Expires in {daysRemaining} day{daysRemaining !== 1 ? "s" : ""}</span>

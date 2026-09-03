@@ -7,6 +7,7 @@ import { useToast } from "@/components/ToastProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { FormField, Select, Input } from "@/components/ui/FormField";
 import { cn } from "@/lib/ui-utils";
+import ProductImportModal from "@/components/products/ProductImportModal";
 import {
   Plus, Search, Trash2, Check, X, FileText, BookOpen,
   Package, Filter, Download, Upload, Eye
@@ -20,9 +21,17 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
   const [categoryId, setCategoryId] = useState("");
   const [productType, setProductType] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [grade, setGrade] = useState("");
+  const [size, setSize] = useState("");
+  const [description, setDescription] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [sortBy, setSortBy] = useState("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  
+  const [isImportOpen, setIsImportOpen] = useState(false);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -33,23 +42,35 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
   const loadProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string> = {
+        page: String(page),
+        pageSize: String(pageSize),
+      };
       if (search) params.search = search;
       if (categoryId) params.categoryId = categoryId;
       if (productType) params.productType = productType;
-      if (statusFilter) params.status = statusFilter;
+      if (statusFilter) params.isActive = statusFilter;
+      if (grade) params.grade = grade;
+      if (size) params.size = size;
+      if (description) params.description = description;
       if (sortBy) params.sortBy = sortBy;
       if (sortOrder) params.sortOrder = sortOrder;
-      
+
       const res = await fetch(`/api/catalogue/products?${new URLSearchParams(params)}`);
       const data = await res.json();
-      if (data.success && data.data) setProducts(data.data);
+      if (data.success && data.data) {
+        setProducts(data.data);
+        if (data.pagination) {
+          setTotal(data.pagination.total || 0);
+          setTotalPages(data.pagination.totalPages || 1);
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [search, categoryId, productType, statusFilter, sortBy, sortOrder]);
+  }, [search, categoryId, productType, statusFilter, grade, size, description, page, pageSize, sortBy, sortOrder]);
 
   const loadCategories = useCallback(async () => {
     try {
@@ -66,6 +87,10 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
     loadCategories();
   }, [loadProducts, loadCategories]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, categoryId, productType, statusFilter, grade, size, description, pageSize]);
+
   return (
     <div className="flex h-full w-full">
       {/* Center Panel: List */}
@@ -76,9 +101,24 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
               <Package size={18} className="text-text-muted" />
               Products
             </h1>
-            <button onClick={() => router.push("/catalogue/products/new")} className="p-1.5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors" title="Add Product">
-              <Plus size={16} />
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setIsImportOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-card border border-border text-text-secondary rounded-lg text-[13px] font-medium hover:bg-card-hover transition-colors"
+                title="Import Products"
+              >
+                <Upload size={15} />
+                Import
+              </button>
+              <button
+                onClick={() => router.push("/catalogue/products/new")}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[var(--primary)] text-white rounded-lg text-[13px] font-medium hover:bg-[var(--primary-hover)] transition-colors"
+                title="Add Product"
+              >
+                <Plus size={15} />
+                Add
+              </button>
+            </div>
           </div>
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -90,11 +130,11 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
               className="w-full pl-9 pr-3 py-1.5 text-sm bg-card border border-border rounded-lg text-text-primary focus:outline-none focus:border-[var(--primary)] transition-colors"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="flex-1 py-1 px-2 text-xs bg-card border border-border rounded text-text-secondary focus:outline-none focus:border-[var(--primary)]"
+              className="w-full py-1 px-2 text-xs bg-card border border-border rounded text-text-secondary focus:outline-none focus:border-[var(--primary)]"
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
@@ -104,12 +144,35 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-24 py-1 px-2 text-xs bg-card border border-border rounded text-text-secondary focus:outline-none focus:border-[var(--primary)]"
+              className="w-full py-1 px-2 text-xs bg-card border border-border rounded text-text-secondary focus:outline-none focus:border-[var(--primary)]"
             >
               <option value="">Any Status</option>
               <option value="true">Active</option>
               <option value="false">Inactive</option>
             </select>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <input
+              type="text"
+              placeholder="Grade"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              className="w-full py-1 px-2 text-xs bg-card border border-border rounded text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[var(--primary)]"
+            />
+            <input
+              type="text"
+              placeholder="Size"
+              value={size}
+              onChange={(e) => setSize(e.target.value)}
+              className="w-full py-1 px-2 text-xs bg-card border border-border rounded text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[var(--primary)]"
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full py-1 px-2 text-xs bg-card border border-border rounded text-text-primary placeholder:text-text-muted focus:outline-none focus:border-[var(--primary)]"
+            />
           </div>
         </div>
 
@@ -147,12 +210,24 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
                         <span>•</span>
                         <span className="truncate">{product.category?.name || "Uncategorized"}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn(
-                          "inline-block w-2 h-2 rounded-full",
-                          product.isActive ? "bg-success-text" : "bg-text-muted"
-                        )} />
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted">{product.isActive ? "Active" : "Inactive"}</span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn(
+                            "inline-block w-2 h-2 rounded-full",
+                            product.isActive ? "bg-success-text" : "bg-text-muted"
+                          )} />
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-text-muted">{product.isActive ? "Active" : "Inactive"}</span>
+                        </div>
+                        {product.currentStock != null && product.currentStock > 0 && (
+                          <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                            Stock: {Number(product.currentStock).toLocaleString("en-IN", { maximumFractionDigits: 3 })} {product.unit || "kgs"}
+                          </span>
+                        )}
+                        {product.currentStock === 0 && (
+                          <span className="text-[10px] font-medium text-rose-500">
+                            Out of Stock
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -160,6 +235,43 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
               })}
             </div>
           )}
+        </div>
+
+        {/* Pagination */}
+        <div className="p-3 border-t border-border bg-card shrink-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(parseInt(e.target.value))}
+                className="py-1 px-2 text-xs bg-card border border-border rounded text-text-secondary focus:outline-none focus:border-[var(--primary)]"
+              >
+                <option value={20}>20 / page</option>
+                <option value={50}>50 / page</option>
+                <option value={100}>100 / page</option>
+              </select>
+              <span className="text-xs text-text-muted hidden sm:inline">{total} products</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1 || loading}
+                className="px-2 py-1 text-xs font-medium rounded border border-border bg-card text-text-secondary hover:bg-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Prev
+              </button>
+              <span className="text-xs text-text-secondary min-w-[80px] text-center">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages || loading}
+                className="px-2 py-1 text-xs font-medium rounded border border-border bg-card text-text-secondary hover:bg-card-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -175,6 +287,12 @@ export default function ProductsWorkspaceLayout({ children }: { children: React.
         onConfirm={confirmState.action}
         onCancel={() => setConfirmState({ isOpen: false, title: "", message: "", action: () => {} })}
         isDestructive={true}
+      />
+
+      <ProductImportModal
+        open={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImportDone={loadProducts}
       />
     </div>
   );

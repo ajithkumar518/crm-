@@ -22,6 +22,55 @@ export function getRequiredModuleForKey(key: string): ModuleKey | null {
   return null;
 }
 
+/**
+ * Compliance-sensitive config keys whose values are validated before saving.
+ * These keys affect customer-facing tax documents (quotations, proforma invoices).
+ * A placeholder/fabricated value in one of these keys could create incorrect tax
+ * invoices with real compliance consequences.
+ */
+const COMPLIANCE_SENSITIVE_KEYS = ["company_gstin"];
+
+/**
+ * Validate a compliance-sensitive config value before it is saved.
+ * Returns an error message string if the value is rejected, or null if it is valid.
+ *
+ * For company_gstin:
+ *   - Must be a valid 15-character Indian GSTIN format
+ *   - Must NOT contain placeholder PAN patterns (e.g. "AAAAA0000A" — all repeated
+ *     letters in the PAN segment are obviously not a real PAN)
+ *   - This prevents fabricated/sample GSTINs from being saved to the live database
+ */
+function validateComplianceValue(key: string, value: string): string | null {
+  if (!COMPLIANCE_SENSITIVE_KEYS.includes(key)) return null;
+
+  if (key === "company_gstin") {
+    const trimmed = value.trim().toUpperCase();
+
+    // Format check: 2-digit state code + 10-char PAN + entity + Z + check digit
+    const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[0-9]{1}Z[0-9A-Z]{1}$/;
+    if (!gstinRegex.test(trimmed)) {
+      return `company_gstin "${trimmed}" is not a valid 15-character Indian GSTIN. Expected format: 2-digit state code + 10-char PAN + entity code + Z + check digit (e.g. 33AABCU1234A1Z5).`;
+    }
+
+    // Placeholder detection: check for obviously fake PAN segments
+    // A real PAN has 5 letters (first 5 chars of the PAN portion) that are NOT all the same.
+    // Position 3-7 of the GSTIN are the first 5 letters of the PAN.
+    const panLetters = trimmed.substring(2, 7); // chars 3-7 (0-indexed 2-6)
+    const allSameLetter = panLetters.split("").every((c) => c === panLetters[0]);
+    if (allSameLetter) {
+      return `company_gstin "${trimmed}" appears to be a placeholder/fabricated value — the PAN segment "${panLetters}" consists of the same repeated letter, which is not a real PAN. Refusing to save. Provide the actual company GSTIN.`;
+    }
+
+    // Additional placeholder check: "0000" in the numeric portion of PAN (positions 7-10)
+    const panDigits = trimmed.substring(7, 11);
+    if (panDigits === "0000") {
+      return `company_gstin "${trimmed}" appears to be a placeholder/fabricated value — the PAN numeric segment is "0000". Refusing to save. Provide the actual company GSTIN.`;
+    }
+  }
+
+  return null;
+}
+
 // GET all system configs (admin only, filtered by tenant variant permissions)
 export async function GET() {
   const user = await verifyAuth();
@@ -63,6 +112,18 @@ export async function PUT(request: NextRequest) {
     if (requiredModule) {
       const guard = enforceModuleGuard(user, requiredModule, `PUT /api/system-configs (${key})`);
       if (guard) return guard;
+    }
+  }
+
+  // Validate compliance-sensitive config values (e.g. company_gstin) before saving.
+  // This prevents placeholder/fabricated values from entering the live database.
+  for (const { key, value } of updates) {
+    const validationError = validateComplianceValue(key, value);
+    if (validationError) {
+      return NextResponse.json(
+        { success: false, message: validationError },
+        { status: 400 }
+      );
     }
   }
 

@@ -38,6 +38,7 @@ export default function ManagerDashboard() {
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard/manager");
+      if (!res.ok) return;
       const json = await res.json();
       if (json.success) setData(json.data);
     } catch (err) {

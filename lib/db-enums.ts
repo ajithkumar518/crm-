@@ -22,7 +22,7 @@ export type FollowUpStatus = "Pending" | "Completed" | "Overdue" | "Cancelled";
 
 export type SlaStatus = "Pending" | "Warning" | "Breached" | "Met";
 
-export type LeadSource = "Website" | "Facebook" | "Instagram" | "LinkedIn" | "Referral" | "WalkIn" | "ColdCall" | "Partner";
+export type LeadSource = "Website" | "IndiaMART" | "Justdial" | "TradeIndia" | "WhatsApp" | "Door-to-Door Marketing" | "Direct Visit" | "Telephonic Conversation" | "Email";
 
 export type OpportunityStage =
   | "Qualified"

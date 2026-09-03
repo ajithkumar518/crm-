@@ -8,11 +8,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { validateNotInPast } from "@/lib/date-validation";
 import { buildScope, checkRecordScope } from "@/lib/scopes";
+import { isQuotationFollowupAllowed } from "@/lib/feature-allowlist";
 
 const createSchema = z.object({
   customerId: z.string().optional().nullable(),
   leadId: z.string().optional().nullable(),
   dealId: z.string().optional().nullable(),
+  quotationId: z.string().optional().nullable(),
   nextMeetingDate: z.date(),
   remarks: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
@@ -23,8 +25,8 @@ const createSchema = z.object({
   assignedUserId: z.string().optional().nullable(),
   autoCreated: z.boolean().default(false),
   type: z.enum(["Call", "Meeting", "Note"]).optional().nullable(),
-}).refine(data => data.customerId || data.leadId || data.dealId, {
-  message: "Either customerId, leadId, or dealId must be provided",
+}).refine(data => data.customerId || data.leadId || data.dealId || data.quotationId, {
+  message: "Either customerId, leadId, dealId, or quotationId must be provided",
   path: ["customerId"]
 });
 
@@ -47,6 +49,12 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
         status: "Pending",
         nextMeetingDate: { lt: now },
       },
+      include: {
+        customer: { select: { name: true } },
+        lead: { select: { name: true } },
+        deal: { select: { dealName: true } },
+        assignedUser: { select: { name: true } },
+      },
     });
 
     // 2. Find old overdue follow-ups that need Level 1 escalation (overdue > 48h and escalationLevel === 0)
@@ -56,6 +64,12 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
         status: "Overdue",
         escalationLevel: 0,
         nextMeetingDate: { lt: fortyEightHoursAgo },
+      },
+      include: {
+        customer: { select: { name: true } },
+        lead: { select: { name: true } },
+        deal: { select: { dealName: true } },
+        assignedUser: { select: { name: true } },
       },
     });
 
@@ -82,10 +96,11 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
 
       // Notify assignee
       if (f.assignedUserId) {
+        const entityName = f.customer?.name || f.lead?.name || f.deal?.dealName || "this follow-up";
         await dispatchNotification({
           userId: f.assignedUserId,
           title: "Follow-Up Overdue",
-          message: `Your scheduled follow-up for customer is now overdue.`,
+          message: `Your scheduled follow-up for ${entityName} is now overdue.`,
           type: "follow_up",
           link: "/follow-up",
         });
@@ -93,22 +108,25 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
 
       // Notify managers
       if (managerIds.length > 0) {
+        const entityName = f.customer?.name || f.lead?.name || f.deal?.dealName || "this follow-up";
+        const assigneeName = f.assignedUser?.name || "user";
         await dispatchNotificationsToMany({
           userIds: managerIds,
           title: "Follow-Up Overdue Alert",
-          message: `Follow-up assigned to user ${f.assignedUserId} is overdue.`,
+          message: `Follow-up for ${entityName} assigned to ${assigneeName} is overdue.`,
           type: "follow_up",
           link: "/follow-up",
         });
       }
 
       if (isEscalated) {
+        const entityName = f.customer?.name || f.lead?.name || f.deal?.dealName || "this follow-up";
         if (f.assignedUserId) {
           await logAudit(
             f.assignedUserId,
             "follow-up",
             "escalate",
-            `Follow-up ${f.id} automatically escalated to Level 1 (overdue > 48h)`
+            `Follow-up for ${entityName} automatically escalated to Level 1 (overdue > 48h)`
           );
         }
 
@@ -116,7 +134,7 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
           await dispatchNotificationsToMany({
             userIds: managerIds,
             title: "Follow-Up Escalated (Level 1)",
-            message: `Follow-up ${f.id} escalated to Level 1 (overdue > 48h).`,
+            message: `Follow-up for ${entityName} escalated to Level 1 (overdue > 48h).`,
             type: "follow_up",
             link: "/follow-up",
           });
@@ -131,12 +149,13 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
         data: { escalationLevel: 1 },
       });
 
+      const entityName = f.customer?.name || f.lead?.name || f.deal?.dealName || "this follow-up";
       if (f.assignedUserId) {
         await logAudit(
           f.assignedUserId,
           "follow-up",
           "escalate",
-          `Follow-up ${f.id} automatically escalated to Level 1 (overdue > 48h)`
+          `Follow-up for ${entityName} automatically escalated to Level 1 (overdue > 48h)`
         );
       }
 
@@ -144,7 +163,7 @@ export async function checkAndUpdateOverdueFollowUps(companyId?: string | null) 
         await dispatchNotificationsToMany({
           userIds: managerIds,
           title: "Follow-Up Escalated (Level 1)",
-          message: `Follow-up ${f.id} escalated to Level 1 (overdue > 48h).`,
+          message: `Follow-up for ${entityName} escalated to Level 1 (overdue > 48h).`,
           type: "follow_up",
           link: "/follow-up",
         });
@@ -221,6 +240,7 @@ export async function getFollowUpsAction(params?: {
     const whereClause = {
       ...scope,
       stageAtCreation: { not: "Lead" },
+      quotationId: null, // Quotation-linked follow-ups live only in the Quotation sub-module
       AND: [
         params?.assignedUserId ? { assignedUserId: params.assignedUserId } : {},
         params?.status ? { status: params.status as any } : {},
@@ -237,6 +257,7 @@ export async function getFollowUpsAction(params?: {
         customer: { select: { id: true, name: true, customerCode: true, status: true } },
         lead: { select: { id: true, name: true, leadCode: true, status: true, companyName: true } },
         deal: { select: { id: true, dealName: true, opportunityCode: true, status: true } },
+        quotation: { select: { id: true, quotationCode: true, status: true } },
         assignedUser: { select: { id: true, name: true, email: true } },
         completedBy: { select: { id: true, name: true, email: true } },
       },
@@ -300,6 +321,7 @@ export async function createFollowUpAction(data: any) {
       customerId: data.customerId || null,
       leadId: data.leadId || null,
       dealId: data.dealId || null,
+      quotationId: data.quotationId || null,
       nextMeetingDate: new Date(data.nextMeetingDate || data.scheduledTime),
       remarks: data.remarks || data.notes || null,
       notes: data.notes || data.remarks || null,
@@ -318,6 +340,11 @@ export async function createFollowUpAction(data: any) {
 
     const validated = parsedInput.data;
 
+    // Per-user feature guard: quotation-linked follow-ups are restricted
+    if (validated.quotationId && !isQuotationFollowupAllowed(userPayload.email)) {
+      return { success: false, message: "Unauthorized: You do not have access to quotation follow-ups." };
+    }
+
     const dateValidationError = validateNotInPast(validated.nextMeetingDate, "Follow-up date");
     if (dateValidationError) {
       return { success: false, message: dateValidationError };
@@ -326,6 +353,25 @@ export async function createFollowUpAction(data: any) {
     // Check if Executive is trying to assign to someone else
     if (userPayload.role === "SalesExecutive" && validated.assignedUserId !== userPayload.id) {
       return { success: false, message: "Executives can only assign follow-ups to themselves" };
+    }
+
+    // Auto-resolve customerId and quotationCode from quotation if only quotationId is provided
+    let resolvedCustomerId = validated.customerId || null;
+    let quotationCode: string | null = null;
+    let accountReference: string | null = null;
+    if (validated.quotationId) {
+      const quotation = await prisma.quotation.findUnique({
+        where: { id: validated.quotationId },
+        include: { customer: { select: { id: true, name: true } } },
+      });
+      if (!quotation) {
+        return { success: false, message: "Quotation not found." };
+      }
+      quotationCode = quotation.quotationCode;
+      if (!resolvedCustomerId && quotation.customerId) {
+        resolvedCustomerId = quotation.customerId;
+      }
+      accountReference = quotation.customer?.name || null;
     }
 
     // Verify Customer scope
@@ -366,11 +412,14 @@ export async function createFollowUpAction(data: any) {
 
     const followUp = await prisma.followUp.create({
       data: {
-        customerId: validated.customerId || null,
+        customerId: resolvedCustomerId,
         leadId: validated.leadId || null,
         dealId: validated.dealId || null,
-        entityType: validated.leadId ? "lead" : (validated.dealId ? "deal" : (validated.customerId ? "account" : null)),
-        entityId: validated.leadId || validated.dealId || validated.customerId || null,
+        quotationId: validated.quotationId || null,
+        quotationCode: quotationCode,
+        accountReference: accountReference,
+        entityType: validated.leadId ? "lead" : (validated.dealId ? "deal" : (resolvedCustomerId ? "account" : null)),
+        entityId: validated.leadId || validated.dealId || resolvedCustomerId || validated.quotationId || null,
         assignedUserId: validated.assignedUserId || userPayload.id,
         nextMeetingDate: validated.nextMeetingDate,
         dueDate: validated.nextMeetingDate, // Align dueDate with nextMeetingDate
@@ -390,9 +439,19 @@ export async function createFollowUpAction(data: any) {
         customer: { select: { id: true, name: true, customerCode: true } },
         lead: { select: { id: true, name: true, leadCode: true } },
         deal: { select: { id: true, dealName: true, opportunityCode: true } },
+        quotation: { select: { id: true, quotationCode: true, status: true } },
         assignedUser: { select: { id: true, name: true, email: true } },
       },
     });
+
+    // Quotation follow-up: move quotation to "Follow-up" status when a pending follow-up is created
+    if (validated.quotationId) {
+      await prisma.quotation.update({
+        where: { id: validated.quotationId },
+        data: { status: "Follow-up" },
+      });
+      revalidatePath(`/quotations/${validated.quotationId}`);
+    }
 
     await logAudit(
       userPayload.id,
@@ -746,6 +805,14 @@ export async function completeFollowUpWithActivityAction(data: {
       }
     }
 
+    // Quotation follow-up: move quotation back to "Quotation Sent" when completed
+    if (followUp.quotationId) {
+      await prisma.quotation.update({
+        where: { id: followUp.quotationId },
+        data: { status: "Quotation Sent" },
+      });
+    }
+
     await logAudit(
       userPayload.id,
       "follow-up",
@@ -759,6 +826,7 @@ export async function completeFollowUpWithActivityAction(data: {
     revalidatePath("/activities");
     if (followUp.leadId) revalidatePath(`/leads/${followUp.leadId}`);
     if (followUp.customerId) revalidatePath(`/customers/${followUp.customerId}`);
+    if (followUp.quotationId) revalidatePath(`/quotations/${followUp.quotationId}`);
 
     return {
       success: true,
@@ -939,6 +1007,16 @@ export async function reassignFollowUpAction(data: { id: string; assignedUserId:
       return { success: false, message: "Unauthorized: Access denied." };
     }
 
+    // Fetch customer/lead/deal details for notification
+    const followUpWithDetails = await prisma.followUp.findUnique({
+      where: { id },
+      include: {
+        customer: { select: { name: true } },
+        lead: { select: { name: true } },
+        deal: { select: { dealName: true } },
+      },
+    });
+
     const targetUser = await prisma.user.findUnique({
       where: { id: assignedUserId },
       select: { name: true, companyId: true },
@@ -956,18 +1034,19 @@ export async function reassignFollowUpAction(data: { id: string; assignedUserId:
       },
     });
 
+    const entityName = followUpWithDetails?.customer?.name || followUpWithDetails?.lead?.name || followUpWithDetails?.deal?.dealName || "this follow-up";
     await logAudit(
       userPayload.id,
       "follow-up",
       "reassign",
-      `Follow-up ${id} reassigned to user ${assignedUserId} (${targetUser.name})`
+      `Follow-up for ${entityName} reassigned to user ${targetUser.name}`
     );
 
     // Notify new assignee
     await dispatchNotification({
       userId: assignedUserId,
       title: "Follow-Up Reassigned",
-      message: `A follow-up has been reassigned to you.`,
+      message: `Follow-up for ${entityName} has been reassigned to you.`,
       type: "follow_up",
       link: "/follow-up",
     });
@@ -1292,4 +1371,117 @@ export async function getFollowUpByIdAction(id: string) {
   }
 }
 
+/**
+ * Fetches all follow-ups linked to a specific quotation.
+ * Restricted to users in the quotation-followup allow-list.
+ */
+export async function getQuotationFollowUpsAction(quotationId: string) {
+  try {
+    const userPayload = await verifyAuth();
+    if (!userPayload || userPayload.role === "Customer") {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    // Tenant check: SuperAdmin supportMode check
+    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
+      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    }
+
+    // Per-user feature guard
+    if (!isQuotationFollowupAllowed(userPayload.email)) {
+      return { success: false, message: "Unauthorized: You do not have access to quotation follow-ups." };
+    }
+
+    // Run sweep to ensure statuses are fresh (scoped to tenant)
+    await checkAndUpdateOverdueFollowUps(userPayload.companyId);
+
+    const followUps = await prisma.followUp.findMany({
+      where: {
+        quotationId,
+        companyId: userPayload.companyId,
+        deletedAt: null,
+      },
+      include: {
+        customer: { select: { id: true, name: true, customerCode: true, status: true } },
+        quotation: { select: { id: true, quotationCode: true, status: true } },
+        assignedUser: { select: { id: true, name: true, email: true } },
+        completedBy: { select: { id: true, name: true, email: true } },
+      },
+      orderBy: { nextMeetingDate: "desc" },
+    });
+
+    const normalized = followUps.map((f) => ({
+      ...f,
+      scheduledTime: f.nextMeetingDate.toISOString(),
+      nextMeetingDate: f.nextMeetingDate.toISOString(),
+      dueDate: f.dueDate ? f.dueDate.toISOString() : null,
+      reminderAt: f.reminderAt ? f.reminderAt.toISOString() : null,
+      completedAt: f.completedAt ? f.completedAt.toISOString() : null,
+      notes: f.remarks || f.notes,
+      callNotes: f.completionNotes,
+      userId: f.assignedUserId,
+      user: f.assignedUser,
+      createdAt: f.createdAt.toISOString(),
+      updatedAt: f.updatedAt.toISOString(),
+    }));
+
+    return { success: true, data: normalized };
+  } catch (error) {
+    console.error("GET Quotation FollowUps Error:", error);
+    return { success: false, message: "Failed to fetch quotation follow-ups" };
+  }
+}
+
+/**
+ * Lists all quotations with their follow-up counts, for the Quotation
+ * Follow-Ups sub-module landing page. Restricted to allow-listed users.
+ */
+export async function getQuotationsForFollowUpsAction() {
+  try {
+    const userPayload = await verifyAuth();
+    if (!userPayload || userPayload.role === "Customer") {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    if (userPayload.role === "SuperAdmin" && (!userPayload.supportMode || !userPayload.companyId)) {
+      return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
+    }
+
+    if (!isQuotationFollowupAllowed(userPayload.email)) {
+      return { success: false, message: "Unauthorized: You do not have access to quotation follow-ups." };
+    }
+
+    const quotations = await prisma.quotation.findMany({
+      where: {
+        deletedAt: null,
+        companyId: userPayload.companyId,
+      },
+      select: {
+        id: true,
+        quotationCode: true,
+        status: true,
+        finalAmount: true,
+        createdAt: true,
+        customer: { select: { id: true, name: true } },
+        _count: { select: { followUps: { where: { deletedAt: null } } } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const normalized = quotations.map((q) => ({
+      id: q.id,
+      quotationCode: q.quotationCode,
+      status: q.status,
+      finalAmount: q.finalAmount,
+      createdAt: q.createdAt.toISOString(),
+      customerName: q.customer?.name || null,
+      followUpCount: q._count.followUps,
+    }));
+
+    return { success: true, data: normalized };
+  } catch (error) {
+    console.error("GET Quotations For FollowUps Error:", error);
+    return { success: false, message: "Failed to fetch quotations" };
+  }
+}
 

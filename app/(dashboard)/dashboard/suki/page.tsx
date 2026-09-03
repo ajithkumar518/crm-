@@ -42,6 +42,7 @@ export default function SukiDashboardPage() {
     setError("");
     try {
       const res = await fetch("/api/dashboard/suki");
+      if (!res.ok) { setError("Failed to load SUKI dashboard"); return; }
       const json = await res.json();
       if (json.success) setData(json.data);
       else setError(json.message || "Failed to load");
@@ -60,11 +61,23 @@ export default function SukiDashboardPage() {
 
   const execChart = {
     labels: data.executivePerformance.map((e: any) => e.name),
-    datasets: [{
-      label: "Customers",
-      data: data.executivePerformance.map((e: any) => e.count),
-      backgroundColor: COLORS,
-    }],
+    datasets: [
+      {
+        label: "Leads Handled",
+        data: data.executivePerformance.map((e: any) => e.leadsHandled),
+        backgroundColor: "#3b82f6",
+      },
+      {
+        label: "Quotations Sent",
+        data: data.executivePerformance.map((e: any) => e.quotationsSent),
+        backgroundColor: "#8b5cf6",
+      },
+      {
+        label: "Deals Won",
+        data: data.executivePerformance.map((e: any) => e.dealsWon),
+        backgroundColor: "#10b981",
+      },
+    ],
   };
 
   const sourceChart = {
@@ -94,9 +107,33 @@ export default function SukiDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="p-4 rounded-xl bg-[var(--surface-2)] border border-[var(--border-subtle)]">
-          <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Marketing Executive-wise Performance (Customers)</h2>
+          <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Marketing Executive-wise Performance</h2>
           <div className="h-64">
-            <Bar data={execChart} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+            <Bar data={execChart} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: "bottom", labels: { boxWidth: 12, font: { size: 10 } } } } }} />
+          </div>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="text-[var(--text-secondary)]">
+                <tr>
+                  <th className="p-1 text-left">Executive</th>
+                  <th className="p-1 text-right">Leads</th>
+                  <th className="p-1 text-right">Quotations</th>
+                  <th className="p-1 text-right">Deals Won</th>
+                  <th className="p-1 text-right">Revenue</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.executivePerformance.map((e: any) => (
+                  <tr key={e.id || e.name} className="border-t border-[var(--border-subtle)]">
+                    <td className="p-1 text-[var(--text-primary)]">{e.name}</td>
+                    <td className="p-1 text-right text-[var(--text-primary)]">{e.leadsHandled}</td>
+                    <td className="p-1 text-right text-[var(--text-primary)]">{e.quotationsSent}</td>
+                    <td className="p-1 text-right text-[var(--text-primary)]">{e.dealsWon}</td>
+                    <td className="p-1 text-right text-[var(--text-primary)]">{formatCurrency(e.revenue)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 

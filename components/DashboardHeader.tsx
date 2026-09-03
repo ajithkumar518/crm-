@@ -174,7 +174,7 @@ export default function DashboardHeader({
     if (searchQuery.length < 2) { setSearchResults(null); return; }
     const t = setTimeout(() => {
       fetch(`/api/search?q=${encodeURIComponent(searchQuery)}`)
-        .then(r => r.json())
+        .then(r => r.ok ? r.json() : { success: false })
         .then(d => { if (d.success) { setSearchResults(d.data); setIsSearchOpen(true); } })
         .catch(() => {});
     }, 300);
@@ -415,7 +415,7 @@ export default function DashboardHeader({
       {/* ── Right ── */}
       <div className="flex items-center gap-2">
         {/* CRM Switcher Toggle */}
-        {user?.role !== "ServiceEngineer" && !user?.disableServiceCrm && (
+        {user?.role !== "ServiceEngineer" && !user?.disableServiceCrm && user?.email !== "shahnaz@sukisoftware.com" && (
           <div className="hidden md:block mr-2 shrink-0">
             <CrmToggle />
           </div>

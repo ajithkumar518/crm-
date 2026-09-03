@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
-
-// GET /api/catalogue/products/bulk-export
+import { createFormattedWorkbook, writeWorkbookBuffer, EXCEL_CONTENT_TYPE } from "@/lib/excel-utils";
 import { enforceModuleGuard } from "@/lib/moduleGuard";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 
+// GET /api/catalogue/products/bulk-export
 export async function GET(request: Request) {
   try {
     const user = await verifyAuth();
@@ -21,15 +21,15 @@ export async function GET(request: Request) {
     const isActive = url.searchParams.get("isActive");
 
     const where: any = { deletedAt: null };
-    
+
     if (user.companyId) {
       where.companyId = user.companyId;
     }
-    
+
     if (categoryId) {
       where.categoryId = categoryId;
     }
-    
+
     if (isActive !== null) {
       where.isActive = isActive === "true";
     } else {
@@ -54,7 +54,6 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Convert to CSV format
     const headers = [
       "Product Code",
       "Name",
@@ -72,23 +71,30 @@ export async function GET(request: Request) {
     const rows = products.map((p) => [
       p.productCode,
       p.name,
-      p.category?.name || "",
-      p.description || "",
-      p.unit || "",
-      p.basePrice?.toString() || "",
-      p.productType || "",
-      p.minOrderQuantity?.toString() || "",
+      p.category?.name || "—",
+      p.description || "—",
+      p.unit || "—",
+      Number(p.basePrice || 0),
+      p.productType || "—",
+      Number(p.minOrderQuantity || 0),
       p.isActive ? "Active" : "Inactive",
-      p.datasheets?.map((d: any) => d.fileName).join("; ") || "",
-      p.brochures?.map((b: any) => b.fileName).join("; ") || "",
+      p.datasheets?.map((d: any) => d.fileName).join("; ") || "—",
+      p.brochures?.map((b: any) => b.fileName).join("; ") || "—",
     ]);
 
-    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const workbook = createFormattedWorkbook(
+      "Products Export",
+      headers,
+      rows,
+      [22, 28, 24, 40, 14, 16, 22, 20, 16, 32, 32]
+    );
 
-    return new NextResponse(csvContent, {
+    const buffer = await writeWorkbookBuffer(workbook);
+
+    return new NextResponse(buffer as any, {
       headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="products-export-${new Date().toISOString().split("T")[0]}.csv"`,
+        "Content-Type": EXCEL_CONTENT_TYPE,
+        "Content-Disposition": `attachment; filename="products-export-${new Date().toISOString().split("T")[0]}.xlsx"`,
       },
     });
   } catch (error: any) {

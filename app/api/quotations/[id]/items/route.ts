@@ -98,6 +98,17 @@ export async function PUT(
       marginPercent: marginVal,
       priceSource,
       quantityBreakId: qbId,
+      // Preserve fields not sent by every caller — fall back to the existing DB value
+      // so a save from a form that doesn't edit these fields doesn't wipe them out.
+      productType: item.productType !== undefined ? item.productType : (matched?.productType ?? null),
+      materialGrade: item.materialGrade !== undefined ? item.materialGrade : (matched?.materialGrade ?? null),
+      materialSize: item.materialSize !== undefined ? item.materialSize : (matched?.materialSize ?? null),
+      lengthMm: item.lengthMm !== undefined ? item.lengthMm : (matched?.lengthMm ?? null),
+      numberOfPieces: item.numberOfPieces !== undefined ? item.numberOfPieces : (matched?.numberOfPieces ?? null),
+      rmMake: item.rmMake !== undefined ? item.rmMake : (matched?.rmMake ?? null),
+      deliveryDays: item.deliveryDays !== undefined ? item.deliveryDays : (matched?.deliveryDays ?? null),
+      cuttingCharge: item.cuttingCharge !== undefined ? item.cuttingCharge : (matched?.cuttingCharge ?? null),
+      remarks: item.remarks !== undefined ? item.remarks : (matched?.remarks ?? null),
     });
   }
 

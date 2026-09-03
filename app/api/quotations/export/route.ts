@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { createFormattedWorkbook, writeWorkbookBuffer, EXCEL_CONTENT_TYPE } from "@/lib/excel-utils";
 
 // GET /api/quotations/export?status=Draft&search=...
-// Exports quotations as CSV
+// Exports quotations as a formatted Excel file
 export async function GET(request: NextRequest) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
@@ -62,36 +63,39 @@ export async function GET(request: NextRequest) {
   const rows = quotations.map((q) => [
     q.quotationCode,
     `R${q.revisionNumber || 1}`,
-    q.customer?.name || "",
-    q.customer?.customerCode || "",
-    q.contact?.name || "",
+    q.customer?.name || "—",
+    q.customer?.customerCode || "—",
+    q.contact?.name || "—",
     q.status,
-    String(q.subtotal?.toFixed(2) || "0.00"),
-    String(q.discountPercent || 0),
-    String(q.taxAmount?.toFixed(2) || "0.00"),
-    String(q.finalAmount?.toFixed(2) || "0.00"),
-    q.validUntil ? new Date(q.validUntil).toISOString().split("T")[0] : "",
-    q.sentAt ? new Date(q.sentAt).toISOString().split("T")[0] : "",
-    q.acceptedAt ? new Date(q.acceptedAt).toISOString().split("T")[0] : "",
-    q.rejectedAt ? new Date(q.rejectedAt).toISOString().split("T")[0] : "",
-    q.rfq?.rfqCode || "",
-    q.deal?.dealName || "",
-    String(q._count?.items || 0),
-    q.createdBy?.name || "",
-    q.assignedUser?.name || "",
+    Number(q.subtotal?.toFixed(2) || 0),
+    Number(q.discountPercent || 0),
+    Number(q.taxAmount?.toFixed(2) || 0),
+    Number(q.finalAmount?.toFixed(2) || 0),
+    q.validUntil ? new Date(q.validUntil).toISOString().split("T")[0] : "—",
+    q.sentAt ? new Date(q.sentAt).toISOString().split("T")[0] : "—",
+    q.acceptedAt ? new Date(q.acceptedAt).toISOString().split("T")[0] : "—",
+    q.rejectedAt ? new Date(q.rejectedAt).toISOString().split("T")[0] : "—",
+    q.rfq?.rfqCode || "—",
+    q.deal?.dealName || "—",
+    Number(q._count?.items || 0),
+    q.createdBy?.name || "—",
+    q.assignedUser?.name || "—",
     new Date(q.createdAt).toISOString(),
   ]);
 
-  const csv = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
-    .join("\r\n");
+  const workbook = createFormattedWorkbook(
+    "Quotations Export",
+    headers,
+    rows,
+    [20, 12, 28, 18, 22, 18, 16, 14, 16, 18, 16, 16, 16, 16, 20, 24, 14, 20, 20, 22]
+  );
 
-  const bom = "\uFEFF";
+  const buffer = await writeWorkbookBuffer(workbook);
 
-  return new NextResponse(bom + csv, {
+  return new NextResponse(buffer as any, {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="quotations-export-${new Date().toISOString().split("T")[0]}.csv"`,
+      "Content-Type": EXCEL_CONTENT_TYPE,
+      "Content-Disposition": `attachment; filename="quotations-export-${new Date().toISOString().split("T")[0]}.xlsx"`,
     },
   });
 }

@@ -181,7 +181,28 @@ export async function transitionDealStatus(
       where: { id: deal.customerId },
       select: { status: true }
     });
-    
+
+    // Update linked quotation to "Converted to Customer" status
+    const linkedQuotations = await db.quotation.findMany({
+      where: { dealId, status: "Accepted", deletedAt: null },
+      select: { id: true, quotationCode: true, status: true },
+    });
+    for (const q of linkedQuotations) {
+      await db.quotation.update({
+        where: { id: q.id },
+        data: { status: "Converted to Customer" },
+      });
+      await db.quotationStatusHistory.create({
+        data: {
+          quotationId: q.id,
+          fromStatus: q.status,
+          toStatus: "Converted to Customer",
+          changedById: ctx.actorId === "system" ? (await getSystemActorId(db)) : ctx.actorId,
+          notes: "Deal won — quotation converted to customer",
+        },
+      });
+    }
+
     if (customer && customer.status !== "ActiveCustomer") {
       await db.customer.update({
         where: { id: deal.customerId },

@@ -6,12 +6,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is missing.");
 }
-const ALLOWED_DOMAINS = (
-  process.env.ALLOWED_DOMAIN ||
-  "sukisoftware.com,sukisoft.com,apexindustries.com,bharatmetalworks.com"
-)
-  .split(",")
-  .map((d) => d.trim().toLowerCase());
+
 
 export interface TokenPayload {
   id: string;
@@ -27,16 +22,15 @@ export interface TokenPayload {
   exp: number;
 }
 
-/** Returns true if the email belongs to any of the allowed internal domains (or their subdomains) */
-export function isInternalEmail(email: string): boolean {
-  const domain = email.split("@")[1]?.toLowerCase();
-  if (!domain) return false;
-  return ALLOWED_DOMAINS.some((d) => domain === d || domain.endsWith("." + d));
+/** Domain-based email validation has been disabled to allow any valid email
+ *  for internal user credentials. Kept as a no-op for backward compatibility. */
+export function isInternalEmail(_email: string): boolean {
+  return true;
 }
 
-/** Returns true if the role requires an internal (company) email */
-export function requiresInternalEmail(role: string): boolean {
-  return ["Admin", "SalesManager", "SalesExecutive"].includes(role);
+/** @deprecated Domain-based email validation is no longer enforced. */
+export function requiresInternalEmail(_role: string): boolean {
+  return false;
 }
 
 export async function verifyAuth(): Promise<TokenPayload | null> {

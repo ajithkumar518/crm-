@@ -1399,7 +1399,9 @@ function SidebarContent({
       >
         {!collapsed && process.env.NODE_ENV === "development" && (
           <div className="px-3.5 pb-2 text-[10px] text-gray-500">
-            Variant: {user?.variant || user?.company?.variant || 1}
+            {!isServiceWorkspace && activeVariant === 2
+              ? "Professional CRM"
+              : `Variant: ${activeVariant}`}
           </div>
         )}
 

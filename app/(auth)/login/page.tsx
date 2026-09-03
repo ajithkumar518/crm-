@@ -144,17 +144,17 @@ const SLIDES = [
   {
     src: "/login-slides/factory.png",
     headline: "Built for manufacturing. Designed for growth.",
-    sub: "SUKI CRM — Where the factory floor meets the boardroom.",
+    sub: "Shahnaz CRM — Where the factory floor meets the boardroom.",
   },
   {
     src: "/login-slides/sales.png",
     headline: "Turn every conversation into a closed deal.",
-    sub: "SUKI CRM — Intelligent B2B sales, end to end.",
+    sub: "Shahnaz CRM — Intelligent B2B sales, end to end.",
   },
   {
     src: "/login-slides/warehouse.png",
     headline: "From dispatch to delivery, every touchpoint tracked.",
-    sub: "SUKI CRM — Operational clarity at enterprise scale.",
+    sub: "Shahnaz CRM — Operational clarity at enterprise scale.",
   },
 ];
 
@@ -549,7 +549,7 @@ function LoginContent() {
           <div>
             <p className="font-semibold">Account activated successfully!</p>
             <p className="text-[12px] opacity-80">
-              Welcome to SUKI CRM. Sign in with your email and new password.
+              Welcome to Shahnaz CRM. Sign in with your email and new password.
             </p>
           </div>
         </div>
@@ -625,7 +625,7 @@ function LoginContent() {
                     className="text-[var(--text-primary)] mb-2 leading-snug"
                     style={{ fontSize: "18px", fontWeight: 400 }}
                   >
-                    Sign in to SUKI CRM
+                    Sign in to Shahnaz CRM
                   </h2>
                   <p className="text-[13px] text-[var(--text-secondary)] leading-[1.5]">
                     Enter your registered email address to continue.
@@ -663,7 +663,7 @@ function LoginContent() {
                     Need help? Contact IT Support
                   </p>
                   <p className="text-[11px] text-[var(--text-muted)] mt-3">
-                    © {new Date().getFullYear()} SUKI CRM. All rights reserved.
+                    © {new Date().getFullYear()} Shahnaz CRM. All rights reserved.
                   </p>
                 </div>
               </>
@@ -750,7 +750,7 @@ function LoginContent() {
                 </div>
                 <div className="pt-8 text-center">
                   <p className="text-[11px] text-[var(--text-muted)]">
-                    © {new Date().getFullYear()} SUKI CRM. All rights reserved.
+                    © {new Date().getFullYear()} Shahnaz CRM. All rights reserved.
                   </p>
                 </div>
               </>
@@ -782,7 +782,7 @@ function LoginContent() {
                     Set your password
                   </h2>
                   <p className="text-[13px] text-[var(--text-secondary)] leading-[1.5]">
-                    Create a strong password to secure your SUKI CRM account.
+                    Create a strong password to secure your Shahnaz CRM account.
                   </p>
                 </div>
                 <ErrorBox />
@@ -931,7 +931,7 @@ function LoginContent() {
                 </form>
                 <div className="pt-6 text-center">
                   <p className="text-[11px] text-[var(--text-muted)]">
-                    © {new Date().getFullYear()} SUKI CRM. All rights reserved.
+                    © {new Date().getFullYear()} Shahnaz CRM. All rights reserved.
                   </p>
                 </div>
               </>
@@ -1045,7 +1045,7 @@ function LoginContent() {
                 </form>
                 <div className="pt-6 text-center">
                   <p className="text-[11px] text-[var(--text-muted)]">
-                    © {new Date().getFullYear()} SUKI CRM. All rights reserved.
+                    © {new Date().getFullYear()} Shahnaz CRM. All rights reserved.
                   </p>
                 </div>
               </>

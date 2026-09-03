@@ -5,6 +5,8 @@ import { FileText, Download } from "lucide-react";
 import EntityDocumentTab from "@/components/documents/EntityDocumentTab";
 import { statusColors } from "./QuotationStatusColors";
 import { Ico, icons } from "./QuotationIcons";
+import QuotationFollowUpsTab from "./QuotationFollowUpsTab";
+import { isQuotationFollowupAllowed } from "@/lib/feature-allowlist";
 
 interface QuotationTabsProps {
   q: any;
@@ -25,6 +27,7 @@ export default function QuotationTabs({ q, quotation, formatCurrency, toast }: Q
             { key: "revisions", label: "Revisions" },
             { key: "approvals", label: "Approvals" },
             { key: "documents", label: "Documents" },
+            ...(isQuotationFollowupAllowed(q.user?.email) ? [{ key: "followUps", label: "Follow-Ups" }] : []),
           ].map((tab) => (
             <button
               key={tab.key}
@@ -504,6 +507,11 @@ export default function QuotationTabs({ q, quotation, formatCurrency, toast }: Q
             </div>
           </div>
         </div>
+      )}
+
+      {/* Follow-Ups Tab — quotation-linked follow-ups (feature-gated) */}
+      {q.activeTab === "followUps" && quotation && (
+        <QuotationFollowUpsTab quotationId={quotation.id} quotationCode={quotation.quotationCode} />
       )}
     </>
   );

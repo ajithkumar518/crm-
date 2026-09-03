@@ -12,18 +12,23 @@ const PRODUCT_HEADERS: Record<string, string> = {
   "unit of measure": "uom",
   "material category": "materialCategory",
   "product description": "productDescription",
+  "base price": "basePrice",
+  "hsn code": "hsnCode",
+  "min order quantity": "minOrderQuantity",
+  "product type": "productType",
 };
 
 function normalizeHeader(value: unknown): string {
   return String(value ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function normalizeProductType(value?: string): string | null {
+const VALID_PRODUCT_TYPES = ["Black Bar", "Bright Bar", "Bright Ground Bar"];
+
+function normalizeProductType(value?: string | null): string | null {
   if (!value) return null;
-  const v = value.trim().toLowerCase();
-  if (v.includes("black")) return "Black Bar";
-  if (v.includes("bright")) return "Bright Bar";
-  return null;
+  const v = value.trim();
+  const match = VALID_PRODUCT_TYPES.find((t) => t.toLowerCase() === v.toLowerCase());
+  return match || null;
 }
 
 export async function POST(request: Request) {
@@ -88,10 +93,17 @@ export async function POST(request: Request) {
       const uom = String(row.uom ?? "").trim() || null;
       const materialCategory = String(row.materialCategory ?? "").trim() || null;
       const productDescription = String(row.productDescription ?? "").trim() || null;
+      const basePrice = row.basePrice !== undefined && row.basePrice !== null && row.basePrice !== "" ? parseFloat(String(row.basePrice)) : null;
+      const hsnCode = String(row.hsnCode ?? "").trim() || null;
+      const minOrderQuantity = row.minOrderQuantity !== undefined && row.minOrderQuantity !== null && row.minOrderQuantity !== "" ? parseFloat(String(row.minOrderQuantity)) : null;
+      const productTypeRaw = String(row.productType ?? "").trim() || null;
+      const productType = normalizeProductType(productTypeRaw);
 
       if (!materialGrade) rowErrors.push("Material Grade is required");
       if (!partNumber) rowErrors.push("Part Number is required");
       if (!materialCategory) rowErrors.push("Material Category is required");
+      if (!productTypeRaw) rowErrors.push("Product Type is required");
+      if (productTypeRaw && !productType) rowErrors.push(`Product Type "${productTypeRaw}" is invalid. Valid: ${VALID_PRODUCT_TYPES.join(", ")}`);
 
       const baseName = productDescription || `${materialGrade || ""} ${materialSize || ""} ${partNumber || ""}`.trim();
 
@@ -158,6 +170,10 @@ export async function POST(request: Request) {
             materialSize,
             partNumber,
             rmMake,
+            basePrice,
+            hsnCode,
+            minOrderQuantity,
+            productType,
             isActive: true,
             companyId: user.companyId ?? null,
           },

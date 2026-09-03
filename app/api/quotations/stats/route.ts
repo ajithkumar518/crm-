@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const [total, draft, sent, accepted, rejected, expired] = await Promise.all([
     prisma.quotation.count({ where }),
     prisma.quotation.count({ where: { ...where, status: "Draft" } }),
-    prisma.quotation.count({ where: { ...where, status: "Sent" } }),
+    prisma.quotation.count({ where: { ...where, status: "Quotation Sent" } }),
     prisma.quotation.count({ where: { ...where, status: "Accepted" } }),
     prisma.quotation.count({ where: { ...where, status: "Rejected" } }),
     prisma.quotation.count({ where: { ...where, status: "Expired" } }),
@@ -25,16 +25,16 @@ export async function GET(request: NextRequest) {
   const expiringSoon = await prisma.quotation.count({
     where: {
       ...where,
-      status: "Sent",
+      status: "Quotation Sent",
       validUntil: { gte: now, lte: sevenDaysLater },
     },
   });
 
-  // Already expired (validity passed, still Sent)
+  // Already expired (validity passed, still Quotation Sent)
   const expiredPending = await prisma.quotation.count({
     where: {
       ...where,
-      status: "Sent",
+      status: "Quotation Sent",
       validUntil: { lt: now },
     },
   });
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
   // Total value of sent quotations
   const sentValue = await prisma.quotation.aggregate({
-    where: { ...where, status: "Sent" },
+    where: { ...where, status: "Quotation Sent" },
     _sum: { finalAmount: true },
   });
 
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     success: true,
     data: {
       total,
-      byStatus: { Draft: draft, Sent: sent, Accepted: accepted, Rejected: rejected, Expired: expired },
+      byStatus: { Draft: draft, "Quotation Sent": sent, Accepted: accepted, Rejected: rejected, Expired: expired },
       expiringSoon,
       expiredPending,
       acceptedValue: acceptedValue._sum.finalAmount || 0,

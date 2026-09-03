@@ -6,6 +6,7 @@ import { useSyncUrlParam } from "@/lib/use-sync-url-param";
 import { useAuth } from "@/components/AuthProvider";
 import { useCurrency } from "@/components/CurrencyProvider";
 import { useToast } from "@/components/ToastProvider";
+import { PdfPreviewModal } from "@/components/PdfPreviewModal";
 import { Modal } from "@/components/ui/Modal";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { FormField, Input, Textarea, Select } from "@/components/ui/FormField";
@@ -318,6 +319,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
   const [linkedQuotations, setLinkedQuotations] = useState<any[]>([]);
   const [linkedQuotationsLoading, setLinkedQuotationsLoading] = useState(false);
   const [reqPdfLoading, setReqPdfLoading] = useState(false);
+  const [reqPdfPreviewUrl, setReqPdfPreviewUrl] = useState<string | null>(null);
   // V2: Sample management state
   const [products, setProducts] = useState<any[]>([]);
   const [linkedSample, setLinkedSample] = useState<any>(null);
@@ -355,25 +357,8 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
     if (reqPdfLoading) return;
     setReqPdfLoading(true);
     try {
-      const res = await fetch(`/api/opportunities/${id}/requirements-pdf`);
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}));
-        throw new Error(json.message || "Failed to generate PDF");
-      }
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      const disposition = res.headers.get("Content-Disposition") || "";
-      const match = disposition.match(/filename="?([^"]+)"?/);
-      a.download = match ? match[1] : `${deal?.opportunityCode || id}-Requirements-Summary.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      toast.success("Requirements summary downloaded.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to download requirements PDF.");
+      // Open in preview modal instead of forcing download
+      setReqPdfPreviewUrl(`/api/opportunities/${id}/requirements-pdf`);
     } finally {
       setReqPdfLoading(false);
     }
@@ -3328,7 +3313,7 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
                 {formatCurrency(linkedQuotations[0]?.finalAmount || linkedQuotations[0]?.totalAmount || 0)}
               </p>
             </div>
-          ) : linkedQuotations.some((q: any) => q.status === "Sent") ? (
+          ) : linkedQuotations.some((q: any) => q.status === "Quotation Sent") ? (
             <div className="px-3 py-3 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40">
               <p className="text-xs font-bold text-blue-700 dark:text-blue-400">
                 ⏳ Awaiting Customer Response
@@ -3473,6 +3458,14 @@ export default function OpportunityDetailPage({ params }: { params: Promise<{ id
           </>
         )}
       </div>
+      {reqPdfPreviewUrl && (
+        <PdfPreviewModal
+          url={reqPdfPreviewUrl}
+          fileName={`${deal?.opportunityCode || id}-Requirements-Summary.pdf`}
+          title={`Requirements Summary — ${deal?.opportunityCode || ""}`}
+          onClose={() => setReqPdfPreviewUrl(null)}
+        />
+      )}
     </div>
   );
 }

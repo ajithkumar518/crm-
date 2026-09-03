@@ -14,10 +14,11 @@ export async function GET(request: NextRequest) {
     prisma.salesOrder.findMany({
       where: { companyId: user.companyId },
       include: {
-        customer: { select: { id: true, name: true, customerCode: true } },
+        customer: { select: { id: true, name: true, customerCode: true, customerCategory: true } },
         proforma: { select: { id: true, proformaNumber: true } },
         quotation: { select: { id: true, quotationCode: true } },
         _count: { select: { items: true } },
+        items: { select: { id: true, quantity: true, numberOfPieces: true } },
       },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,

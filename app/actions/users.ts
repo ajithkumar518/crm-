@@ -44,19 +44,6 @@ export async function createInternalUserAction(data: {
       return { success: false, message: "A user with this email already exists" };
     }
 
-    // Validate email domain matches company domain if set
-    if (userPayload.companyId) {
-      const company = await prisma.company.findUnique({
-        where: { id: userPayload.companyId }
-      });
-      if (company && company.domain) {
-        const emailDomain = email.split('@')[1]?.toLowerCase();
-        if (emailDomain !== company.domain) {
-          return { success: false, message: `Email must match company domain: ${company.domain}` };
-        }
-      }
-    }
-
     const passwordHash = await bcrypt.hash("Password@123", 10);
 
     const user = await prisma.$transaction(async (tx) => {
@@ -355,7 +342,7 @@ export async function approveUserAction(id: string) {
 
     await sendEmail(
       user.email,
-      "Your SUKI CRM account has been approved!",
+      "Your Shahnaz CRM account has been approved!",
       buildOtpEmail(user.name, otp)
     );
 

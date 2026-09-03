@@ -1,0 +1,396 @@
+---
+title: Dashboard
+module: Dashboard
+route: /dashboard
+icon: 📊
+order: 1
+---
+
+# Dashboard
+
+The Dashboard is the landing page of the CRM and the first screen every user sees after logging in. It provides a consolidated, at-a-glance view of sales performance, pipeline health, lead flow, quotation status, follow-up activity, and system alerts — all in one scrollable page.
+
+> **Who sees this:** All roles except Service Engineers. Service Engineers are automatically redirected to the My Visits page in the Service module and do not see this dashboard.
+
+---
+
+## Pages in this Module
+
+| # | Page | Route | Purpose |
+|---|------|-------|---------|
+| 1 | [Main Dashboard](#1-main-dashboard) | `/dashboard` | Consolidated admin view with KPIs, charts, and widgets |
+| 2 | [CRM Dashboard](#2-crm-dashboard) | `/dashboard/crm` | SUKI-focused CRM metrics (leads, quotations, conversions) |
+| 3 | [Manager Dashboard](#3-manager-dashboard) | `/dashboard/manager` | Sales manager view with team performance and analytics |
+| 4 | [SUKI Dashboard](#4-suki-dashboard) | `/dashboard/suki` | Lightweight SUKI Steel CRM dashboard with KPIs and charts |
+
+The **Main Dashboard** (`/dashboard`) is the default landing page and the most comprehensive. The other three routes (`/dashboard/crm`, `/dashboard/manager`, `/dashboard/suki`) are alternative, focused views that can be navigated to directly. Most users will only interact with the Main Dashboard.
+
+---
+
+## 1. Main Dashboard
+
+**Route:** `/dashboard`
+
+This is the default landing page. It combines sales, pipeline, follow-up, and SUKI CRM metrics into a single scrollable view.
+
+### Page Header
+
+The page header shows the title **"Dashboards Overview"** with the subtitle *"Master consolidated view of sales, pipeline, and module activity"*. On the right side of the header is a **Date Range** dropdown that filters the sales analytics data.
+
+[SCREENSHOT NEEDED: Main Dashboard — full page header with title "Dashboards Overview" and the Date Range dropdown visible on the right]
+
+#### Date Range Filter
+
+A dropdown selector in the top-right corner that controls the time window for sales analytics charts and KPIs.
+
+| Option | Effect |
+|--------|--------|
+| **All Time** (default) | No date filter — includes all historical data |
+| **Last 30 Days** | Only counts records created in the past 30 days |
+| **Last 3 Months** | Only counts records created in the past 3 months |
+| **Last 6 Months** | Only counts records created in the past 6 months |
+
+> **Note:** The date range filter only affects the **Sales Analytics** data (KPIs, funnel, agent leaderboard, revenue trend). The SUKI KPI strip and CRM metrics are not affected by this filter — they show all-time or current-month counts.
+
+**How to use:** Click the dropdown and select a range. The page automatically reloads data for the new range.
+
+---
+
+### Section 1: Overall CRM KPI Strip
+
+A horizontal row of 10 KPI cards at the top of the dashboard, showing high-level CRM metrics. Each card displays:
+- A **label** (uppercase, small text)
+- A **large numeric value** with a count-up animation
+- A **trend badge** ("Good" with green up-arrow, or "Action" with red down-arrow)
+- A **trend description** (e.g., "All time", "This month", "Needs attention")
+- A **colored icon** in the top-right corner
+
+[SCREENSHOT NEEDED: KPI Strip — the row of 10 KPI cards at the top of the dashboard showing Total Leads, New Leads, Quotations Sent, etc.]
+
+#### KPI Cards (left to right)
+
+| # | KPI | What it shows | Trend logic |
+|---|-----|---------------|-------------|
+| 1 | **Total Leads** | All-time total lead count | "Good" if > 0 |
+| 2 | **New Leads** | Leads created this month | "Good" if > 0 |
+| 3 | **Quotations Sent** | Quotations with status "Quotation Sent" (awaiting customer response) | "Good" if > 0 |
+| 4 | **Follow-up Pending** | Quotations with status "Follow-up" | "Good" if 0 (no pending = good) |
+| 5 | **Accepted** | Quotations with status "Accepted" (won quotes) | "Good" if > 0 |
+| 6 | **Rejected** | Quotations with status "Rejected" (lost quotes) | "Good" if 0 (no rejections = good) |
+| 7 | **Converted Customers** | Quotations with status "Converted to Customer" | "Good" if > 0 |
+| 8 | **Supplier Rate Checking** | Quotations pending supplier rate verification | "Good" if 0 (none pending = good) |
+| 9 | **Material Not Available** | Quotations blocked due to material unavailability | "Good" if 0 |
+| 10 | **No Stock** | Quotations blocked due to out-of-stock items | "Good" if 0 |
+
+> **Tip:** Cards 4, 6, 8, 9, and 10 use inverted logic — a value of 0 shows "Good" (green), because having zero pending/rejected/blocked items is the desired state.
+
+---
+
+### Section 2: SUKI CRM Analytics
+
+Two charts displayed side-by-side below the KPI strip.
+
+[SCREENSHOT NEEDED: SUKI CRM Analytics — the two-chart row showing "Marketing Executive-wise Performance" bar chart on the left and "Lead Source-wise Performance" doughnut chart on the right]
+
+#### Left Chart: Marketing Executive-wise Performance
+
+- **Type:** Vertical bar chart
+- **Size:** 2/3 of the row width
+- **X-axis:** Executive names
+- **Y-axis:** Number of customers assigned to each executive
+- **Bars:** Single color (accent blue), one bar per executive
+- **Empty state:** Shows *"No executive data available"* if no executives exist
+
+#### Right Chart: Lead Source-wise Performance
+
+- **Type:** Doughnut chart with center label
+- **Size:** 1/3 of the row width
+- **Center label:** Shows total lead count
+- **Segments:** One per lead source (e.g., Website, Referral, Cold Call, etc.)
+- **Legend:** Below the chart, showing source name, count, and percentage for the top 6 sources
+- **Tooltip:** Hover over a segment to see source name, count, and percentage
+- **Empty state:** Shows *"No lead source data available"* if no leads exist
+
+---
+
+### Section 3: Sales Analytics + Side Cards
+
+A row with a large bar chart on the left (3/4 width) and two stacked cards on the right (1/4 width).
+
+[SCREENSHOT NEEDED: Sales Analytics row — the "Sales Analytics" revenue bar chart on the left taking 3/4 width, with "Monthly Lead Conversion Ratio" and "Quotation Status Breakdown" cards stacked on the right]
+
+#### Left: Sales Analytics (Revenue Trend)
+
+- **Type:** Vertical bar chart
+- **X-axis:** Month labels
+- **Y-axis:** Revenue amounts
+- **Bars:** Single color (accent blue), one bar per month
+- **Empty state:** Shows *"No sales data available"* if no won deals exist in the selected date range
+
+#### Right Top: Monthly Lead Conversion Ratio
+
+- **Type:** Large percentage display with progress bar
+- **Display:** Conversion percentage (e.g., "12.50%") in large accent-colored text
+- **Description:** *"Converted vs total leads this month"*
+- **Progress bar:** Fills proportionally to the conversion percentage
+- **Calculation:** `(converted customers / total leads this month) × 100`
+
+#### Right Bottom: Quotation Status Breakdown
+
+- **Type:** Grid of status tiles
+- **Layout:** 2-column grid (responsive up to 4 columns on wide screens)
+- **Each tile:** Shows a colored dot, the quotation status name (uppercase), and the count
+- **Data:** One tile per quotation status present in the system (Draft, Quotation Sent, Accepted, Rejected, Follow-up, Supplier Rate Checking, etc.)
+- **Empty state:** Shows *"No quotations yet"* if no quotations exist
+
+---
+
+### Section 4: Funnel, Win/Loss & Forecast
+
+A row of three equal-width cards.
+
+[SCREENSHOT NEEDED: Row 3 — three cards side by side: "Pipeline Stages" funnel chart, "Win vs Loss Summary" with donut and bar, and "Forecast vs Target" with progress bars]
+
+#### Left: Pipeline Stages (Sales Funnel)
+
+- **Type:** Horizontal funnel chart (custom SVG bars)
+- **Display:** One horizontal bar per pipeline stage, width proportional to deal count
+- **Stages shown:** New Lead, Contacted, Qualified, Meeting Scheduled, Active Deal, Closed Won
+- **Interaction:** Hover over a bar to see a tooltip with the exact lead count
+- **Header:** Has a "This Week / This Month" dropdown (currently decorative — does not filter data)
+
+#### Middle: Win vs Loss Summary
+
+- **Type:** Donut gauge + horizontal split bar
+- **Top:** A circular progress gauge showing the overall conversion rate percentage (won deals / total closed deals)
+- **Bottom:** A horizontal bar split into green (Won) and red (Lost) segments, with counts and percentages
+- **Description text:** *"Ratio of closed deals won successfully. Higher conversions indicate efficient pipeline management."*
+
+#### Right: Forecast vs Target
+
+- **Type:** Two stacked progress bars with a forecast alert box
+- **Top bar — "Achieved vs Target":** Shows won revenue vs target amount, with percentage completed and the gap amount
+- **Bottom bar — "Open Pipeline (Forecast)":** Shows open pipeline value as a percentage of target, with potential quota met percentage
+- **Alert box:** *"💡 Forecast Alert: Closing all open deals will hit X% of your target quota this month."*
+- **Badge:** "Monthly Quota" pill in the top-right
+
+---
+
+### Section 5: Leadership, Follow-up & Alerts
+
+A row of three equal-width cards focused on team performance and action items.
+
+[SCREENSHOT NEEDED: Row 4 — three cards: "Executive Sales Leaderboard" with ranked agents, "Follow-up Action Health" with 4 metric tiles, and "System Alerts & Activity" with alert items]
+
+#### Left: Executive Sales Leaderboard
+
+- **Type:** Ranked list of sales executives
+- **Each entry shows:**
+  - Rank badge (#1 gold, #2 silver, #3 bronze, #4+ blue)
+  - Executive name
+  - Deals won / total deals count
+  - Conversion rate percentage
+  - Revenue generated (in currency)
+- **Scrollable:** If more executives than fit, the list scrolls vertically
+- **Empty state:** Shows *"Leaderboard metrics unavailable."*
+
+#### Middle: Follow-up Action Health
+
+- **Type:** 2×2 grid of metric tiles + a backlog progress bar
+- **Tiles:**
+  - **Overdue** (red) — follow-ups past their due date
+  - **Due Today** (blue) — follow-ups due today
+  - **Upcoming** (amber) — follow-ups due in the near future
+  - **Done Today** (green) — follow-ups completed today
+- **Bottom bar:** "Overall Action Backlog" — shows overdue count vs total pending, with a red progress bar proportional to overdue/pending ratio
+
+#### Right: System Alerts & Activity
+
+- **Type:** Alert feed with icons and colored badges
+- **Header:** "System Alerts & Activity" with a pulsing red dot indicator
+- **Alerts shown (up to 4):**
+  - 🔴 **Pipeline Alert** — X deals at risk (inactive > 7 days or past close date)
+  - 🟡 **Tasks Engine** — X follow-ups overdue
+  - 🔵 **Lead Ingestion** — X new leads unassigned
+  - 🟣 **Manager Approvals** — X visits awaiting manager approval
+  - 🟦 **Visits & RFP** — X RFQs pending under-review
+- **All clear state:** If no alerts, shows a green *"All clear! No urgent alerts or overdue actions found."* message
+
+---
+
+### Section 6: System Overview, Recent Leads & CRM Health
+
+The final row has a wide left column (3/4 width) with two stacked widgets and a narrow right rail (1/4 width) with one widget.
+
+[SCREENSHOT NEEDED: Row 5 — left column showing "System Overview" bar chart on top and "Recent Leads" table below; right rail showing "CRM Health Score" widget]
+
+#### Left Top: System Overview (Cross-Module Bento Grid)
+
+- **Type:** Vertical bar chart
+- **Bars (9 metrics):**
+  - Active Accounts
+  - Active Contacts
+  - Pending Samples
+  - Total Samples
+  - Pending RFQs
+  - Total RFQs
+  - Pending Tasks
+  - Total Visits
+  - Active Products
+- **Purpose:** Shows the operational load across all CRM modules in a single view
+
+#### Left Bottom: Recent Leads
+
+- **Type:** Table widget
+- **Header:** "Recent Leads" with a "View All →" link that navigates to `/leads`
+- **Columns:** Lead (name + avatar + company), Status (colored badge), Source, Score (progress bar + number), Owner
+- **Rows:** Shows the 5 most recent leads
+- **Status badges:** Color-coded (Qualified = blue, Contacted = cyan, Follow-up = amber, Won = green, Lost = red)
+- **Empty state:** Shows *"No recent leads found."*
+
+#### Right Rail: CRM Health Score
+
+- **Type:** Gauge widget with quality label and progress bar
+- **Display:**
+  - "System Vitality" label
+  - Quality rating: "Excellent" (>85), "Good" (50-85), "Needs Attention" (<50), "Critical" (<30)
+  - Large percentage score
+  - Colored progress bar (green for good, amber for attention, red for critical)
+- **Calculation:** Based on conversion rate score (max 50) + activity score from samples and RFQs (max 50)
+
+---
+
+### User Actions on the Main Dashboard
+
+| Action | How to perform | Effect |
+|--------|----------------|--------|
+| **Change date range** | Click the "Date Range" dropdown in the header → select an option | Reloads sales analytics data for the selected period |
+| **View lead details** | Click "View All →" on the Recent Leads widget | Opens the Leads module |
+| **Hover funnel bars** | Mouse over a bar in the Pipeline Stages chart | Shows a tooltip with the exact lead count for that stage |
+| **Hover revenue bars** | Mouse over a bar in the Sales Analytics chart | Shows a tooltip with month and revenue value |
+| **Hover doughnut segments** | Mouse over a segment in Lead Source or Quotation Status charts | Shows tooltip with source name, count, and percentage |
+| **Scroll the page** | Use mouse wheel or scroll bar | Reveals all sections (the dashboard is a long scrollable page) |
+
+> **Note:** The dashboard is primarily a **read-only** view. It does not have inline editing, create, or delete actions. To act on any data shown (e.g., call a lead, close a deal, send a quotation), navigate to the relevant module using the sidebar.
+
+---
+
+## 2. CRM Dashboard
+
+**Route:** `/dashboard/crm`
+
+A focused dashboard showing only SUKI CRM metrics — leads, quotations, and conversions. This is essentially a standalone version of the SUKI sections from the Main Dashboard, without the sales analytics widgets.
+
+[SCREENSHOT NEEDED: CRM Dashboard — the focused CRM view with KPI cards, executive performance bar chart, lead source doughnut, conversion ratio, and quotation status breakdown]
+
+### What's on this page
+
+1. **KPI Strip** — Same 10 KPI cards as the Main Dashboard (Total Leads, New Leads, Quotations Sent, Follow-up Pending, Accepted, Rejected, Converted Customers, Supplier Rate Checking, Material Not Available, No Stock)
+2. **Marketing Executive-wise Performance** — Grouped bar chart showing 3 metrics per executive: Leads Handled (blue), Quotations Sent (purple), Deals Won (green)
+3. **Lead Source-wise Performance** — Doughnut chart with center total and legend
+4. **Monthly Lead Conversion Ratio** — Large percentage display with progress bar
+5. **Quotation Status Breakdown** — Grid of status tiles with counts
+
+This page does **not** load sales analytics data (no revenue trend, funnel, or agent leaderboard).
+
+### User Actions
+
+| Action | How to perform |
+|--------|----------------|
+| View KPIs | Read the KPI strip at the top |
+| View executive performance | Read the grouped bar chart |
+| View lead source distribution | Read the doughnut chart and legend |
+| View conversion ratio | Read the large percentage display |
+
+This page is **read-only** with no interactive filters or navigation actions.
+
+---
+
+## 3. Manager Dashboard
+
+**Route:** `/dashboard/manager`
+
+A dashboard designed for sales managers, showing team performance, pipeline analytics, and follow-up metrics.
+
+> **Access control:** Sales Executives who navigate to this page are automatically redirected to the Main Dashboard. Only Admins, Managers, and SuperAdmins can view this page.
+
+[SCREENSHOT NEEDED: Manager Dashboard — the sales manager view showing team KPIs, agent leaderboard, pipeline funnel, and follow-up metrics]
+
+### Features
+
+- **Date Range filter** — Same dropdown as the Main Dashboard (All Time, Last 30 Days, Last 3 Months, Last 6 Months)
+- **Team-focused widgets** — Agent leaderboard, pipeline funnel, win/loss summary, forecast vs target
+- **Follow-up Action Health** — Overdue, due today, upcoming, and done today tiles
+
+### User Actions
+
+| Action | How to perform |
+|--------|----------------|
+| Change date range | Click the "Date Range" dropdown in the header |
+| View agent performance | Read the Executive Sales Leaderboard |
+| View pipeline distribution | Read the Pipeline Stages funnel chart |
+
+This page is **read-only**.
+
+---
+
+## 4. SUKI Dashboard
+
+**Route:** `/dashboard/suki`
+
+A lightweight, simplified dashboard specifically for SUKI Steel CRM. This is the most basic dashboard variant — it shows the same SUKI metrics as the CRM Dashboard but with a simpler layout and fewer visual flourishes.
+
+[SCREENSHOT NEEDED: SUKI Dashboard — the simplified SUKI Steel CRM view with KPI cards in a grid, executive performance bar chart with table, lead source doughnut, conversion ratio, and quotation status grid]
+
+### What's on this page
+
+1. **Page title:** "SUKI Steel CRM Dashboard"
+2. **KPI Grid** — 10 KPI cards in a responsive grid (2 columns on mobile, up to 6 on large screens):
+   - Total Leads, New Leads, Quotations Sent, Follow-up Pending, Accepted, Rejected, Converted, Supplier Rate Checking, Material Not Available, No Stock
+3. **Marketing Executive-wise Performance** — Grouped bar chart (Leads Handled, Quotations Sent, Deals Won) **plus a data table** below the chart showing each executive's name, leads, quotations, deals won, and revenue
+4. **Lead Source-wise Performance** — Simple doughnut chart (no center label or legend)
+5. **Monthly Conversion Ratio** — Large percentage number with description
+6. **Quotation Status Breakdown** — Simple grid of status tiles
+
+### User Actions
+
+This page is **read-only** with no interactive filters or actions.
+
+---
+
+## Natural Workflow for a New User
+
+1. **Log in** → You land on the Main Dashboard (`/dashboard`)
+2. **Scan the KPI strip** → Get a quick sense of lead volume, quotation status, and conversion health
+3. **Review the SUKI CRM Analytics** → See which executives are performing and which lead sources are most productive
+4. **Check Sales Analytics** → Review revenue trend and quotation status breakdown
+5. **Examine the funnel and win/loss** → Understand pipeline distribution and conversion rate
+6. **Check the leaderboard** → See which team members are top performers
+7. **Review follow-up health** → Identify overdue and due-today action items
+8. **Read system alerts** → Spot any urgent issues (unassigned leads, overdue follow-ups, pending approvals)
+9. **Check CRM Health Score** → Get an overall system vitality rating
+10. **Navigate to a module** → Click sidebar items or the "View All →" link on Recent Leads to take action
+
+---
+
+## Role-Based Access
+
+| Role | Default landing page | Can access all 4 dashboard routes? |
+|------|---------------------|-----------------------------------|
+| **Admin** | Main Dashboard (`/dashboard`) | Yes |
+| **Manager** | Main Dashboard (`/dashboard`) | Yes (Manager Dashboard shows team view) |
+| **SalesExecutive** | Main Dashboard (`/dashboard`) | Yes, but Manager Dashboard redirects to Main Dashboard |
+| **SuperAdmin** | Main Dashboard (`/dashboard`) | Yes (must be in support/impersonation mode to see business data) |
+| **ServiceEngineer** | Redirected to My Visits in the Service module | No — does not see CRM dashboards |
+| **Customer** | N/A | No access to dashboards |
+
+---
+
+## Tips & Notes
+
+- **The dashboard auto-loads on page visit.** There is no manual refresh button. To refresh the data, reload the page or change the date range filter.
+- **The date range filter only affects sales analytics**, not SUKI KPIs. If you need time-filtered lead/quotation counts, use the Reports module instead.
+- **All KPI numbers use count-up animation** — they animate from 0 to their final value on page load.
+- **The dashboard is fully responsive** — on smaller screens, the multi-column grids collapse to fewer columns, and the charts adjust their dimensions.
+- **Dark mode is supported** — all dashboard widgets adapt to the system's light/dark theme setting.
+- **Currency display** follows the system's currency setting (e.g., ₹ for INR, $ for USD).

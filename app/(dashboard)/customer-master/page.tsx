@@ -11,6 +11,7 @@ import { useToast } from "@/components/ToastProvider";
 import PageContainer from "@/components/PageContainer";
 import { useGlobalLoading } from "@/components/GlobalLoadingProvider";
 import { SummaryCard } from "@/components/ui/SummaryCard";
+import { StatusBadge } from "@/components/ui/StatusBadge";
 import { validateEmail, validatePhone, validateAlphabetic } from "@/lib/formValidation";
 import CustomerImportModal from "@/components/customers/CustomerImportModal";
 
@@ -30,21 +31,6 @@ const icons = {
   clock: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z",
   map: "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
 };
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    ActiveCustomer: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Prospect: "bg-amber-50 text-amber-700 border-amber-200",
-    Renewed: "bg-blue-50 text-blue-700 border-blue-200",
-    Churned: "bg-rose-50 text-rose-700 border-rose-200",
-  };
-  const label = status === "ActiveCustomer" ? "Active Customer" : status;
-  return (
-    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${styles[status] || "bg-slate-50 text-slate-650 border-slate-200"}`}>
-      {label}
-    </span>
-  );
-}
 
 export default function CustomerMasterPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -73,6 +59,7 @@ export default function CustomerMasterPage() {
     email: "",
     phone: "",
     city: "",
+    location: "",
     state: "",
     status: "Prospect" as any,
     assignedUserId: "",
@@ -180,6 +167,7 @@ export default function CustomerMasterPage() {
       email: "",
       phone: "",
       city: "",
+      location: "",
       state: "",
       status: "Prospect",
       assignedUserId: "",
@@ -210,6 +198,7 @@ export default function CustomerMasterPage() {
       email: d.email || "",
       phone: d.phone || "",
       city: d.city || "",
+      location: d.location || "",
       state: d.state || "",
       status: d.status,
       assignedUserId: d.assignedUserId || "",
@@ -428,13 +417,14 @@ export default function CustomerMasterPage() {
             >
               <option value="">All Lead Sources</option>
               <option value="Website">Website</option>
-              <option value="Facebook">Facebook</option>
-              <option value="Instagram">Instagram</option>
-              <option value="LinkedIn">LinkedIn</option>
-              <option value="Referral">Referral</option>
-              <option value="WalkIn">Walk-in</option>
-              <option value="ColdCall">Cold Call</option>
-              <option value="Partner">Partner</option>
+              <option value="IndiaMART">IndiaMART</option>
+              <option value="Justdial">Justdial</option>
+              <option value="TradeIndia">TradeIndia</option>
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Door-to-Door Marketing">Door-to-Door Marketing</option>
+              <option value="Direct Visit">Direct Visit</option>
+              <option value="Telephonic Conversation">Telephonic Conversation</option>
+              <option value="Email">Email</option>
             </select>
           </div>
         </div>
@@ -502,7 +492,7 @@ export default function CustomerMasterPage() {
                       </div>
                     </td>
                     <td className="crm-td text-slate-600">{c.city || "-"}</td>
-                    <td className="crm-td"><StatusBadge status={c.status} /></td>
+                    <td className="crm-td"><StatusBadge status={c.status} showDot /></td>
                     <td className="crm-td text-right" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
                         <button
@@ -545,8 +535,8 @@ export default function CustomerMasterPage() {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit}>
-              <div className="p-6 overflow-y-auto space-y-4">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-6 flex-1 overflow-y-auto space-y-4">
                 {errorMsg && (
                   <div className="p-3 rounded-[8px] bg-[#ffdad6] border border-[#ffb4ab] text-[13px] text-[#93000a] font-medium text-center">
                     {errorMsg}
@@ -631,6 +621,18 @@ export default function CustomerMasterPage() {
                     {formData.city && validateAlphabetic(formData.city, "City") && <p className="text-xs text-rose-500 mt-1">{validateAlphabetic(formData.city, "City")}</p>}
                   </div>
                   <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Location</label>
+                    <input 
+                      type="text" 
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      placeholder="Street, building, area (e.g. No. 45, Anna Salai, T. Nagar)" 
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Status</label>
                     <select 
                       value={formData.status}
@@ -654,13 +656,14 @@ export default function CustomerMasterPage() {
                     >
                       <option value="">Select Source</option>
                       <option value="Website">Website</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="Instagram">Instagram</option>
-                      <option value="LinkedIn">LinkedIn</option>
-                      <option value="Referral">Referral</option>
-                      <option value="WalkIn">Walk-in</option>
-                      <option value="ColdCall">Cold Call</option>
-                      <option value="Partner">Partner</option>
+                      <option value="IndiaMART">IndiaMART</option>
+                      <option value="Justdial">Justdial</option>
+                      <option value="TradeIndia">TradeIndia</option>
+                      <option value="WhatsApp">WhatsApp</option>
+                      <option value="Door-to-Door Marketing">Door-to-Door Marketing</option>
+                      <option value="Direct Visit">Direct Visit</option>
+                      <option value="Telephonic Conversation">Telephonic Conversation</option>
+                      <option value="Email">Email</option>
                     </select>
                   </div>
                   {(user?.role === "Admin" || user?.role === "SalesManager") ? (
@@ -707,14 +710,51 @@ export default function CustomerMasterPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">State</label>
-                    <input 
-                      type="text" 
+                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">State <span className="text-rose-500">*</span></label>
+                    <select
                       value={formData.state}
                       onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      placeholder="State" 
-                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all" 
-                    />
+                      className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all"
+                    >
+                      <option value="">Select State</option>
+                      <option value="Andhra Pradesh">Andhra Pradesh</option>
+                      <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                      <option value="Assam">Assam</option>
+                      <option value="Bihar">Bihar</option>
+                      <option value="Chhattisgarh">Chhattisgarh</option>
+                      <option value="Goa">Goa</option>
+                      <option value="Gujarat">Gujarat</option>
+                      <option value="Haryana">Haryana</option>
+                      <option value="Himachal Pradesh">Himachal Pradesh</option>
+                      <option value="Jharkhand">Jharkhand</option>
+                      <option value="Karnataka">Karnataka</option>
+                      <option value="Kerala">Kerala</option>
+                      <option value="Madhya Pradesh">Madhya Pradesh</option>
+                      <option value="Maharashtra">Maharashtra</option>
+                      <option value="Manipur">Manipur</option>
+                      <option value="Meghalaya">Meghalaya</option>
+                      <option value="Mizoram">Mizoram</option>
+                      <option value="Nagaland">Nagaland</option>
+                      <option value="Odisha">Odisha</option>
+                      <option value="Punjab">Punjab</option>
+                      <option value="Rajasthan">Rajasthan</option>
+                      <option value="Sikkim">Sikkim</option>
+                      <option value="Tamil Nadu">Tamil Nadu</option>
+                      <option value="Telangana">Telangana</option>
+                      <option value="Tripura">Tripura</option>
+                      <option value="Uttar Pradesh">Uttar Pradesh</option>
+                      <option value="Uttarakhand">Uttarakhand</option>
+                      <option value="West Bengal">West Bengal</option>
+                      <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                      <option value="Chandigarh">Chandigarh</option>
+                      <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                      <option value="Delhi">Delhi</option>
+                      <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                      <option value="Ladakh">Ladakh</option>
+                      <option value="Lakshadweep">Lakshadweep</option>
+                      <option value="Puducherry">Puducherry</option>
+                    </select>
+                    <p className="text-xs text-slate-400 mt-1">Required for GST tax type determination (CGST+SGST vs IGST)</p>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">Industry Type</label>

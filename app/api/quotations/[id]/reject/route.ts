@@ -20,69 +20,78 @@ export async function POST(
   });
   if (!existing) return NextResponse.json({ success: false, message: "Quotation not found" }, { status: 404 });
 
-  if (!["Sent", "UnderReview"].includes(existing.status)) {
-    return NextResponse.json({ success: false, message: "Only Sent or UnderReview quotations can be rejected" }, { status: 400 });
+  const outcomeStatus = body.outcomeStatus || "Rejected";
+  const VALID_OUTCOMES = ["Rejected", "MOQ", "Material Not Available", "No Stock", "Price Pending", "Supplier Rate Checking", "Others", "Follow-up", "Revised Rate"];
+  if (!VALID_OUTCOMES.includes(outcomeStatus)) {
+    return NextResponse.json({ success: false, message: `Invalid outcome status. Allowed: ${VALID_OUTCOMES.join(", ")}` }, { status: 400 });
   }
 
-  // Require rejection_reason_id
-  if (!body.rejectionReasonId) {
-    return NextResponse.json({ success: false, message: "Rejection reason is required" }, { status: 400 });
+  // Require rejection_reason_id for "Rejected" outcome
+  if (outcomeStatus === "Rejected" && !body.rejectionReasonId) {
+    return NextResponse.json({ success: false, message: "Rejection reason is required for Rejected status" }, { status: 400 });
   }
 
   try {
     const quotation = await prisma.$transaction(async (tx) => {
+      const updateData: any = { status: outcomeStatus };
+      if (outcomeStatus === "Rejected") {
+        updateData.rejectedAt = new Date();
+        updateData.rejectionReasonId = body.rejectionReasonId || null;
+      }
+      if (body.rejectionReasonText != null) {
+        updateData.rejectionReason = body.rejectionReasonText || null;
+      }
+
       const q = await tx.quotation.update({
         where: { id },
-        data: {
-          status: "Rejected",
-          rejectedAt: new Date(),
-          rejectionReason: body.rejectionReasonText || null,
-          rejectionReasonId: body.rejectionReasonId,
-        },
+        data: updateData,
       });
 
       await tx.quotationStatusHistory.create({
         data: {
           quotationId: id,
           fromStatus: existing.status,
-          toStatus: "Rejected",
+          toStatus: outcomeStatus,
           changedById: user.id,
-          notes: body.rejectionReasonText || `Rejected (reason ID: ${body.rejectionReasonId})`,
+          notes: body.rejectionReasonText || `Status changed to ${outcomeStatus}`,
         },
       });
 
-      // Close active negotiations
-      const activeNegotiations = await tx.negotiation.findMany({
-        where: {
-          quotationId: id,
-          status: { in: ["Active", "PriceRevision", "CommercialDiscussion", "PendingApproval"] },
-          deletedAt: null,
-        },
-        select: { id: true },
-      });
-      if (activeNegotiations.length > 0) {
-        await tx.negotiation.updateMany({
-          where: { id: { in: activeNegotiations.map(n => n.id) } },
-          data: { status: "Closed-Failure", outcome: "Lost", closedAt: new Date() },
+      const terminalOutcomes = ["Rejected", "MOQ", "Material Not Available", "No Stock", "Others"];
+      if (terminalOutcomes.includes(outcomeStatus)) {
+        // Close active negotiations
+        const activeNegotiations = await tx.negotiation.findMany({
+          where: {
+            quotationId: id,
+            status: { in: ["Active", "PriceRevision", "CommercialDiscussion", "PendingApproval"] },
+            deletedAt: null,
+          },
+          select: { id: true },
         });
-      }
+        if (activeNegotiations.length > 0) {
+          await tx.negotiation.updateMany({
+            where: { id: { in: activeNegotiations.map(n => n.id) } },
+            data: { status: "Closed-Failure", outcome: "Lost", closedAt: new Date() },
+          });
+        }
 
-      // Transition linked deal to Lost (consistent with negotiation-cascade behavior)
-      if (existing.dealId) {
-        await transitionDealStatus(existing.dealId, "Lost", {
-          actorId: user.id,
-          companyId: user.companyId!,
-          reason: body.rejectionReasonText || `Quotation ${existing.quotationCode} rejected`,
-        }, tx);
+        // Transition linked deal to Lost (consistent with negotiation-cascade behavior)
+        if (existing.dealId) {
+          await transitionDealStatus(existing.dealId, "Lost", {
+            actorId: user.id,
+            companyId: user.companyId!,
+            reason: body.rejectionReasonText || `Quotation ${existing.quotationCode} rejected`,
+          }, tx);
+        }
       }
 
       return q;
     });
 
-    await logAudit(user.id, "Quotation", "Reject", `Rejected quotation ${existing.quotationCode}: ${body.rejectionReasonText || body.rejectionReasonId}`, {
+    await logAudit(user.id, "Quotation", "Reject", `Quotation ${existing.quotationCode} marked as ${outcomeStatus}: ${body.rejectionReasonText || body.rejectionReasonId || ""}`, {
       resourceId: id,
       previousState: { status: existing.status },
-      newState: { status: "Rejected", rejectionReasonId: body.rejectionReasonId },
+      newState: { status: outcomeStatus, rejectionReasonId: body.rejectionReasonId },
       context: extractAuditContext(request),
     });
 

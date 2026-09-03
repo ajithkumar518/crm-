@@ -21,7 +21,7 @@ export async function GET(
       customer: { select: { id: true, name: true, customerCode: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true, email: true } },
       contact: { select: { id: true, name: true, email: true, phone: true } },
       deal: { select: { id: true, dealName: true, opportunityCode: true } },
-      items: { include: { product: { select: { id: true, name: true, productCode: true } } } },
+      items: { include: { product: { select: { id: true, name: true, productCode: true, productType: true } } } },
       company: { select: { id: true, name: true } },
       createdBy: { select: { id: true, name: true } },
     },
@@ -93,7 +93,9 @@ export async function GET(
 
   const generatedByName = (await prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }))?.name || user.email;
 
-  const doc = generateSukiQuotationPdf({
+  let doc;
+  try {
+    doc = generateSukiQuotationPdf({
     quotationCode: quotation.quotationCode,
     revisionNumber: quotation.revisionNumber,
     status: quotation.status,
@@ -104,16 +106,34 @@ export async function GET(
     deliveryTerms: quotation.deliveryTerms,
     freightTerms: quotation.freightTerms,
     leadTimeDays: quotation.leadTimeDays,
+    transportCharge: (quotation as any).transportCharge,
+    otherCharges: (quotation as any).otherCharges,
+    weighingLoadingCharge: (quotation as any).weighingLoadingCharge,
+    deliveryCharge: (quotation as any).deliveryCharge,
+    testingCharge: (quotation as any).testingCharge,
     customer: quotation.customer,
     contact: quotation.contact,
     company: quotation.company,
-    items: quotation.items,
+    items: quotation.items.map((it: any) => ({ ...it, productType: it.product?.productType || it.productType })),
     companyAddress: addrConfig?.value || "",
     companyGstin: gstinConfig?.value || "",
     companyPhone: phoneConfig?.value || "",
     companyEmail: emailConfig?.value || "",
     generatedByName,
+    placeOfSupply: (quotation as any).placeOfSupply || quotation.customer?.state || null,
+    shipState: (quotation as any).shipState || quotation.customer?.state || null,
+    shipGstNumber: (quotation as any).shipGstNumber || quotation.customer?.gstNumber || null,
   });
+  } catch (err: any) {
+    // Tax treatment could not be determined — missing state/GSTIN data
+    return NextResponse.json(
+      {
+        success: false,
+        message: err?.message || "Cannot generate PDF: GST tax treatment could not be determined. Set the customer's state or GSTIN first.",
+      },
+      { status: 422 }
+    );
+  }
 
   const pdfBytes = doc.output("arraybuffer");
   const fileName = `${quotation.quotationCode}-R${quotation.revisionNumber}.pdf`;

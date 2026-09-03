@@ -25,7 +25,7 @@ export default function DashboardRouter() {
       const [dashRes, salesRes, sukiRes] = await Promise.all([
         getDashboardDataAction(),
         getSalesAnalyticsAction(dateRange === "alltime" ? undefined : dateRange),
-        fetch("/api/dashboard/suki").then(r => r.json())
+        fetch("/api/dashboard/suki").then(r => r.ok ? r.json() : { success: false }).catch(() => ({ success: false }))
       ]);
 
       if (dashRes.success && dashRes.data) {

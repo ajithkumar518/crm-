@@ -434,12 +434,14 @@ export default function AccountsPage() {
                 >
                   <option value="">All Sources</option>
                   <option value="Website">Website</option>
-                  <option value="Facebook">Facebook</option>
-                  <option value="LinkedIn">LinkedIn</option>
-                  <option value="Referral">Referral</option>
-                  <option value="Cold Call">Cold Call</option>
-                  <option value="Trade Show">Trade Show</option>
-                  <option value="Email Campaign">Email Campaign</option>
+                  <option value="IndiaMART">IndiaMART</option>
+                  <option value="Justdial">Justdial</option>
+                  <option value="TradeIndia">TradeIndia</option>
+                  <option value="WhatsApp">WhatsApp</option>
+                  <option value="Door-to-Door Marketing">Door-to-Door Marketing</option>
+                  <option value="Direct Visit">Direct Visit</option>
+                  <option value="Telephonic Conversation">Telephonic Conversation</option>
+                  <option value="Email">Email</option>
                 </select>
               </div>
             </div>
@@ -687,12 +689,14 @@ export default function AccountsPage() {
                     >
                       <option value="">Select Source</option>
                       <option value="Website">Website</option>
-                      <option value="Facebook">Facebook</option>
-                      <option value="LinkedIn">LinkedIn</option>
-                      <option value="Referral">Referral</option>
-                      <option value="Cold Call">Cold Call</option>
-                      <option value="Trade Show">Trade Show</option>
-                      <option value="Email Campaign">Email Campaign</option>
+                      <option value="IndiaMART">IndiaMART</option>
+                      <option value="Justdial">Justdial</option>
+                      <option value="TradeIndia">TradeIndia</option>
+                      <option value="WhatsApp">WhatsApp</option>
+                      <option value="Door-to-Door Marketing">Door-to-Door Marketing</option>
+                      <option value="Direct Visit">Direct Visit</option>
+                      <option value="Telephonic Conversation">Telephonic Conversation</option>
+                      <option value="Email">Email</option>
                     </select>
                   </div>
 

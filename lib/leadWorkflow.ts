@@ -32,6 +32,10 @@ export interface CreateLeadWithWorkflowInput {
   companyId?: string | null;
   createdById?: string | null;
   auditContext?: AuditContext | null;
+  industryType?: string | null;
+  estimatedValue?: number | null;
+  companyName?: string | null;
+  designation?: string | null;
 }
 
 export interface CreateLeadWithWorkflowResult {
@@ -201,6 +205,10 @@ export async function createLeadWithWorkflow(
     companyId,
     createdById,
     auditContext,
+    industryType,
+    estimatedValue,
+    companyName,
+    designation,
   } = input;
 
   const normalizedName = name.trim();
@@ -234,6 +242,9 @@ export async function createLeadWithWorkflow(
     leadSource: source,
     email: normalizedEmail,
     phone: normalizedPhone,
+    industryType: input.industryType || null,
+    estimatedValue: input.estimatedValue || null,
+    designation: input.designation || null,
   });
 
   const assignedUserId = await resolveOwner(companyId, normalizedCity);
@@ -258,10 +269,10 @@ export async function createLeadWithWorkflow(
       lastInteractionAt: now,
       escalationLevel: 0,
       leadScore,
-      companyName: null,
-      designation: null,
-      industryType: null,
-      estimatedValue: null,
+      companyName: companyName || null,
+      designation: designation || null,
+      industryType: industryType || null,
+      estimatedValue: estimatedValue || null,
     },
   });
 

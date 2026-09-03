@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { logAudit, extractAuditContext } from "@/lib/audit";
 import { generateProformaPdf } from "@/lib/generateProformaPdf";
 import { sendEmail } from "@/lib/email";
 
@@ -10,6 +11,7 @@ export async function POST(
 ) {
   const user = await verifyAuth();
   if (!user) return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+  if (user.role === "Customer") return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
 
   const { id } = await params;
 
@@ -26,6 +28,18 @@ export async function POST(
 
   if (!proforma) return NextResponse.json({ success: false, message: "Proforma not found" }, { status: 404 });
 
+  // Only Draft (initial send) and Sent (re-send) proformas can be emailed
+  if (!["Draft", "Sent"].includes(proforma.status)) {
+    return NextResponse.json(
+      { success: false, message: `Cannot send proforma in "${proforma.status}" status. Only Draft or Sent proformas can be emailed.` },
+      { status: 400 },
+    );
+  }
+
+  if (proforma.items.length === 0) {
+    return NextResponse.json({ success: false, message: "Cannot send proforma without line items" }, { status: 400 });
+  }
+
   const recipientEmail = proforma.contact?.email || proforma.customer?.email;
   if (!recipientEmail) {
     return NextResponse.json({ success: false, message: "No contact or customer email found" }, { status: 400 });
@@ -40,47 +54,73 @@ export async function POST(
 
   const generatedByName = (await prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }))?.name || user.email;
 
-  const doc = generateProformaPdf({
-    proformaNumber: proforma.proformaNumber,
-    proformaDate: proforma.proformaDate,
-    validityDate: proforma.validityDate,
-    status: proforma.status,
-    customer: proforma.customer,
-    contact: proforma.contact,
-    company: proforma.company,
-    quotationCode: proforma.quotation?.quotationCode || null,
-    items: proforma.items.map((it) => ({
-      description: it.description || it.product?.name || "—",
-      productType: it.productType,
-      materialGrade: it.materialGrade,
-      materialSize: it.materialSize,
-      rmMake: it.rmMake,
-      lengthMm: it.lengthMm,
-      numberOfPieces: it.numberOfPieces,
-      quantity: it.quantity,
-      unit: it.unit,
-      unitPrice: it.unitPrice,
-      discountPercent: it.discountPercent,
-      taxPercent: it.taxPercent,
-      lineTotal: it.lineTotal,
-      cuttingCharge: it.cuttingCharge,
-      deliveryDays: it.deliveryDays,
-      remarks: it.remarks,
-    })),
-    subtotal: proforma.subtotal,
-    taxAmount: proforma.taxAmount,
-    discountPercent: proforma.discountPercent,
-    grandTotal: proforma.grandTotal,
-    paymentTerms: proforma.paymentTerms,
-    deliveryTerms: proforma.deliveryTerms,
-    termsAndConditions: proforma.termsAndConditions,
-    notes: proforma.notes,
-    companyAddress: addrConfig?.value || "",
-    companyGstin: gstinConfig?.value || "",
-    companyPhone: phoneConfig?.value || "",
-    companyEmail: emailConfig?.value || "",
-    generatedByName,
-  });
+  let doc;
+  try {
+    doc = generateProformaPdf({
+      proformaNumber: proforma.proformaNumber,
+      proformaDate: proforma.proformaDate,
+      validityDate: proforma.validityDate,
+      status: proforma.status,
+      customer: proforma.customer,
+      contact: proforma.contact,
+      company: proforma.company,
+      quotationCode: proforma.quotation?.quotationCode || null,
+      items: proforma.items.map((it) => ({
+        description: it.description || it.product?.name || "—",
+        productType: it.productType,
+        materialGrade: it.materialGrade,
+        materialSize: it.materialSize,
+        rmMake: it.rmMake,
+        lengthMm: it.lengthMm,
+        numberOfPieces: it.numberOfPieces,
+        quantity: it.quantity,
+        unit: it.unit,
+        unitPrice: it.unitPrice,
+        discountPercent: it.discountPercent,
+        taxPercent: it.taxPercent,
+        lineTotal: it.lineTotal,
+        cuttingCharge: it.cuttingCharge,
+        deliveryDays: it.deliveryDays,
+        remarks: it.remarks,
+      })),
+      subtotal: proforma.subtotal,
+      taxAmount: proforma.taxAmount,
+      discountPercent: proforma.discountPercent,
+      grandTotal: proforma.grandTotal,
+      transportCharge: (proforma.quotation as any)?.transportCharge,
+      otherCharges: (proforma.quotation as any)?.otherCharges,
+      weighingLoadingCharge: (proforma.quotation as any)?.weighingLoadingCharge,
+      deliveryCharge: (proforma.quotation as any)?.deliveryCharge,
+      testingCharge: (proforma.quotation as any)?.testingCharge,
+      paymentTerms: proforma.paymentTerms,
+      deliveryTerms: proforma.deliveryTerms,
+      termsAndConditions: proforma.termsAndConditions,
+      notes: proforma.notes,
+      companyAddress: addrConfig?.value || "",
+      companyGstin: gstinConfig?.value || "",
+      companyPhone: phoneConfig?.value || "",
+      companyEmail: emailConfig?.value || "",
+      generatedByName,
+      placeOfSupply: (proforma as any).placeOfSupply,
+      shipName: (proforma as any).shipName,
+      shipAddress: (proforma as any).shipAddress,
+      shipState: (proforma as any).shipState,
+      shipStateCode: (proforma as any).shipStateCode,
+      shipGstNumber: (proforma as any).shipGstNumber,
+      shipPhone: (proforma as any).shipPhone,
+      billName: (proforma as any).billName,
+      billAddress: (proforma as any).billAddress,
+      billState: (proforma as any).billState,
+      billStateCode: (proforma as any).billStateCode,
+      billGstNumber: (proforma as any).billGstNumber,
+      billPhone: (proforma as any).billPhone,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, message: err.message || "Cannot generate Proforma PDF." },
+      { status: 422 }
+    );
+  }
 
   const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
   const fileName = `${proforma.proformaNumber}.pdf`;
@@ -88,7 +128,7 @@ export async function POST(
   const htmlBody = `
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
       <div style="background-color:#0D2137;padding:20px;text-align:center;">
-        <h2 style="color:#ffffff;margin:0;">SUKI CRM</h2>
+        <h2 style="color:#ffffff;margin:0;">Shahnaz CRM</h2>
       </div>
       <div style="padding:24px;">
         <p>Dear <strong>${proforma.contact?.name || proforma.customer?.name || "Customer"}</strong>,</p>
@@ -106,7 +146,7 @@ export async function POST(
   `;
 
   let emailSent = false;
-  let emailWarning = "";
+  let emailWarning: string | null = null;
   try {
     await sendEmail({
       to: recipientEmail,
@@ -119,13 +159,19 @@ export async function POST(
     emailWarning = `Email delivery failed: ${e.message}`;
   }
 
+  // Only transition Draft → Sent when email actually goes out.
+  // If email fails on a Draft, keep it as Draft so user can retry.
+  // If email fails on a re-send (already Sent), status stays Sent.
   const status = emailSent && proforma.status === "Draft" ? "Sent" : proforma.status;
   const updated = await prisma.proformaInvoice.update({
     where: { id },
     data: { status },
     include: {
-      customer: { select: { id: true, name: true, customerCode: true } },
+      customer: { select: { id: true, name: true, customerCode: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true, email: true } },
+      contact: { select: { id: true, name: true, email: true, phone: true } },
+      company: { select: { id: true, name: true } },
       quotation: { select: { id: true, quotationCode: true } },
+      items: { include: { product: { select: { id: true, name: true, productCode: true } } } },
     },
   });
 
@@ -134,7 +180,7 @@ export async function POST(
       channel: "Email",
       direction: "Outbound",
       status: emailSent ? "Sent" : "Failed",
-      content: `Proforma ${proforma.proformaNumber} emailed to ${recipientEmail}. ${emailWarning}`.trim(),
+      content: `Proforma ${proforma.proformaNumber} emailed to ${recipientEmail}. ${emailWarning || ""}`.trim(),
       customerId: proforma.customerId || null,
       sentByUserId: user.id,
       sentAt: new Date(),
@@ -142,9 +188,18 @@ export async function POST(
     },
   }).catch(() => {});
 
+  await logAudit(user.id, "ProformaInvoice", "Send", `Sent proforma ${proforma.proformaNumber} to customer`, {
+    resourceId: id,
+    newState: { status: updated.status, emailSent, emailedTo: recipientEmail },
+    context: extractAuditContext(request),
+  }).catch(() => undefined);
+
   return NextResponse.json({
     success: true,
     data: updated,
-    message: emailSent ? "Proforma sent successfully" : `PDF ready, but ${emailWarning}`,
+    emailSent,
+    emailedTo: emailSent ? recipientEmail : undefined,
+    ...(emailWarning ? { emailWarning } : {}),
+    message: emailSent ? "Proforma sent successfully" : `PDF generated, but ${emailWarning}`,
   });
 }

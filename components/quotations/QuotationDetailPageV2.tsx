@@ -11,12 +11,27 @@ import QuotationNextStepBanner from "./QuotationNextStepBanner";
 import QuotationStatusTimeline from "./QuotationStatusTimeline";
 import QuotationSummaryCard from "./QuotationSummaryCard";
 import QuotationTabs from "./QuotationTabs";
+import QuotationFollowUpDrawer from "./QuotationFollowUpDrawer";
 import { Ico, icons } from "./QuotationIcons";
+import { useState, useEffect } from "react";
+import { getUsersAction } from "@/app/actions/users";
 
 export default function QuotationDetailPageV2() {
   const q = useQuotationDetail();
   const { formatCurrency } = useCurrency();
   const toast = useToast();
+  const [showFollowUpDrawer, setShowFollowUpDrawer] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    getUsersAction()
+      .then((res: any) => {
+        if (res?.success && res.data) {
+          setUsers(res.data.filter((u: any) => u.isActive && (u.role === "SalesExecutive" || u.role === "SalesManager")));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   if (q.loading) {
     return (
@@ -45,6 +60,7 @@ export default function QuotationDetailPageV2() {
         savingItems={q.savingItems}
         creatingPo={q.creatingPo}
         markingWon={q.markingWon}
+        creatingDraftProforma={q.creatingDraftProforma}
         generatingPdf={q.generatingPdf}
         needsApproval={q.needsApproval}
         onStartEdit={q.startEdit}
@@ -56,11 +72,14 @@ export default function QuotationDetailPageV2() {
         onAccept={q.handleAccept}
         onReject={q.handleReject}
         onCreatePo={q.handleCreatePo}
+        onCreateDraftProforma={q.handleCreateDraftProforma}
         onMarkWon={q.handleMarkWon}
         onClone={q.handleClone}
         onDownloadPdf={q.handleDownloadPdf}
         onGeneratePdf={q.handleGeneratePdf}
         onDelete={q.handleDelete}
+        onFollowUp={() => setShowFollowUpDrawer(true)}
+        featureUserEmail={q.user?.email}
       />
 
       <QuotationStageTracker
@@ -136,6 +155,27 @@ export default function QuotationDetailPageV2() {
         onCancel={() => { q.setConfirmState({ isOpen: false, title: "", message: "", action: () => {} }); q.setRejectReason(""); q.setRejectReasonId(""); }}
         isDestructive={q.confirmState.title.includes("Delete")}
       />
+
+      {quotation && (
+        <QuotationFollowUpDrawer
+          isOpen={showFollowUpDrawer}
+          onClose={() => setShowFollowUpDrawer(false)}
+          onSuccess={() => {
+            if (q.activeTab === "followUps") {
+              q.setActiveTab("items");
+              setTimeout(() => q.setActiveTab("followUps"), 10);
+            }
+          }}
+          quotation={{
+            id: quotation.id,
+            quotationCode: quotation.quotationCode,
+            customerId: quotation.customerId,
+            customer: { name: quotation.customer?.name || null },
+          }}
+          user={q.user}
+          users={users}
+        />
+      )}
 
       {q.showNegotiateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">

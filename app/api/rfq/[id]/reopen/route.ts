@@ -40,7 +40,7 @@ export async function POST(
 
   // Guard: check for linked accepted quotations or purchase orders
   const linkedQuotes = await prisma.quotation.findMany({
-    where: { rfqId: id, deletedAt: null, status: { in: ["Accepted", "Sent", "UnderReview"] } },
+    where: { rfqId: id, deletedAt: null, status: { in: ["Accepted", "Quotation Sent", "UnderReview"] } },
     select: { id: true, quotationCode: true, status: true },
   });
   if (linkedQuotes.length > 0) {

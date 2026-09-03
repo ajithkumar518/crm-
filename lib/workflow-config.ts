@@ -65,14 +65,14 @@ export const DEALS_WORKFLOW: WorkflowConfig = {
 // ─── 3. Quotes (Quotations) ─────────────────────────────────────────────────────
 export const QUOTES_WORKFLOW: WorkflowConfig = {
   module: "quotes",
-  nodes: ["Draft", "Sent", "UnderReview", "Accepted", "Rejected", "Expired"],
+  nodes: ["Draft", "Quotation Sent", "UnderReview", "Accepted", "Rejected", "Expired"],
   edges: [
-    { from: "Draft", to: "Sent", type: "positive" },
-    { from: "Sent", to: "UnderReview", type: "positive" },
+    { from: "Draft", to: "Quotation Sent", type: "positive" },
+    { from: "Quotation Sent", to: "UnderReview", type: "positive" },
     { from: "UnderReview", to: "Accepted", type: "positive" },
-    { from: "Sent", to: "Rejected", type: "negative", requiredFields: ["rejectionReasonId", "rejectionReason"] },
+    { from: "Quotation Sent", to: "Rejected", type: "negative", requiredFields: ["rejectionReasonId", "rejectionReason"] },
     { from: "UnderReview", to: "Rejected", type: "negative", requiredFields: ["rejectionReasonId", "rejectionReason"] },
-    { from: "Sent", to: "Expired", type: "negative", requiredFields: ["expiryDate"] },
+    { from: "Quotation Sent", to: "Expired", type: "negative", requiredFields: ["expiryDate"] },
     { from: "UnderReview", to: "Expired", type: "negative", requiredFields: ["expiryDate"] },
   ],
   reversible: true, // Rejected/Expired can be reversed

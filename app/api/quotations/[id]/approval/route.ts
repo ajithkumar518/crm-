@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { logAudit, extractAuditContext } from "@/lib/audit";
 import { applyNegotiationRevision, rejectNegotiationRevision } from "@/lib/negotiation-revision";
+import { resolveTaxTreatment } from "@/lib/gstState";
 
 export async function PUT(
   request: NextRequest,
@@ -54,9 +55,40 @@ export async function PUT(
 
   const existing = await prisma.quotation.findFirst({
     where: { id, deletedAt: null, companyId: user.companyId },
-    select: { quotationCode: true, createdById: true, negotiationId: true, revisionNumber: true, parentQuotationId: true },
+    select: {
+      quotationCode: true,
+      createdById: true,
+      negotiationId: true,
+      revisionNumber: true,
+      parentQuotationId: true,
+      customer: { select: { state: true, gstNumber: true } },
+    },
   });
   if (!existing) return NextResponse.json({ success: false, message: "Quotation not found" }, { status: 404 });
+
+  // ─── GST validation: block approval if customer state/GSTIN is missing ───
+  // This prevents approving a quotation with undeterminable tax treatment (CGST+SGST vs IGST).
+  if (body.decision === "Approved") {
+    const gstinConfig = await prisma.systemConfig.findUnique({ where: { key: "company_gstin" } });
+    const companyGstin = gstinConfig?.value || null;
+    const taxResult = resolveTaxTreatment(
+      companyGstin,
+      existing.customer?.state || null,
+      existing.customer?.gstNumber || null,
+      existing.customer?.state || null,
+      existing.customer?.gstNumber || null,
+      existing.customer?.state || null,
+    );
+    if (taxResult.treatment === "unknown") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: `Cannot approve quotation: ${taxResult.warning} The customer's state or GSTIN must be set before approval to ensure correct CGST/SGST vs IGST tax treatment.`,
+        },
+        { status: 422 }
+      );
+    }
+  }
 
   try {
     const result = await prisma.$transaction(async (tx) => {

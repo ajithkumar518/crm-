@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["crmdev.sukierp.com", "103.182.210.202"],
+  allowedDevOrigins: ["crmdev.sukierp.com", "103.182.210.202", "127.0.0.1", "localhost"],
   experimental: {
     serverActions: {
       allowedOrigins: [
@@ -47,6 +47,11 @@ const nextConfig: NextConfig = {
       {
         source: "/sales_pipeline/:path*",
         destination: "/sales-pipeline/:path*",
+        permanent: true,
+      },
+      {
+        source: "/catalogue/products/import",
+        destination: "/catalogue/products",
         permanent: true,
       },
     ];

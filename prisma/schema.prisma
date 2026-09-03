@@ -98,6 +98,7 @@ model User {
   createdRevisionSnapshots     QuotationRevisionSnapshot[] @relation("CreatedRevisionSnapshots")
   quotationDocuments           QuotationDocument[]         @relation("QuotationDocumentsGenerated")
   changedQuotationStatuses     QuotationStatusHistory[]    @relation("ChangedQuotationStatus")
+  proformaInvoiceHistories     ProformaInvoiceHistory[]
   exportedReports              ReportExportLog[]           @relation("ExportedReports")
   createdReportSchedules       ReportSchedule[]            @relation("CreatedReportSchedules")
   rfqs                         RFQ[]                       @relation("AssignedRFQs")
@@ -150,6 +151,7 @@ model Customer {
   email            String?   @unique
   phone            String?
   city             String?
+  location         String?                 @db.NVarChar(Max) // Street/building/area address line
   status           String    @default("Prospect")
   assignedUserId   String?
   onboardingStatus String    @default("Pending")
@@ -527,6 +529,9 @@ model FollowUp {
   entityType        String?
   entityId          String?
   stageAtCreation   String?
+  quotationId       String?
+  quotationCode     String?
+  accountReference  String?
   communicationLogs CommunicationLog[]
   assignedUser      User               @relation("AssignedFollowUps", fields: [assignedUserId], references: [id], onUpdate: NoAction)
   company           Company?           @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -534,6 +539,7 @@ model FollowUp {
   customer          Customer?          @relation(fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lead              Lead?              @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   deal              Deal?              @relation(fields: [dealId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quotation         Quotation?         @relation(fields: [quotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   nextFollowUp      FollowUp?          @relation("ChainedFollowUp", fields: [nextFollowupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   prevFollowUps     FollowUp[]         @relation("ChainedFollowUp")
 
@@ -548,6 +554,7 @@ model FollowUp {
   @@index([type])
   @@index([entityType, entityId])
   @@index([assignedUserId, status, nextMeetingDate])
+  @@index([quotationId])
 }
 
 model Notification {
@@ -870,6 +877,7 @@ model Lead {
   designation            String?
   estimatedValue         Float?
   industryType           String?
+  customerCategory       String?
   isDuplicateOf          String?
   leadScore              Int                     @default(0)
   lostReason             String?                 @db.NVarChar(Max)
@@ -884,6 +892,7 @@ model Lead {
   statusHistories        LeadStatusHistory[]
   marketingVisits        MarketingVisit[]
   competitorInvolvements CompetitorInvolvement[] @relation("CompetitorInvolvementLead")
+  quotations             Quotation[]
 
   @@index([status])
   @@index([assignedUserId])
@@ -896,19 +905,27 @@ model Lead {
 }
 
 model InboundEmailLog {
-  id            String    @id @default(uuid())
-  messageId     String    @unique @db.NVarChar(450)
-  fromEmail     String    @db.NVarChar(254)
-  subject       String?   @db.NVarChar(Max)
-  status        String    @default("Pending") @db.NVarChar(20)
-  extractedJson String?   @db.NVarChar(Max)
-  leadId        String?
-  rejectReason  String?   @db.NVarChar(Max)
-  receivedAt    DateTime  @default(now())
-  processedAt   DateTime?
-  lead          Lead?     @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                       String    @id @default(uuid())
+  messageId                String    @unique @db.NVarChar(450)
+  fromEmail                String    @db.NVarChar(254)
+  fromName                 String?   @db.NVarChar(254)
+  subject                  String?   @db.NVarChar(Max)
+  bodyText                 String?   @db.NVarChar(Max)
+  classification           String?   @db.NVarChar(20) // "Enquiry" | "General" | null (pending)
+  classificationReason     String?   @db.NVarChar(Max) // audit trail: which keywords/rules matched
+  classificationConfidence Float? // 0.0 - 1.0
+  manuallyOverridden       Boolean   @default(false)
+  status                   String    @default("Pending") @db.NVarChar(20) // Pending | Processed | Rejected | Error
+  extractedJson            String?   @db.NVarChar(Max)
+  leadId                   String?
+  rejectReason             String?   @db.NVarChar(Max)
+  hasAttachments           Boolean   @default(false)
+  receivedAt               DateTime  @default(now())
+  processedAt              DateTime?
+  lead                     Lead?     @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([status])
+  @@index([classification])
   @@index([receivedAt])
 }
 
@@ -1281,6 +1298,8 @@ model Product {
   rmMake              String? // raw material make
   productType         String? // Black Bar | Bright Bar
   productImageUrl     String?                @db.NVarChar(Max)
+  currentStock        Float?                 @default(0) // synced from ERP stock table
+  stockUpdatedAt      DateTime?              // last stock sync timestamp
   category            ProductCategory?       @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   company             Company?               @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   specifications      ProductSpecification[]
@@ -1416,6 +1435,7 @@ model Quotation {
   rfqId                    String?
   customerId               String
   contactId                String?
+  leadId                   String?
   dealId                   String?
   status                   String                      @default("Draft")
   validUntil               DateTime
@@ -1438,6 +1458,11 @@ model Quotation {
   freightTerms             String?
   leadTimeDays             Int?
   paymentTerms             String?                     @db.NVarChar(Max)
+  transportCharge          Float                       @default(0)
+  otherCharges             Float                       @default(0)
+  weighingLoadingCharge    Float                       @default(0)
+  deliveryCharge           Float                       @default(0)
+  testingCharge            Float                       @default(0)
   pdfUrl                   String?                     @db.NVarChar(Max)
   revisionNumber           Int                         @default(1)
   subtotal                 Float                       @default(0)
@@ -1447,6 +1472,7 @@ model Quotation {
   negotiationId            String?
   parentQuotationId        String?
   currentRound             Int                         @default(0)
+  quantityWiseCategory     String?
   holdReason               String?                     @db.NVarChar(Max)
   holdAt                   DateTime?
   negotiations             Negotiation[]
@@ -1457,6 +1483,7 @@ model Quotation {
   createdBy                User                        @relation("CreatedQuotations", fields: [createdById], references: [id], onUpdate: NoAction)
   customer                 Customer                    @relation(fields: [customerId], references: [id], onUpdate: NoAction)
   deal                     Deal?                       @relation(fields: [dealId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lead                     Lead?                       @relation(fields: [leadId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   negotiation              Negotiation?                @relation("NegotiationQuotationRevisions", fields: [negotiationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   parentQuotation          Quotation?                  @relation("QuotationRevisions", fields: [parentQuotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   childRevisions           Quotation[]                 @relation("QuotationRevisions")
@@ -1469,11 +1496,13 @@ model Quotation {
   documents                QuotationDocument[]
   ProformaInvoice          ProformaInvoice?
   SalesOrder               SalesOrder[]
+  followUps                FollowUp[]
 
   @@index([customerId])
   @@index([status])
   @@index([companyId])
   @@index([rfqId])
+  @@index([leadId])
   @@index([validUntil])
   @@index([revisionNumber])
   @@index([status, validUntil])
@@ -3196,6 +3225,39 @@ model ProformaInvoice {
   taxAmount          Float     @default(0)
   discountPercent    Float     @default(0)
   grandTotal         Float     @default(0)
+  roundedOff         Float     @default(0)
+  sourceQuotationId  String?
+  sourceQuotationNumber String?
+  transportCharge    Float     @default(0)
+  otherCharges       Float     @default(0)
+  weighingLoadingCharge Float  @default(0)
+  deliveryCharge     Float     @default(0)
+  testingCharge      Float     @default(0)
+  irn                String?
+  ackNo              String?
+  ackDate            DateTime?
+  ewayBillNo         String?
+  ewayBillDate       DateTime?
+  customerPoNo       String?
+  customerPoDate     DateTime?
+  despatchThrough    String?
+  vehicleNo          String?
+  placeOfSupply      String?
+  billName           String?
+  billAddress        String?   @db.NVarChar(Max)
+  billState          String?
+  billStateCode      String?
+  billGstNumber      String?
+  billPhone          String?
+  shipName           String?
+  shipAddress        String?   @db.NVarChar(Max)
+  shipState          String?
+  shipStateCode      String?
+  shipGstNumber      String?
+  shipPhone          String?
+  declaration        String?   @db.NVarChar(Max)
+  preparedBy         String?
+  verifiedBy         String?
   termsAndConditions String?   @db.NVarChar(Max)
   notes              String?   @db.NVarChar(Max)
   createdById        String
@@ -3203,12 +3265,13 @@ model ProformaInvoice {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  quotation  Quotation?            @relation(fields: [quotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  customer   Customer              @relation(fields: [customerId], references: [id], onUpdate: NoAction)
-  contact    Contact?              @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  createdBy  User                  @relation(fields: [createdById], references: [id], onUpdate: NoAction)
-  company    Company?              @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  quotation  Quotation?               @relation(fields: [quotationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  customer   Customer                 @relation(fields: [customerId], references: [id], onUpdate: NoAction)
+  contact    Contact?                 @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy  User                     @relation(fields: [createdById], references: [id], onUpdate: NoAction)
+  company    Company?                 @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   items      ProformaInvoiceItem[]
+  histories  ProformaInvoiceHistory[]
   SalesOrder SalesOrder?
 
   @@index([customerId])
@@ -3223,6 +3286,7 @@ model ProformaInvoiceItem {
   productId       String?
   description     String  @db.NVarChar(Max)
   productType     String? // Black Bar | Bright Bar
+  hsn             String?
   materialGrade   String?
   materialSize    String?
   lengthMm        Float?
@@ -3245,6 +3309,24 @@ model ProformaInvoiceItem {
   @@index([productId])
 }
 
+model ProformaInvoiceHistory {
+  id             String          @id @default(uuid())
+  proformaId     String
+  proformaItemId String?
+  fieldName      String
+  previousValue  String?         @db.NVarChar(Max)
+  newValue       String?         @db.NVarChar(Max)
+  changedById    String?
+  notes          String?         @db.NVarChar(Max)
+  changedAt      DateTime        @default(now())
+  proforma       ProformaInvoice @relation(fields: [proformaId], references: [id], onDelete: Cascade)
+  changedBy      User?           @relation(fields: [changedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([proformaId])
+  @@index([changedAt])
+  @@index([changedById])
+}
+
 model SalesOrder {
   id                   String    @id @default(uuid())
   orderNumber          String    @unique
@@ -3263,6 +3345,11 @@ model SalesOrder {
   grandTotal           Float     @default(0)
   notes                String?   @db.NVarChar(Max)
   erpReference         String? // sync reference from SUKI ERP
+  erpPayload           String?   @db.NVarChar(Max)
+  erpReferenceNumber   String?
+  erpResponse          String?   @db.NVarChar(Max)
+  erpSyncStatus        String?
+  erpSyncedAt          DateTime?
   createdById          String
   companyId            String?
   createdAt            DateTime  @default(now())

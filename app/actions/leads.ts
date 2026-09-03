@@ -20,15 +20,14 @@ type LeadStatus =
   | "Duplicate";
 type LeadSource =
   | "Website"
-  | "Referral"
-  | "SocialMedia"
-  | "Email"
-  | "Event"
-  | "ColdCall"
-  | "Partner"
-  | "Other"
-  | "Trade Show"
-  | "Tender Portal";
+  | "IndiaMART"
+  | "Justdial"
+  | "TradeIndia"
+  | "WhatsApp"
+  | "Door-to-Door Marketing"
+  | "Direct Visit"
+  | "Telephonic Conversation"
+  | "Email";
 import { buildScope, checkRecordScope } from "@/lib/scopes";
 import { nanoid } from "nanoid";
 
@@ -48,12 +47,14 @@ function calculateLeadScore(params: {
   if (["automotive", "pharma", "textile"].includes(industry)) score += 25;
   else score += 10;
 
-  // source_quality: Referral=20, Trade Show=18, Website=15, Cold Call=10, Other=5
+  // source_quality: IndiaMART/Justdial/TradeIndia=20 (marketplace), Website=15, WhatsApp=12, Email=10, Direct Visit=18, Door-to-Door=8, Telephonic=10, Other=5
   const source = (params.leadSource || "").toLowerCase().replace(/\s/g, "");
-  if (source === "referral") score += 20;
-  else if (source === "tradeshow") score += 18;
+  if (["indiamart", "justdial", "tradeindia"].includes(source)) score += 20;
+  else if (source === "directvisit") score += 18;
   else if (source === "website") score += 15;
-  else if (source === "coldcall") score += 10;
+  else if (source === "whatsapp") score += 12;
+  else if (["email", "telephonicconversation"].includes(source)) score += 10;
+  else if (source === "door-to-doormarketing") score += 8;
   else score += 5;
 
   // designation: Head/Director/VP/GM/CEO/MD/President = 20, Manager = 15, Engineer/Exec = 10
@@ -345,6 +346,7 @@ export async function createLeadAction(data: {
   companyName: string;
   designation?: string;
   industryType?: string;
+  customerCategory?: string;
   estimatedValue?: number;
 }) {
   try {
@@ -389,19 +391,18 @@ export async function createLeadAction(data: {
       return { success: false, message: "Estimated value must be positive." };
     }
 
-    // Duplicate check on email (block creation — existing V1 behavior)
+    // Duplicate check on email (block creation — email is globally unique in the DB)
     if (email?.trim()) {
       const existingEmail = await prisma.lead.findFirst({
         where: {
           email: email.trim(),
-          companyId: userPayload.companyId,
           deletedAt: null,
         },
       });
       if (existingEmail) {
         return {
           success: false,
-          message: `Lead with email '${email}' already exists.`,
+          message: `Lead with email '${email}' already exists. Please use a different email or update the existing lead.`,
         };
       }
     }
@@ -461,6 +462,7 @@ export async function createLeadAction(data: {
         companyName: data.companyName?.trim() || null,
         designation: data.designation?.trim() || null,
         industryType: data.industryType || null,
+        customerCategory: data.customerCategory?.trim() || null,
         estimatedValue: data.estimatedValue || null,
         leadScore,
       },
@@ -548,8 +550,14 @@ export async function createLeadAction(data: {
       message: "Lead created successfully",
       data: newLead,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Create Lead Error:", error);
+    if (error?.code === "P2002") {
+      return {
+        success: false,
+        message: "A lead with this email already exists. Please use a different email or update the existing lead.",
+      };
+    }
     return { success: false, message: "Failed to create lead." };
   }
 }
@@ -576,6 +584,7 @@ export async function updateLeadAction(
     companyName?: string;
     designation?: string;
     industryType?: string;
+    customerCategory?: string;
     estimatedValue?: number;
     lostReasonRefId?: string;
   },

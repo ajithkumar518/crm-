@@ -21,6 +21,9 @@ export async function GET(request: Request) {
     const isActive = url.searchParams.get("isActive");
     const view = url.searchParams.get("view") || "";
     const productType = url.searchParams.get("productType") || "";
+    const materialGrade = url.searchParams.get("grade") || "";
+    const materialSize = url.searchParams.get("size") || "";
+    const description = url.searchParams.get("description") || "";
     const minPrice = url.searchParams.get("minPrice") || "";
     const maxPrice = url.searchParams.get("maxPrice") || "";
     const sortBy = url.searchParams.get("sortBy") || "createdAt";
@@ -38,14 +41,27 @@ export async function GET(request: Request) {
       where.categoryId = categoryId;
     }
     
-    if (isActive !== null) {
-      where.isActive = isActive === "true";
-    } else {
-      where.isActive = true; // Default to active only
+    if (isActive === "true") {
+      where.isActive = true;
+    } else if (isActive === "false") {
+      where.isActive = false;
     }
+    // If isActive is absent or empty, no status filter is applied (Any Status)
 
     if (productType) {
       where.productType = productType;
+    }
+
+    if (materialGrade) {
+      where.materialGrade = { contains: materialGrade };
+    }
+
+    if (materialSize) {
+      where.materialSize = { contains: materialSize };
+    }
+
+    if (description) {
+      where.description = { contains: description };
     }
 
     if (minPrice) {
@@ -56,10 +72,12 @@ export async function GET(request: Request) {
       where.basePrice = { lte: parseFloat(maxPrice) }
     }
 
-    if (search) {
+    const trimmedSearch = search.trim();
+    if (trimmedSearch) {
       where.OR = [
-        { name: { contains: search } },
-        { productCode: { contains: search } },
+        { name: { contains: trimmedSearch } },
+        { productCode: { contains: trimmedSearch } },
+        { description: { contains: trimmedSearch } },
       ];
     }
 
@@ -106,6 +124,8 @@ export async function GET(request: Request) {
   }
 }
 
+const VALID_PRODUCT_TYPES = ["Black Bar", "Bright Bar", "Bright Ground Bar"];
+
 // POST /api/catalogue/products
 export async function POST(request: Request) {
   try {
@@ -117,6 +137,14 @@ export async function POST(request: Request) {
     if (guard) return guard;
 
     const body = await request.json();
+
+    const productType = body.productType?.trim();
+    if (!productType) {
+      return NextResponse.json({ success: false, message: "Product Type is required" }, { status: 400 });
+    }
+    if (!VALID_PRODUCT_TYPES.includes(productType)) {
+      return NextResponse.json({ success: false, message: `Product Type must be one of: ${VALID_PRODUCT_TYPES.join(", ")}` }, { status: 400 });
+    }
 
     // Auto-generate productCode per company
     const prefix = "PRD";
@@ -135,7 +163,7 @@ export async function POST(request: Request) {
         unit: body.unit ?? null,
         basePrice: body.basePrice ?? null,
         isActive: body.isActive ?? true,
-        productType: body.productType ?? null,
+        productType,
         materialGrade: body.materialGrade?.trim() || null,
         materialSize: body.materialSize?.trim() || null,
         partNumber: body.partNumber?.trim() || null,

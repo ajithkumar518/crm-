@@ -39,6 +39,7 @@
     "node_modules",
     "temp",
     "backup",
+    "scripts",
     "**/*.test.tsx",
     "**/*.test.ts"
   ]

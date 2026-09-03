@@ -16,7 +16,7 @@ export async function GET() {
     // Find quotations in Sent status that have not been updated for 3+ days
     const staleQuotations = await prisma.quotation.findMany({
       where: {
-        status: "Sent",
+        status: "Quotation Sent",
         updatedAt: { lt: threshold },
         deletedAt: null,
       },
@@ -49,7 +49,7 @@ export async function GET() {
         await tx.quotationStatusHistory.create({
           data: {
             quotationId: q.id,
-            fromStatus: "Sent",
+            fromStatus: "Quotation Sent",
             toStatus: "OnHold",
             changedById,
             notes: "Auto-moved to On Hold: no customer response for 3 days",
@@ -97,7 +97,7 @@ export async function GET() {
           "Quotation",
           "StatusChange",
           `Quotation ${q.quotationCode} auto-moved to OnHold (3 days inactivity)`,
-          { resourceId: q.id, previousState: { status: "Sent" }, newState: { status: "OnHold" } }
+          { resourceId: q.id, previousState: { status: "Quotation Sent" }, newState: { status: "OnHold" } }
         );
       }
 

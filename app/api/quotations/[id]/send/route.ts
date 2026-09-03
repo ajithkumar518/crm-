@@ -7,7 +7,7 @@ import { logEvent, logEventAsync } from "@/lib/activity-event";
 import { hasModule } from "@/lib/modules";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import { sendEmail } from "@/lib/email";
-import { generateQuotationPdf } from "@/lib/generateQuotationPdf";
+import { generateSukiQuotationPdf } from "@/lib/generateSukiQuotationPdf";
 
 export async function POST(
   request: NextRequest,
@@ -22,9 +22,9 @@ export async function POST(
   const existing = await prisma.quotation.findFirst({
     where: { id, deletedAt: null, companyId: user.companyId },
     include: {
-      items: true,
-      customer: { select: { id: true, name: true, email: true } },
-      contact: { select: { id: true, name: true, email: true } },
+      items: { include: { product: { select: { productType: true } } } },
+      customer: { select: { id: true, name: true, email: true, customerCode: true, billingAddress: true, shippingAddress: true, city: true, state: true, gstNumber: true, phone: true } },
+      contact: { select: { id: true, name: true, email: true, phone: true } },
       deal: { select: { id: true, dealName: true, opportunityCode: true } },
       company: { select: { id: true, name: true } },
       createdBy: { select: { id: true, name: true } },
@@ -169,7 +169,7 @@ export async function POST(
       // 1. Update quotation status
       const q = await tx.quotation.update({
         where: { id },
-        data: { status: "Sent", sentAt: new Date() },
+        data: { status: "Quotation Sent", sentAt: new Date() },
       });
 
       // 2. Insert quotation_status_history
@@ -180,7 +180,7 @@ export async function POST(
         data: {
           quotationId: id,
           fromStatus: existing.status,
-          toStatus: "Sent",
+          toStatus: "Quotation Sent",
           changedById: user.id,
           notes: sendNotes,
         },
@@ -237,14 +237,14 @@ export async function POST(
       entityId: id,
       type: "quotation_sent",
       fromStatus: existing.status,
-      toStatus: "Sent",
+      toStatus: "Quotation Sent",
       actorId: user.id,
       metadata: { quotationCode: existing.quotationCode, finalAmount: existing.finalAmount },
     });
 
     await logAudit(user.id, "Quotation", "Send", `Sent quotation ${existing.quotationCode} to customer`, {
       resourceId: id,
-      newState: { status: "Sent" },
+      newState: { status: "Quotation Sent" },
       context: extractAuditContext(request),
     });
 
@@ -295,34 +295,46 @@ export async function POST(
 
         const generatedByName = (await prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }))?.name || user.email;
 
-        const doc = generateQuotationPdf({
+        let doc;
+        try {
+          doc = generateSukiQuotationPdf({
           quotationCode: quotation.quotationCode,
           revisionNumber: quotation.revisionNumber,
           status: quotation.status,
           validUntil: quotation.validUntil,
           createdAt: quotation.createdAt,
-          subtotal: quotation.subtotal || quotation.totalAmount,
-          discountPercent: quotation.discountPercent || 0,
-          taxAmount: quotation.taxAmount || 0,
-          finalAmount: quotation.finalAmount,
-          totalAmount: quotation.totalAmount,
           termsAndConditions: quotation.termsAndConditions,
           paymentTerms: quotation.paymentTerms,
           deliveryTerms: quotation.deliveryTerms,
           freightTerms: quotation.freightTerms,
           leadTimeDays: quotation.leadTimeDays,
+          transportCharge: (quotation as any).transportCharge,
+          otherCharges: (quotation as any).otherCharges,
+          weighingLoadingCharge: (quotation as any).weighingLoadingCharge,
+          deliveryCharge: (quotation as any).deliveryCharge,
+          testingCharge: (quotation as any).testingCharge,
           customer: existing.customer as any,
           contact: existing.contact as any,
-          deal: existing.deal as any,
           company: existing.company as any,
-          items: existing.items as any,
-          createdBy: existing.createdBy as any,
+          items: (existing.items as any[]).map((it) => ({ ...it, productType: it.product?.productType || it.productType })),
           companyAddress: addrConfig?.value || "",
           companyGstin: gstinConfig?.value || "",
           companyPhone: phoneConfig?.value || "",
           companyEmail: emailConfig?.value || "",
           generatedByName,
+          placeOfSupply: (existing as any).placeOfSupply || existing.customer?.state || null,
+          shipState: (existing as any).shipState || existing.customer?.state || null,
+          shipGstNumber: (existing as any).shipGstNumber || existing.customer?.gstNumber || null,
         });
+        } catch (err: any) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: err?.message || "Cannot send quotation: GST tax treatment could not be determined. Set the customer's state or GSTIN first.",
+            },
+            { status: 422 }
+          );
+        }
 
         const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
         const fileName = `${quotation.quotationCode}-R${quotation.revisionNumber}.pdf`;
@@ -331,7 +343,7 @@ export async function POST(
         const htmlBody = `
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
             <div style="background-color:#0D2137;padding:20px;text-align:center;">
-              <h2 style="color:#ffffff;margin:0;"> SUKI  Marketing CRM</h2>
+              <h2 style="color:#ffffff;margin:0;">Shahnaz CRM</h2>
             </div>
             <div style="padding:24px;">
               <p>Dear <strong>${existing.contact?.name || existing.customer?.name || "Customer"}</strong>,</p>
@@ -362,7 +374,7 @@ export async function POST(
           data: {
             channel: "Email",
             direction: "Outbound",
-            status: "Sent",
+            status: "Quotation Sent",
             content: `Quotation ${quotation.quotationCode} emailed to ${recipientEmail}`,
             customerId: existing.customerId || null,
             dealId: existing.dealId || null,

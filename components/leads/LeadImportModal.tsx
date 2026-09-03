@@ -111,6 +111,7 @@ function autoDetectMapping(csvHeaders: string[]): Record<string, string> {
     designation:     ["designation","title","jobtitle","role","position"],
     city:            ["city","location","town"],
     industryType:    ["industrytype","industry","sector"],
+    customerCategory:["customercategory","category","80-20","non-80-20"],
     leadSource:      ["leadsource","source","how"],
     status:          ["status","leadstatus"],
     budgetAsked:     ["budgetasked","budget","budgetrange"],
@@ -134,7 +135,7 @@ function autoDetectMapping(csvHeaders: string[]): Record<string, string> {
 
 // ─── Row validator (client side preview) ──────────────────────────────────
 const VALID_STATUSES = ["New","Contacted","FollowUpDue","SQL","Qualified","Lost"];
-const VALID_SOURCES  = ["Website","Facebook","Instagram","LinkedIn","Referral","WalkIn","ColdCall","Partner","Trade Show","Tender Portal"];
+const VALID_SOURCES  = ["Website","IndiaMART","Justdial","TradeIndia","WhatsApp","Door-to-Door Marketing","Direct Visit","Telephonic Conversation","Email"];
 
 function validateRowClient(mapped: Record<string, string>): string[] {
   const errs: string[] = [];
@@ -332,11 +333,11 @@ export default function LeadImportModal({ open, onClose, onImportDone }: Props) 
             <div className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border border-border">
               <div>
                 <p className="text-sm font-medium text-foreground">Need a template?</p>
-                <p className="text-xs text-muted-foreground">Download the CSV template with correct column headers and example data</p>
+                <p className="text-xs text-muted-foreground">Download the Excel template with correct column headers and example data</p>
               </div>
               <button onClick={downloadTemplate}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm font-medium hover:bg-background transition-colors">
-                <Download size={15} /> Template
+                <Download size={15} /> Excel Template
               </button>
             </div>
           </div>

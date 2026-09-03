@@ -12,7 +12,7 @@ import { ReportFilterLayout, FilterField, filterInputClass } from "@/components/
 import ReportActions from "@/components/reports/ReportActions";
 import { CRMSpinner } from "@/components/CRMSpinner";
 
-const quotationStatuses = ["Sent", "UnderReview", "Accepted", "Rejected", "Expired"];
+const quotationStatuses = ["Quotation Sent", "UnderReview", "Accepted", "Rejected", "Expired"];
 
 export default function QuotationsReportPage() {
   const toast = useToast();

@@ -35,16 +35,31 @@ export default function SalesOrdersPage() {
       {error && <p className="text-rose-500 text-sm">{error}</p>}
       {!loading && orders.length === 0 && <p className="text-[var(--text-tertiary)] text-sm">No sales orders yet. Create one from an approved proforma.</p>}
       <div className="space-y-2">
-        {orders.map((o: any) => (
-          <Link key={o.id} href={`/sales-orders/${o.id}`} className="flex items-center justify-between p-3 bg-[var(--surface-2)] rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--border)]">
-            <div>
-              <p className="text-sm font-semibold text-[var(--text-primary)]">{o.orderNumber}</p>
-              <p className="text-xs text-[var(--text-tertiary)]">{o.customer?.customerCode} - {o.customer?.name}</p>
-              <p className="text-xs text-[var(--text-tertiary)]">Status: {o.status} · {o._count?.items || 0} items</p>
-            </div>
-            <span className="text-sm font-medium text-[var(--primary)]">{formatCurrency(o.grandTotal)}</span>
-          </Link>
-        ))}
+        {orders.map((o: any) => {
+          const items = o.items || [];
+          const totalItems = items.length;
+          const totalQuantity = items.reduce((s: number, it: any) => s + (it.quantity || 0), 0);
+          const totalPieces = items.reduce((s: number, it: any) => s + (it.numberOfPieces || 0), 0);
+          const customer8020 = o.customer?.customerCategory === "80-20" ? "80/20 Customer" : "Non-80/20 Customer";
+          return (
+            <Link key={o.id} href={`/sales-orders/${o.id}`} className="block p-3 bg-[var(--surface-2)] rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--border)]">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-[var(--text-primary)]">{o.orderNumber}</p>
+                  <span className="text-sm font-medium text-[var(--primary)]">{formatCurrency(o.grandTotal)}</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-1 text-xs text-[var(--text-tertiary)]">
+                  <span>{o.customer?.name || "—"}</span>
+                  <span>PO Date: {o.orderDate ? new Date(o.orderDate).toLocaleDateString("en-IN") : "—"}</span>
+                  <span>{totalItems} items</span>
+                  <span>Qty: {totalQuantity.toFixed(3)} kgs</span>
+                  <span>Pcs: {totalPieces.toFixed(0)}</span>
+                  <span>{customer8020}</span>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </PageContainer>
   );

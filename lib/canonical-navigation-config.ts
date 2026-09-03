@@ -78,6 +78,7 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'follow-ups-pending', label: 'Pending', href: '/follow-up?status=Pending', iconEmoji: '🔔', keywords: ['pending', 'due'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   { key: 'follow-ups-completed', label: 'Completed', href: '/follow-up?status=Completed', iconEmoji: '🔔', keywords: ['completed', 'done'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   { key: 'follow-ups-overdue', label: 'Overdue', href: '/follow-up?status=Overdue', iconEmoji: '🔔', keywords: ['overdue', 'late'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
+  { key: 'follow-ups-quotation', label: 'Quotation', href: '/follow-up/quotation', iconEmoji: '📋', keywords: ['quotation', 'quote', 'quotation follow up'], type: 'submodule', parentLabel: 'Follow Ups', parentKey: 'follow-ups' },
   // Pipeline sub-modules
   { key: 'pipeline-all', label: 'Overview', href: '/sales-pipeline/pipeline-list', iconEmoji: '📈', keywords: ['all opportunities', 'pipeline list'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
   { key: 'pipeline-qualified', label: 'Qualified', href: '/sales-pipeline/pipeline-list?stage=Qualified', iconEmoji: '📈', keywords: ['qualified', 'sql'], type: 'submodule', parentLabel: 'Sales Pipeline', parentKey: 'pipeline' },
@@ -93,7 +94,7 @@ export const V1_ITEMS: NavItem[] = [
   // V1 quotations sub-modules
   { key: 'quotations-overview', label: 'Overview', href: '/quotations', iconEmoji: '💰', keywords: ['all quotations', 'overview'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-draft', label: 'Draft', href: '/quotations?status=Draft', iconEmoji: '💰', keywords: ['draft', 'not sent'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
-  { key: 'quotations-sent', label: 'Sent', href: '/quotations?status=Sent', iconEmoji: '💰', keywords: ['sent', 'delivered'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
+  { key: 'quotations-sent', label: 'Sent', href: '/quotations?status=Quotation%20Sent', iconEmoji: '💰', keywords: ['sent', 'delivered'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-accepted', label: 'Accepted', href: '/quotations?status=Accepted', iconEmoji: '💰', keywords: ['accepted', 'won'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-rejected', label: 'Rejected', href: '/quotations?status=Rejected', iconEmoji: '💰', keywords: ['rejected', 'declined'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },
   { key: 'quotations-proforma', label: 'Proforma Invoices', href: '/proforma-invoices', iconEmoji: '💰', keywords: ['proforma', 'invoice', 'pi'], type: 'submodule', parentLabel: 'Quotations', parentKey: 'quotations' },

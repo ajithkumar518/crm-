@@ -241,12 +241,13 @@ export async function createCustomerAction(data: any) {
       return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
     }
 
-    let { customerCode, name, email, phone, city, state, status, assignedUserId, leadSource, gstNumber, accountType, industryType, billingAddress, shippingAddress, paymentTerms, creditLimit, creditTermsDays, customerCategory, contactPerson, contactMobile, contactEmail } = data;
+    let { customerCode, name, email, phone, city, location, state, status, assignedUserId, leadSource, gstNumber, accountType, industryType, billingAddress, shippingAddress, paymentTerms, creditLimit, creditTermsDays, customerCategory, contactPerson, contactMobile, contactEmail } = data;
 
     // Normalize empty strings to null for unique constraints
     email = email?.trim() || null;
     phone = phone?.trim() || null;
     city = city?.trim() || null;
+    location = location?.trim() || null;
     state = state?.trim() || null;
     gstNumber = gstNumber?.trim() || null;
     paymentTerms = paymentTerms?.trim() || null;
@@ -259,6 +260,12 @@ export async function createCustomerAction(data: any) {
 
     if (!leadSource || leadSource.trim() === "") {
       return { success: false, message: "Lead Source is required" };
+    }
+
+    // State is required for GST tax treatment determination (CGST+SGST vs IGST).
+    // Without it, the system cannot determine the correct tax type for quotations/proformas.
+    if (!state || state.trim() === "") {
+      return { success: false, message: "State is required. Without the customer's state, the system cannot determine whether to charge CGST+SGST (intra-state) or IGST (inter-state). Please select the customer's state." };
     }
 
     // GSTIN validation (15-char format) - optional but unique if provided
@@ -315,6 +322,7 @@ export async function createCustomerAction(data: any) {
         email,
         phone,
         city,
+        location,
         state: state?.trim() || null,
         status: status || "Prospect",
         assignedUserId: finalAssignedUserId,
@@ -390,12 +398,13 @@ export async function updateCustomerAction(data: any) {
       return { success: false, message: "Unauthorized: SuperAdmin must access business data via support/impersonation mode." };
     }
 
-    let { id, customerCode, name, email, phone, city, state, status, assignedUserId, leadSource, gstNumber, accountType, industryType, billingAddress, shippingAddress, paymentTerms, creditLimit, creditTermsDays, customerCategory, contactPerson, contactMobile, contactEmail } = data;
+    let { id, customerCode, name, email, phone, city, location, state, status, assignedUserId, leadSource, gstNumber, accountType, industryType, billingAddress, shippingAddress, paymentTerms, creditLimit, creditTermsDays, customerCategory, contactPerson, contactMobile, contactEmail } = data;
 
     // Normalize empty strings to null for unique constraints
     email = email?.trim() || null;
     phone = phone?.trim() || null;
     city = city?.trim() || null;
+    location = location?.trim() || null;
     state = state?.trim() || null;
     gstNumber = gstNumber?.trim() || null;
     paymentTerms = paymentTerms?.trim() || null;
@@ -408,6 +417,11 @@ export async function updateCustomerAction(data: any) {
 
     if (!leadSource || leadSource.trim() === "") {
       return { success: false, message: "Lead Source is required" };
+    }
+
+    // State is required for GST tax treatment determination (CGST+SGST vs IGST).
+    if (!state || state.trim() === "") {
+      return { success: false, message: "State is required. Without the customer's state, the system cannot determine whether to charge CGST+SGST (intra-state) or IGST (inter-state). Please select the customer's state." };
     }
 
     const currentCustomer = await prisma.customer.findUnique({ where: { id } });
@@ -495,6 +509,7 @@ export async function updateCustomerAction(data: any) {
         email,
         phone,
         city,
+        location,
         state: state !== undefined ? (state?.trim() || null) : currentCustomer.state,
         status: status !== undefined ? status : currentCustomer.status,
         assignedUserId: finalAssignedUserId,

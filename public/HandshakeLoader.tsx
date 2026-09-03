@@ -44,7 +44,7 @@ export function HandshakeLoader({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="SUKI CRM"
+      aria-label="Shahnaz CRM"
       style={{ position: 'relative', zIndex: 2 }}
     >
       <g

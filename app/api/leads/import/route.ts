@@ -3,10 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 import { z } from "zod";
 import * as ExcelJS from "exceljs";
+import { createFormattedWorkbookBuffer, EXCEL_CONTENT_TYPE } from "@/lib/excel-utils";
 
 // ─── Zod schema for a single importable lead row ──────────────────────────────
 const VALID_STATUSES = ["New", "Contacted", "FollowUpDue", "SQL", "Qualified", "Lost"] as const;
-const VALID_SOURCES  = ["Website","Facebook","Instagram","LinkedIn","Referral","WalkIn","ColdCall","Partner","Trade Show","Tender Portal"] as const;
+const VALID_SOURCES  = ["Website","IndiaMART","Justdial","TradeIndia","WhatsApp","Door-to-Door Marketing","Direct Visit","Telephonic Conversation","Email"] as const;
+
+const VALID_CATEGORIES = ["80-20", "NON-80-20"] as const;
 
 const LeadImportRowSchema = z.object({
   name:            z.string().min(1, "Name is required"),
@@ -16,6 +19,7 @@ const LeadImportRowSchema = z.object({
   designation:     z.string().optional().nullable(),
   city:            z.string().optional().nullable(),
   industryType:    z.string().optional().nullable(),
+  customerCategory: z.string().optional().nullable(),
   leadSource:      z.string().optional().nullable(),
   status:          z.string().optional().nullable(),
   budgetAsked:     z.string().optional().nullable(),
@@ -133,10 +137,18 @@ export async function POST(request: Request) {
 
     // ── Apply mapping: {leadField: csvColumn} → normalize each row ───────────
     const LEAD_FIELDS = [
-      "name","phone","email","companyName","designation","city","industryType",
+      "name","phone","email","companyName","designation","city","industryType","customerCategory",
       "leadSource","status","budgetAsked","estimatedValue","timelineAsked",
       "isGenuine","notes","assignedToEmail",
     ];
+
+    const normalizeCustomerCategory = (v: string | null | undefined) => {
+      const s = (v ?? "").trim();
+      if (s === "80-20" || s === "80/20") return "80-20";
+      if (s === "NON-80-20" || s === "NON-80/20" || s.toUpperCase().startsWith("NON")) return "NON-80-20";
+      if (s === "") return null;
+      return s;
+    };
 
     const normalized: Record<string, any>[] = rawRows.map(rawRow => {
       const row: Record<string, any> = {};
@@ -157,12 +169,14 @@ export async function POST(request: Request) {
     normalized.forEach((row, idx) => {
       const result = LeadImportRowSchema.safeParse(row);
       if (result.success) {
-        // Validate status / source against allowed lists
+        // Validate status / source / customerCategory against allowed lists
         const errors: string[] = [];
         const s = result.data.status;
         const src = result.data.leadSource;
+        const cat = result.data.customerCategory;
         if (s && !VALID_STATUSES.includes(s as any)) errors.push(`Invalid status: "${s}"`);
         if (src && !VALID_SOURCES.includes(src as any)) errors.push(`Invalid leadSource: "${src}"`);
+        if (cat && !VALID_CATEGORIES.includes(cat as any)) errors.push(`Invalid customerCategory: "${cat}"`);
         if (errors.length > 0) {
           invalidRows.push({ rowIndex: idx + 2, errors });
         } else {
@@ -254,6 +268,7 @@ export async function POST(request: Request) {
               designation:     row.designation?.trim() || null,
               city:            row.city?.trim() || null,
               industryType:    row.industryType?.trim() || null,
+              customerCategory: normalizeCustomerCategory(row.customerCategory),
               leadSource:      (row.leadSource as any) || "Website",
               status:          status,
               budgetAsked:     row.budgetAsked?.trim() || null,
@@ -296,6 +311,7 @@ export async function POST(request: Request) {
             designation:     row.designation?.trim() || undefined,
             city:            row.city?.trim() || undefined,
             industryType:    row.industryType?.trim() || undefined,
+            customerCategory: normalizeCustomerCategory(row.customerCategory) ?? undefined,
             leadSource:      (row.leadSource as any) || undefined,
             budgetAsked:     row.budgetAsked?.trim() || undefined,
             estimatedValue:  row.estimatedValue ?? undefined,
@@ -366,16 +382,36 @@ export async function POST(request: Request) {
   }
 }
 
-// ─── GET: return CSV template ─────────────────────────────────────────────────
+// ─── GET: return formatted Excel template ─────────────────────────────────────
 export async function GET() {
-  const headers = "name,phone,email,companyName,designation,city,industryType,leadSource,status,budgetAsked,estimatedValue,timelineAsked,isGenuine,notes";
-  const example = "Ravi Kumar,9876543210,ravi.kumar@example.com,Apex Industries,Purchase Manager,Mumbai,Automotive,Referral,New,5-10 Lakhs,750000,Q3 2025,yes,Interested in industrial pumps";
-  const csv = `${headers}\n${example}\n`;
+  const headers = [
+    "name", "phone", "email", "companyName", "designation", "city",
+    "industryType", "customerCategory", "leadSource", "status",
+    "budgetAsked", "estimatedValue", "timelineAsked", "isGenuine",
+    "notes", "assignedToEmail",
+  ];
 
-  return new Response(csv, {
+  const example = [
+    ["Ravi Kumar", "+91 9876543210", "ravi.kumar@example.com",
+     "Apex Industries", "Purchase Manager", "Mumbai",
+     "Automotive", "80-20", "Referral", "New",
+     "5-10 Lakhs", 750000, "Q3 2025", "yes",
+     "Interested in industrial pumps", "ravi.kumar@example.com"],
+  ];
+
+  const colWidths = [25, 22, 30, 25, 20, 18, 20, 18, 20, 16, 18, 18, 20, 16, 35, 30];
+
+  const buffer = await createFormattedWorkbookBuffer(
+    "Lead Import Template",
+    headers,
+    example,
+    colWidths
+  );
+
+  return new Response(buffer as any, {
     headers: {
-      "Content-Type": "text/csv",
-      "Content-Disposition": 'attachment; filename="lead-import-template.csv"',
+      "Content-Type": EXCEL_CONTENT_TYPE,
+      "Content-Disposition": 'attachment; filename="lead-import-template.xlsx"',
     },
   });
 }

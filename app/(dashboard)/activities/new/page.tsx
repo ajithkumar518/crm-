@@ -72,7 +72,7 @@ function NewActivityPageInner() {
           if (mappedType === "call") {
             setCallForm(prev => ({
               ...prev,
-              content: fu.remarks || fu.notes || "",
+              content: "",
               status: fu.status === "Overdue" ? "NoAnswer" : "Completed",
             }));
           } else if (mappedType === "meeting") {
