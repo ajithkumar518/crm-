@@ -1,46 +1,43 @@
-# CI/CD for shahnaz-crm on 202-cloud-server.
+# shahnaz-crm -- build pipeline (egress-sandboxed)
 #
-# Ported from suki_crm (this app is a fork of it) so the two pipelines stay
-# recognisably the same. Replaces the original scaffold pipeline, which
-# installed Node by hand on the shell runner and whose `deploy` job was a
-# placeholder echo -- the real containerised pipeline lived on the
-# `initial-import` branch, which no longer exists on the remote.
+# WHAT CHANGED, 2026-09-05, and why
+# ---------------------------------
+# This pipeline used to run on a `shell` executor: jobs executed directly on the
+# deployment VM as a user in the `docker` group, i.e. root-equivalent, with
+# unrestricted internet access. Anyone who could land a commit here could
+# exfiltrate the whole source tree or take the VM, and with it the other
+# applications sharing it. It was the top finding of the 2026-09-03 audit
+# (P0 #4); cadence and axia were migrated on 2026-09-04/05.
 #
-# The runner (`202-vm-shahnaz-crm`, project-scoped, untagged) is a `shell`
-# executor living inside the Hyper-V VM, so it builds straight into the same
-# Docker engine that runs the stack. Images never cross the network -- no
-# registry push/pull, which is both faster and sidesteps the known registry
-# defect on this GitLab instance.
+# Now:
+#   * Jobs run on the `ci-sandbox` Docker-executor runner on this VM: a
+#     throwaway container, no docker socket, no host mounts, no privileges.
+#   * All egress goes through a domain-allowlisting proxy. github.com and
+#     pastebin.com are not reachable from a build. This app needs Debian, npm
+#     and binaries.prisma.sh, all derived from its Dockerfile.
+#   * The build no longer builds into the host Docker engine. It is handed to a
+#     per-project buildkit daemon and the result is pushed to the registry.
+#   * NOTHING HERE DEPLOYS. A host agent watches the registry and deploys when
+#     :latest moves. CI cannot touch the running stack at all.
 #
-# Deploys are MANUAL. Pushing to main does not create a pipeline; someone has
-# to press Run pipeline. Same policy as Cadence and suki_crm.
-
-variables:
-  SCAN_IMAGES: "shahnaz-crm:latest"
-  APP: "shahnaz-crm"
-  STACK_DIR: "/opt/stacks/shahnaz-crm"
-  HEALTH_URL: "http://172.31.0.10:3003/"
-  GIT_DEPTH: "1"
-
-  # Shown as a dropdown on the Run pipeline page. Consumed ONLY by the manual
-  # db-task job -- a normal deploy never touches the schema.
-  DB_SCRIPT:
-    value: "prisma:status"
-    options:
-      - "prisma:status"
-      - "prisma:validate"
-      - "prisma:generate"
-      - "prisma:migrate-deploy"
-      - "prisma:db-push"
-      - "seed:superadmin"
-      - "seed:suki-masters"
-    description: >-
-      Database command for the manual db-task job, run against PRODUCTION.
-      prisma:status = read-only, shows pending migrations (safe default).
-      prisma:migrate-deploy = apply committed migrations (safe, idempotent).
-      prisma:db-push = sync schema straight from code with NO migration
-      history and --accept-data-loss; it can drop columns without asking --
-      only for fixing drift. seed:* run the deployment_seeding scripts.
+# NOTE ON THE REGISTRY. The old file said this pipeline avoided the container
+# registry because pushing to it hung and took GitLab down. That was true when
+# written; the registry defect was fixed on 2026-08-28 (ops-runbooks
+# ci-cd/gitlab-registry-diagnosis.md). The stale warning is why this VM kept
+# building locally -- and building locally is what required the root-equivalent
+# shell executor. The registry is verified working.
+#
+# WHERE THE OLD JOBS WENT
+#   deploy   -> stack-deploy-agent@shahnaz-crm on this VM (systemd timer).
+#   verify   -> the agent verifies health and auto-rolls-back on failure.
+#   cleanup  -> the agent prunes images after each deploy.
+#   db-task  -> each former DB_SCRIPT dropdown option is now its own manual job
+#               in the `ops` stage. They do not RUN anything here; see below.
+#   rollback -> manual `rollback` job, same mechanism.
+#
+# To run a database task WITHOUT shipping code, start a pipeline with OPS_ONLY=1:
+# you get the manual ops jobs and nothing else.
+# See ops-runbooks ci-cd/ci-build-sandbox.md.
 
 .deploy_rules: &deploy_rules
   - if: $CI_PIPELINE_SOURCE == "web"
@@ -51,160 +48,204 @@ variables:
 stages:
   - build
   - scan
-  - deploy
-  - verify
-  - cleanup
+  - ops
+
+variables:
+  OPS_ONLY:
+    value: "0"
+    options: ["0", "1"]
+    description: >-
+      1 = ops-only pipeline (database/rollback jobs only; nothing is built,
+      published or deployed). 0 = normal build pipeline.
+  REGISTRY: registry.sukierp.com
+  IMAGE_BASE: registry.sukierp.com/ajithkumars/shahnaz_crm
+  # Each project gets its OWN buildkit daemon. A shared one made pushes attempt
+  # cross-repository blob mounts from a sibling project and get refused with
+  # insufficient_scope, and shared build cache between projects.
+  BUILDKIT_HOST: tcp://172.32.0.6:1234
+  GIT_DEPTH: "20"
+  GIT_SUBMODULE_STRATEGY: "none"
+
+default:
+  tags:
+    - ci-sandbox
+  retry: 0
 
 # ---------------------------------------------------------------------------
-# BUILD - tag the current :latest as :previous first, so rollback has a target.
+# BUILD -- one image, pushed to the registry, tagged with the commit SHA.
+# :latest is published ONLY from the default branch on a deliberately-triggered
+# pipeline, because :latest is what the deploy agent watches. Two guards: a
+# merge request cannot publish it, and neither can a "Run pipeline" against a
+# feature branch.
 # ---------------------------------------------------------------------------
 build:
   stage: build
   rules:
+    - if: $OPS_ONLY == "1"
+      when: never
     - *deploy_rules
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"   # build only, no deploy
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  image:
+    name: moby/buildkit:v0.16.0
+    entrypoint: [""]
   script:
-    - set -euo pipefail
+    - set -eu
+    # Fail loudly if the sandbox is not actually fencing egress, rather than
+    # quietly building in an unprotected environment.
     - |
-      if docker image inspect "$APP:latest" >/dev/null 2>&1; then
-        docker tag "$APP:latest" "$APP:previous"
-        echo "tagged current :latest as :previous"
-      else
-        echo "no existing :latest - first build, nothing to preserve"
+      if env -u https_proxy -u HTTPS_PROXY -u http_proxy -u HTTP_PROXY \
+           wget -q -T 8 -O /dev/null https://registry.npmjs.org/ 2>/dev/null; then
+        echo "FAIL: direct egress works -- the sandbox is not in effect"; exit 1
       fi
-    - docker build -t "$APP:$CI_COMMIT_SHA" -t "$APP:latest" .
-    - docker image inspect "$APP:$CI_COMMIT_SHA" --format 'built {{.Id}} ({{.Size}} bytes)'
+      echo "ok: egress fenced"
+    - mkdir -p ~/.docker
+    - |
+      AUTH=$(printf '%s:%s' gitlab-ci-token "$CI_JOB_TOKEN" | base64 | tr -d '\n')
+      printf '{"auths":{"%s":{"auth":"%s"}}}' "$REGISTRY" "$AUTH" > ~/.docker/config.json
+    - |
+      if [ "$CI_PIPELINE_SOURCE" != "merge_request_event" ] \
+         && [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        TAGS="$IMAGE_BASE/app:$CI_COMMIT_SHORT_SHA,$IMAGE_BASE/app:latest"
+        echo "publishing SHA and :latest -- the deploy agent will pick this up"
+      else
+        TAGS="$IMAGE_BASE/app:$CI_COMMIT_SHORT_SHA"
+        echo "not default branch (or an MR): publishing SHA tag only, NOT :latest"
+      fi
+      echo "TAGS=$TAGS" > build.env
+    - . ./build.env
+    # HTTP_PROXY/HTTPS_PROXY/NO_PROXY are predefined build args: BuildKit exposes
+    # them to every RUN without an explicit ARG, which is how apt-get, npm ci and
+    # `prisma generate` reach the allowlisted mirrors.
+    - |
+      buildctl --addr "$BUILDKIT_HOST" build \
+        --frontend dockerfile.v0 --local context=. --local dockerfile=. \
+        --opt build-arg:HTTP_PROXY="$HTTP_PROXY" \
+        --opt build-arg:HTTPS_PROXY="$HTTPS_PROXY" \
+        --opt build-arg:NO_PROXY="$NO_PROXY" \
+        --output "type=image,\"name=$TAGS\",push=true"
+  artifacts:
+    reports:
+      dotenv: build.env
 
 # ---------------------------------------------------------------------------
-# DEPLOY - compose recreates the container from the image built above.
+# SCANS -- these previously ran `docker run -v /var/run/docker.sock:...`, which
+# needs the host daemon and would have kept the shell executor alive. They now
+# run AS the scanner image inside the sandbox: no socket, no host access.
+#
+# Each carries an explicit merge_request_event rule. Without one GitLab does not
+# CREATE the job on an MR pipeline at all, so the pipeline would report success
+# having silently skipped every scan.
 # ---------------------------------------------------------------------------
-deploy:
-  stage: deploy
+.scan_rules: &scan_rules
+  - if: $OPS_ONLY == "1"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "web"
+  - if: $CI_PIPELINE_SOURCE == "api"
+  - if: $CI_PIPELINE_SOURCE == "trigger"
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+trivy:image:
+  stage: scan
+  allow_failure: true
+  rules: *scan_rules
   needs: [build]
-  rules:
-    - *deploy_rules
-  environment:
-    name: production
-    url: https://shahnazcrm.sukierp.com
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
+  variables:
+    TRIVY_USERNAME: gitlab-ci-token
+    TRIVY_PASSWORD: $CI_JOB_TOKEN
   script:
-    - set -euo pipefail
-    - cd "$STACK_DIR"
-    - docker compose up -d --no-build --remove-orphans
-    - docker compose ps
+    - trivy image --exit-code 1 --severity CRITICAL --ignore-unfixed --timeout 15m
+      "$IMAGE_BASE/app:$CI_COMMIT_SHORT_SHA"
 
-# ---------------------------------------------------------------------------
-# VERIFY - fail the pipeline if the app does not actually come back up.
-# A deploy that silently leaves a dead container is worse than a failed one.
-# ---------------------------------------------------------------------------
-verify:
-  stage: verify
-  needs: [deploy]
-  rules:
-    - *deploy_rules
-  script:
-    - set -euo pipefail
-    - |
-      for i in $(seq 1 30); do
-        code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "$HEALTH_URL" || echo 000)
-        echo "attempt $i: $code"
-        case "$code" in
-          2*|3*) echo "healthy"; exit 0 ;;
-        esac
-        sleep 10
-      done
-      echo "did not become healthy in 5 minutes - container logs follow:"
-      docker logs --tail 100 "$APP"
-      exit 1
-
-# ---------------------------------------------------------------------------
-# CLEANUP - image retention. Each build tags a large image set with the commit
-# SHA. Without this the VM disk fills and takes every stack on it down.
-# Keeps the newest 3 SHA tags plus :latest and :previous (rollback needs both).
-# allow_failure so it can never block a release.
-# ---------------------------------------------------------------------------
-cleanup:
-  stage: cleanup
-  needs: [verify]
-  rules:
-    - *deploy_rules
+trivy:fs:
+  stage: scan
   allow_failure: true
-  script:
-    - set -euo pipefail
-    - |
-      keep=$(docker images "$APP" --format '{{.Tag}}' \
-             | grep -Ev '^(latest|previous)$' | head -3 | tr '\n' ' ')
-      echo "keeping: $keep latest previous"
-      for tag in $(docker images "$APP" --format '{{.Tag}}' | grep -Ev '^(latest|previous)$'); do
-        case " $keep " in
-          *" $tag "*) ;;
-          *) echo "removing $APP:$tag"; docker image rm "$APP:$tag" || true ;;
-        esac
-      done
-    - docker image prune -f
-    - df -h / | tail -1
-
-# ---------------------------------------------------------------------------
-# ROLLBACK - manual. Retags :previous back to :latest and redeploys.
-# Goes exactly one step back, and is not repeatable (afterwards :previous and
-# :latest point at the same image). To go further back, deploy a specific SHA.
-# ---------------------------------------------------------------------------
-rollback:
-  stage: deploy
+  rules: *scan_rules
   needs: []
-  when: manual
-  rules:
-    - *deploy_rules
-  environment:
-    name: production
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: [""]
   script:
-    - set -euo pipefail
-    - docker image inspect "$APP:previous" >/dev/null
-    - docker tag "$APP:previous" "$APP:latest"
-    - cd "$STACK_DIR"
-    - docker compose up -d --no-build
-    - docker compose ps
+    - trivy fs --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed
+      --scanners vuln,secret,misconfig "$CI_PROJECT_DIR"
 
-# ---------------------------------------------------------------------------
-# DB-TASK - manual, standalone, independent of any code deploy.
-#
-# Runs ONE database command inside a throwaway container built from the same
-# image as the app, so it uses the same Prisma client and the same .env.
-# Nothing here runs automatically: `deploy` never touches the schema.
-#
-# Pick the command with the DB_SCRIPT variable on the Run pipeline screen.
-# ---------------------------------------------------------------------------
-db-task:
-  stage: deploy
-  needs: []
-  when: manual
-  rules:
-    - *deploy_rules
+gitleaks:
+  stage: scan
   allow_failure: true
-  environment:
-    name: production
+  rules: *scan_rules
+  needs: []
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
   script:
-    - set -euo pipefail
-    - cd "$STACK_DIR"
-    - |
-      case "$DB_SCRIPT" in
-        prisma:status)         CMD="./node_modules/.bin/prisma migrate status" ;;
-        prisma:validate)       CMD="./node_modules/.bin/prisma validate" ;;
-        prisma:generate)       CMD="./node_modules/.bin/prisma generate" ;;
-        prisma:migrate-deploy) CMD="./node_modules/.bin/prisma migrate deploy" ;;
-        prisma:db-push)        CMD="./node_modules/.bin/prisma db push --accept-data-loss" ;;
-        seed:superadmin)       CMD="./node_modules/.bin/tsx deployment_seeding/seed-superadmin.ts" ;;
-        seed:suki-masters)     CMD="./node_modules/.bin/tsx deployment_seeding/seed-suki-masters.ts" ;;
-        *) echo "unknown DB_SCRIPT: $DB_SCRIPT"; exit 1 ;;
-      esac
-      echo "running against PRODUCTION: $CMD"
-      docker compose run --rm --no-deps --entrypoint sh app -c "$CMD"
+    - gitleaks detect --source "$CI_PROJECT_DIR" --no-git --redact
 
-# --- security scanning, added 2026-08-31 ---
-# Vendored from ops/ci-templates instead of included across projects: GitLab
-# resolves `include: project:` with the permissions of whoever TRIGGERS the
-# pipeline, and `ops` is a private group, so any pipeline started by a
-# non-member died before job creation with
-#   "Project `ops/ci-templates` not found or access denied!"
-# See the header of ci/security-scan.yml for how to re-sync it with upstream.
-include:
-  - local: ci/security-scan.yml
+# ---------------------------------------------------------------------------
+# OPS -- the database and rollback jobs, back in the pipeline where developers
+# expect them, but without CI holding any host access.
+#
+# HOW THIS IS SAFE. These jobs send exactly one thing: their own CI_JOB_TOKEN.
+# A broker on the VM asks GitLab who that token belongs to, and maps the JOB'S
+# NAME to a fixed command from a table that lives ON THE HOST
+# (/etc/stack-ops/shahnaz-crm.tasks), not in this repo. Nothing written in this file
+# is ever executed on the VM.
+#
+# So editing this file cannot grant new powers. Renaming a job to something the
+# broker does not know simply gets a 403; changing a job's `script` is
+# irrelevant, because the script is not what runs. The broker also refuses any
+# job whose ref is not `main`, and any token from a job that is not running.
+# Every request is logged with the GitLab username that clicked it:
+#   journalctl -u stack-ops-broker
+#
+# Direct host equivalents remain: `sudo stack-ops shahnaz-crm <cmd>` on the VM.
+# ---------------------------------------------------------------------------
+.ops_rules: &ops_rules
+  - if: $CI_PIPELINE_SOURCE == "schedule"
+    when: never
+  - if: $CI_PIPELINE_SOURCE == "web"
+    when: manual
+  - if: $CI_PIPELINE_SOURCE == "api"
+    when: manual
+  - if: $CI_PIPELINE_SOURCE == "trigger"
+    when: manual
+
+.ops_request: &ops_request
+  stage: ops
+  needs: []
+  allow_failure: false
+  rules: *ops_rules
+  image:
+    name: curlimages/curl:latest
+    entrypoint: [""]
+  script:
+    - |
+      echo "requesting action '$CI_JOB_NAME' from the ops broker"
+      code=$(curl -s -o /tmp/out -w '%{http_code}' --max-time 1900 \
+               -X POST -H "JOB-TOKEN: $CI_JOB_TOKEN" \
+               http://172.32.0.1:8099/run)
+      cat /tmp/out
+      echo "--- broker returned HTTP $code"
+      [ "$code" = "200" ] || exit 1
+
+# --- everyday
+"status": { <<: *ops_request }
+"prisma:status": { <<: *ops_request }
+"prisma:validate": { <<: *ops_request }
+"prisma:generate": { <<: *ops_request }
+"prisma:migrate-deploy": { <<: *ops_request }
+"seed:superadmin": { <<: *ops_request }
+"seed:suki-masters": { <<: *ops_request }
+
+# --- recovery
+"rollback": { <<: *ops_request }
+
+# --- DESTRUCTIVE. Its own explicitly-named job so it is not reachable by
+#     picking the wrong entry in a dropdown, which is how the old DB_SCRIPT
+#     variable worked. Clicking it IS the confirmation -- there is no TTY
+#     to prompt on -- so treat it accordingly.
+#       prisma:db-push = prisma db push --accept-data-loss: no migration
+#       history, and it can drop columns without asking.
+"prisma:db-push": { <<: *ops_request }
