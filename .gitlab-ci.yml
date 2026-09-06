@@ -48,6 +48,7 @@
 stages:
   - build
   - scan
+  - deploy
   - ops
 
 variables:
@@ -122,7 +123,24 @@ build:
         --opt build-arg:HTTP_PROXY="$HTTP_PROXY" \
         --opt build-arg:HTTPS_PROXY="$HTTPS_PROXY" \
         --opt build-arg:NO_PROXY="$NO_PROXY" \
-        --output "type=image,\"name=$TAGS\",push=true"
+        --output "type=image,\"name=$TAGS\",push=true" \
+        --metadata-file /tmp/md-TAGS.json
+    - |
+      # Record what was actually pushed, so the deploy stage can prove that the
+      # image now serving traffic is the one THIS pipeline produced -- rather
+      # than assuming a push means a deployment.
+      DIGESTS=""
+      for m in /tmp/md-*.json; do
+        # buildctl writes this pretty-printed, so key and value are separated
+        # by ": " and may sit on separate lines. Flatten first rather than
+        # trying to match the whitespace.
+        d=$(tr -d ' \n' < "$m" | sed -n 's/.*"containerimage.digest":"\([^"]*\)".*/\1/p')
+        [ -n "$d" ] || { echo "FAIL: no digest recorded in $m"; exit 1; }
+        DIGESTS="$DIGESTS $d"
+      done
+      DIGESTS=$(echo $DIGESTS)
+      echo "PUSHED_DIGESTS=$DIGESTS" >> build.env
+      echo "pushed digests: $DIGESTS"
   artifacts:
     reports:
       dotenv: build.env
@@ -184,6 +202,85 @@ gitleaks:
     - gitleaks detect --source "$CI_PROJECT_DIR" --no-git --redact
 
 # ---------------------------------------------------------------------------
+# DEPLOY -- visibility, not action.
+#
+# Nothing in this file deploys. A host agent does that on its own timer, and
+# that stays true: CI must not be able to touch a running stack (2026-09-03
+# audit, P0 #4). But it meant a pipeline went green having only PUSHED an
+# image, so nobody could tell from GitLab whether the deployment happened --
+# and a host-side failure (a registry login quietly failing, which has actually
+# happened) was invisible here.
+#
+# So this job watches. It asks the broker which image digests are really
+# serving traffic and waits until those are the digests this pipeline pushed
+# AND the app answers healthy. That is the deploy signal that was missing.
+#
+# It sends only its CI_JOB_TOKEN, exactly like the ops jobs. The comparison is
+# done HERE, so the broker still accepts no input from CI, and `deploy:verify`
+# is a read-only builtin on the host -- it cannot change anything.
+# ---------------------------------------------------------------------------
+"deploy:verify":
+  stage: deploy
+  needs: [build]
+  rules:
+    - if: $OPS_ONLY == "1"
+      when: never
+    # Only a default-branch build publishes :latest, and only :latest is ever
+    # deployed. Anywhere else there is deliberately nothing to wait for.
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "api"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "trigger"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_PIPELINE_SOURCE == "schedule"
+  timeout: 30m
+  image:
+    name: curlimages/curl:latest
+    entrypoint: [""]
+  variables:
+    DEPLOY_WAIT_SECONDS: "900"
+    HEALTH_EXPECT: "200"
+  script:
+    - |
+      set -eu
+      [ -n "${PUSHED_DIGESTS:-}" ] || { echo "FAIL: the build reported no digest"; exit 1; }
+      echo "waiting for the host to roll out this build"
+      echo "  expecting: $PUSHED_DIGESTS"
+      deadline=$(( $(date +%s) + DEPLOY_WAIT_SECONDS ))
+      n=0
+      while :; do
+        n=$((n+1))
+        code=$(curl -s -o /tmp/st -w '%{http_code}' --max-time 60 \
+                 -X POST -H "JOB-TOKEN: $CI_JOB_TOKEN" \
+                 http://172.32.0.1:8099/run || echo 000)
+        if [ "$code" != "200" ]; then
+          echo "broker returned HTTP $code"; cat /tmp/st 2>/dev/null || true; exit 1
+        fi
+        missing=""
+        for d in $PUSHED_DIGESTS; do
+          grep -q "$d" /tmp/st || missing="$missing $d"
+        done
+        hc=$(sed -n 's/^health_code=//p' /tmp/st)
+        if [ -z "$missing" ] && [ "$hc" = "$HEALTH_EXPECT" ]; then
+          echo "--- DEPLOYED: every image from this build is running, and the app is healthy."
+          cat /tmp/st
+          exit 0
+        fi
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+          echo "--- TIMED OUT after ${DEPLOY_WAIT_SECONDS}s."
+          echo "    not yet running:${missing:- (none)}"
+          echo "    health_code=$hc (wanted $HEALTH_EXPECT)"
+          echo ""
+          echo "The build pushed fine -- the HOST has not taken it. On the VM:"
+          echo "    sudo journalctl -u stack-deploy-agent@shahnaz-crm -n 50"
+          echo "A 'registry login failed' there means the deploy token needs attention."
+          echo ""
+          cat /tmp/st
+          exit 1
+        fi
+        echo "attempt $n: not yet (missing:${missing:- none}, health=$hc) -- waiting 15s"
+        sleep 15
+      done
+
+# ---------------------------------------------------------------------------
 # OPS -- the database and rollback jobs, back in the pipeline where developers
 # expect them, but without CI holding any host access.
 #
@@ -203,6 +300,12 @@ gitleaks:
 # Direct host equivalents remain: `sudo stack-ops shahnaz-crm <cmd>` on the VM.
 # ---------------------------------------------------------------------------
 .ops_rules: &ops_rules
+  # Only ever on a deliberate ops-only pipeline. These used to be manual
+  # buttons on EVERY build pipeline, which left a destructive job one careless
+  # click away and contradicted this file's own instructions. Set OPS_ONLY=1 on
+  # Run pipeline to get them.
+  - if: $OPS_ONLY != "1"
+    when: never
   - if: $CI_PIPELINE_SOURCE == "schedule"
     when: never
   - if: $CI_PIPELINE_SOURCE == "web"
