@@ -8,7 +8,7 @@ import { logoutAction } from "@/app/actions/auth";
 import { cn } from "@/lib/ui-utils";
 import { searchModules, type ModuleSearchItem } from "@/lib/config/variantModuleMap";
 import { getInitials } from "@/lib/ui-utils";
-import { Search, Bell, ChevronDown, Menu, Settings, User, LogOut, Check, Trash2, TrendingUp, Wrench } from "lucide-react";
+import { Search, Bell, ChevronDown, Menu, Settings, User, LogOut, Check, Trash2, TrendingUp, Wrench, HelpCircle } from "lucide-react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useTheme } from "@/lib/useTheme";
 
@@ -537,6 +537,14 @@ export default function DashboardHeader({
               >
                 <Settings size={14} className="text-slate-400" /> Settings
               </button>
+              {user?.email?.toLowerCase() === "shahnaz@sukisoftware.com" && (
+                <button
+                  onClick={() => { router.push("/settings/help"); setIsProfileOpen(false); }}
+                  className="w-full text-left px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors flex items-center gap-2.5"
+                >
+                  <HelpCircle size={14} className="text-slate-400" /> Help Center
+                </button>
+              )}
               <div className="h-px bg-slate-100 my-1" />
               <button
                 onClick={async () => {

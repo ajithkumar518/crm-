@@ -18,6 +18,10 @@ export async function POST(
   if (user.role === "Customer") return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 403 });
 
   const { id } = await params;
+  const body = await request.json().catch(() => ({}));
+  const toOverride = Array.isArray(body.to) ? (body.to as string[]) : undefined;
+  const ccOverride = Array.isArray(body.cc) ? (body.cc as string[]) : undefined;
+  const bccOverride = Array.isArray(body.bcc) ? (body.bcc as string[]) : undefined;
 
   const existing = await prisma.quotation.findFirst({
     where: { id, deletedAt: null, companyId: user.companyId },
@@ -280,8 +284,10 @@ export async function POST(
       existing.contact?.email ||
       existing.customer?.email ||
       null;
+    const to = toOverride && toOverride.length ? toOverride : (recipientEmail || "");
+    const toLabel = Array.isArray(to) ? to.join(", ") : to;
 
-    if (!recipientEmail) {
+    if (Array.isArray(to) ? to.length === 0 : !to) {
       emailWarning = "No recipient email found (contact or customer). Quotation status updated but email not sent.";
     } else {
       try {
@@ -360,14 +366,16 @@ export async function POST(
         `;
 
         await sendEmail({
-          to: recipientEmail,
+          to,
+          cc: ccOverride,
+          bcc: bccOverride,
           subject: `Quotation ${quotation.quotationCode} from ${existing.company?.name || "SUKI Software"}`,
           html: htmlBody,
           attachments: [{ filename: fileName, content: pdfBuffer, contentType: "application/pdf" }],
         });
 
         emailSent = true;
-        emailedTo = recipientEmail;
+        emailedTo = toLabel;
 
         // Log communication attempt (success)
         await prisma.communicationLog.create({
@@ -375,7 +383,7 @@ export async function POST(
             channel: "Email",
             direction: "Outbound",
             status: "Quotation Sent",
-            content: `Quotation ${quotation.quotationCode} emailed to ${recipientEmail}`,
+            content: `Quotation ${quotation.quotationCode} emailed to ${toLabel}`,
             customerId: existing.customerId || null,
             dealId: existing.dealId || null,
             sentByUserId: user.id,
@@ -391,7 +399,7 @@ export async function POST(
             channel: "Email",
             direction: "Outbound",
             status: "Failed",
-            content: `Failed to email quotation ${quotation.quotationCode} to ${recipientEmail}: ${emailErr.message}`,
+            content: `Failed to email quotation ${quotation.quotationCode} to ${toLabel}: ${emailErr.message}`,
             customerId: existing.customerId || null,
             dealId: existing.dealId || null,
             sentByUserId: user.id,

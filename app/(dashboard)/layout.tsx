@@ -1335,7 +1335,11 @@ function SidebarContent({
     { href: "/user-master", label: "Users" },
     { href: "/settings/roles", label: "Roles & Permissions" },
   ];
-  const settingsSubItems = getSettingsForVariant(activeVariant);
+  const isShahnaz =
+    user?.email?.toLowerCase() === "shahnaz@sukisoftware.com";
+  const settingsSubItems = getSettingsForVariant(activeVariant).filter(
+    (item) => !(isShahnaz && item.key === "docs"),
+  );
   const customerVisitsSubItems = getSub("visits");
   const productCatalogueSubItems = getSub("catalogue");
   const rfqSubItems = getSub("rfq");
@@ -2203,28 +2207,41 @@ export default function DashboardLayout({
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push("/login");
-    } else if (user && user.role !== "Admin" && user.role !== "SuperAdmin") {
-      let currentModule: string | null = null;
-      for (const [pathPrefix, moduleName] of Object.entries(PATH_MODULE_MAP)) {
-        if (pathname === pathPrefix || pathname.startsWith(pathPrefix + "/")) {
-          currentModule = moduleName;
-          break;
-        }
-      }
+    if (!pathname) return;
+    let timer: NodeJS.Timeout | null = null;
 
-      if (
-        currentModule &&
-        user.permissions !== "ALL" &&
-        Array.isArray(user.permissions)
-      ) {
-        const p = user.permissions.find((x: any) => x.module === currentModule);
-        if (p && !p.visible) {
-          router.replace("/dashboard");
+    const runRedirect = () => {
+      if (!loading && !user) {
+        router.push("/login");
+      } else if (user && user.role !== "Admin" && user.role !== "SuperAdmin") {
+        let currentModule: string | null = null;
+        for (const [pathPrefix, moduleName] of Object.entries(PATH_MODULE_MAP)) {
+          if (pathname === pathPrefix || pathname.startsWith(pathPrefix + "/")) {
+            currentModule = moduleName;
+            break;
+          }
+        }
+
+        if (
+          currentModule &&
+          user.permissions !== "ALL" &&
+          Array.isArray(user.permissions)
+        ) {
+          const p = user.permissions.find((x: any) => x.module === currentModule);
+          if (p && !p.visible) {
+            router.replace("/dashboard");
+          }
         }
       }
-    }
+    };
+
+    // Defer slightly so the AppRouter action queue is initialized before
+    // dispatching a navigation action. This prevents the intermittent
+    // "Router action dispatched before initialization" error.
+    timer = setTimeout(runRedirect, 0);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [user, loading, router, pathname]);
 
   const handleLogout = async () => {

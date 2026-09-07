@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit";
 import { buildScope, checkRecordScope } from "@/lib/scopes";
 import { dispatchNotification } from "@/lib/notifications";
 import { DB_DEFAULT_THEME } from "@/lib/theme";
+import { checkInternalUserLimit } from "@/lib/userLimits";
 
 /**
  * Create an internal user (Admin only)
@@ -34,6 +35,17 @@ export async function createInternalUserAction(data: {
 
     if (!email || !name || !role) {
       return { success: false, message: "Email, name, and role are required" };
+    }
+
+    // Enforce per-variant internal user credential limit
+    if (userPayload.companyId) {
+      const limitCheck = await checkInternalUserLimit(userPayload.companyId);
+      if (!limitCheck.allowed && limitCheck.max != null) {
+        return {
+          success: false,
+          message: `This plan allows a maximum of ${limitCheck.max} internal users. You currently have ${limitCheck.current}. Please delete an existing user to add a new one.`,
+        };
+      }
     }
 
     // Check for duplicate email globally

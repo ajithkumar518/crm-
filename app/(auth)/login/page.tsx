@@ -196,11 +196,11 @@ function ImageCarousel() {
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-white to-[#f1f5f9]">
       {SLIDES.map((slide, i) => (
         <div
           key={i}
-          className="absolute inset-0 transition-opacity"
+          className="absolute inset-0 flex flex-col items-center justify-center p-10 transition-opacity"
           style={{
             opacity: i === active ? 1 : 0,
             transitionDuration: "900ms",
@@ -211,56 +211,45 @@ function ImageCarousel() {
           <img
             src={slide.src}
             alt={slide.headline}
-            className="w-full h-full object-cover"
+            className="w-full max-w-[320px] h-auto object-contain mb-8"
           />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.85) 100%)",
-            }}
-          />
+          <div className="text-center w-full max-w-[380px]">
+            <h3
+              className="text-[#0b1f3a] leading-snug mb-2"
+              style={{
+                fontFamily: "'Georgia', 'Times New Roman', serif",
+                fontSize: "22px",
+                fontWeight: 500,
+                letterSpacing: "0.01em",
+              }}
+            >
+              {slide.headline}
+            </h3>
+            <p className="text-[#475569] text-[13px] tracking-wide leading-relaxed">
+              {slide.sub}
+            </p>
+          </div>
         </div>
       ))}
 
-      <div className="absolute bottom-0 left-0 right-0 p-7 z-10">
-        <p
-          className="text-white leading-snug mb-1.5"
-          style={{
-            fontFamily: "'Georgia', 'Times New Roman', serif",
-            fontSize: "15px",
-            fontWeight: 400,
-            letterSpacing: "0.01em",
-          }}
-        >
-          {SLIDES[active].headline}
-        </p>
-        <p className="text-white/50 text-[12px] tracking-wide mb-5">
-          {SLIDES[active].sub}
-        </p>
-
-        <div className="flex items-center gap-2">
-          {SLIDES.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => handleDot(i)}
-              aria-label={`Go to slide ${i + 1}`}
-              style={{
-                width: i === active ? "14px" : "4px",
-                height: "4px",
-                borderRadius: "9999px",
-                backgroundColor:
-                  i === active
-                    ? "var(--brand-primary)"
-                    : "rgba(255,255,255,0.35)",
-                transition: "width 300ms ease, background-color 300ms ease",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-              }}
-            />
-          ))}
-        </div>
+      <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-2 z-10">
+        {SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => handleDot(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            style={{
+              width: i === active ? "20px" : "6px",
+              height: "6px",
+              borderRadius: "9999px",
+              backgroundColor: i === active ? "#3b82f6" : "#cbd5e1",
+              transition: "width 300ms ease, background-color 300ms ease",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          />
+        ))}
       </div>
     </div>
   );
@@ -582,15 +571,23 @@ function LoginContent() {
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center p-4 lg:p-8"
+      className="min-h-screen relative flex items-center justify-center p-4 lg:p-8"
       style={{
         backgroundColor: "var(--bg)",
-        backgroundImage: "url('/login-bg.jpeg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
       }}
     >
+      {/* Abstract geometric login background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "url('/login-abstract-bg.svg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          zIndex: 0,
+        }}
+      />
+
       {/* Centered card container holding both panels */}
       <div
         className="relative z-10 w-full flex overflow-hidden rounded-2xl shadow-2xl"
@@ -607,7 +604,25 @@ function LoginContent() {
         {/* RIGHT: Form Panel */}
         <div
           className="flex-1 flex items-center justify-center px-6 py-10"
-          style={{ backgroundColor: "var(--surface)" }}
+          style={{
+            backgroundColor: "var(--surface)",
+            ["--surface" as string]: "#0b1222",
+            ["--surface-1" as string]: "#111b33",
+            ["--surface-2" as string]: "#182444",
+            ["--text-primary" as string]: "#f8fafc",
+            ["--text-secondary" as string]: "#9ca3af",
+            ["--text-muted" as string]: "#64748b",
+            ["--text-on-brand" as string]: "#ffffff",
+            ["--border" as string]: "rgba(255,255,255,0.12)",
+            ["--brand-primary" as string]: "#3b82f6",
+            ["--brand-primary-hover" as string]: "#2563eb",
+            ["--success" as string]: "#22c55e",
+            ["--success-bg" as string]: "rgba(34,197,94,0.12)",
+            ["--success-border" as string]: "rgba(34,197,94,0.25)",
+            ["--error" as string]: "#ef4444",
+            ["--error-bg" as string]: "rgba(239,68,68,0.12)",
+            ["--error-border" as string]: "rgba(239,68,68,0.25)",
+          } as React.CSSProperties}
         >
           <div className="w-full max-w-[380px] flex flex-col">
             {/* Logo mark */}

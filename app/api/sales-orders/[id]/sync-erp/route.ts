@@ -35,7 +35,7 @@ export async function POST(
       contact: { select: { id: true, name: true, email: true, phone: true } },
       proforma: { select: { id: true, proformaNumber: true } },
       quotation: { select: { id: true, quotationCode: true } },
-      items: { include: { product: { select: { id: true, name: true, productCode: true, unit: true } } } },
+      items: { include: { product: { select: { id: true, name: true, productCode: true, partNumber: true, unit: true } } } },
     },
   });
 
@@ -52,61 +52,39 @@ export async function POST(
   const erpApiUrl = process.env.SUKI_ERP_API_URL;
   const erpApiKey = process.env.SUKI_ERP_API_KEY;
 
-  if (!erpApiUrl || !erpApiKey) {
+  if (!erpApiUrl) {
     return NextResponse.json(
-      { success: false, message: "ERP integration is not configured. Set SUKI_ERP_API_URL and SUKI_ERP_API_KEY in environment." },
+      { success: false, message: "ERP integration is not configured. Set SUKI_ERP_API_URL in environment." },
       { status: 500 }
     );
   }
 
-  // Build the ERP payload — mirrors PO payload shape, with SO-specific fields
-  const erpPayload = {
-    source: "SUKI-CRM",
-    documentType: "SalesOrder",
-    orderNumber: salesOrder.orderNumber,
-    orderDate: salesOrder.orderDate,
-    expectedDelivery: salesOrder.expectedDeliveryDate,
-    customer: {
-      code: salesOrder.customer.customerCode,
-      name: salesOrder.customer.name,
-      email: salesOrder.customer.email,
-      phone: salesOrder.customer.phone,
-      gstin: salesOrder.customer.gstNumber,
-      billingAddress: salesOrder.customer.billingAddress,
-      shippingAddress: salesOrder.customer.shippingAddress,
-      city: salesOrder.customer.city,
-      state: salesOrder.customer.state,
-    },
-    contact: salesOrder.contact
-      ? {
-          name: salesOrder.contact.name,
-          email: salesOrder.contact.email,
-          phone: salesOrder.contact.phone,
-        }
+  // Build the ERP payload — flat array, one object per sales order item
+  // as required by the Spring Boot ERP endpoint.
+  const erpPayload = salesOrder.items.map((it) => ({
+    partNumber: it.product?.partNumber || it.product?.productCode || null,
+    name: salesOrder.customer?.name || null,
+    gstNumber: salesOrder.customer?.gstNumber || null,
+    orderDate: salesOrder.orderDate
+      ? new Date(salesOrder.orderDate).toISOString().split("T")[0]
       : null,
-    proformaNumber: salesOrder.proforma?.proformaNumber || null,
-    quotationCode: salesOrder.quotation?.quotationCode || null,
-    lineItems: salesOrder.items.map((it) => ({
-      productSku: it.product?.productCode || null,
-      productName: it.product?.name || it.description,
-      description: it.description,
-      quantity: it.quantity,
-      unitPrice: it.unitPrice,
-      lineTotal: it.lineTotal,
-      unit: it.product?.unit || it.unit || null,
-    })),
-    totals: {
-      subtotal: salesOrder.subtotal,
-      taxAmount: salesOrder.taxAmount,
-      discountPercent: salesOrder.discountPercent,
-      grandTotal: salesOrder.grandTotal,
-    },
-    paymentTerms: salesOrder.paymentTerms,
-    deliveryTerms: salesOrder.deliveryTerms,
-    notes: salesOrder.notes,
-    syncedAt: new Date().toISOString(),
-    syncedBy: { id: user.id, email: user.email },
-  };
+    orderNumber: salesOrder.orderNumber,
+    subtotal: salesOrder.subtotal,
+    taxAmount: salesOrder.taxAmount,
+    grandTotal: salesOrder.grandTotal,
+    taxType: salesOrder.taxType || "unknown",
+    cgstPercent: salesOrder.cgstPercent ?? 0,
+    sgstPercent: salesOrder.sgstPercent ?? 0,
+    igstPercent: salesOrder.igstPercent ?? 0,
+    productId: it.productId,
+    description: it.description,
+    quantity: it.quantity,
+    unit: it.unit,
+    unitPrice: it.unitPrice,
+    taxPercent: it.taxPercent,
+    lineTotal: it.lineTotal,
+    remarks: it.remarks,
+  }));
 
   const payloadJson = JSON.stringify(erpPayload);
 
@@ -120,13 +98,18 @@ export async function POST(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000);
 
-    const erpResponse = await fetch(`${erpApiUrl}/sales-orders`, {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Source": "SUKI-CRM",
+    };
+    if (erpApiKey) {
+      headers["Authorization"] = `Bearer ${erpApiKey}`;
+    }
+
+    // ERP expects a JSON array of sales orders, not a single object.
+    const erpResponse = await fetch(`${erpApiUrl}/saleOrder`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${erpApiKey}`,
-        "X-Source": "SUKI-CRM",
-      },
+      headers,
       body: payloadJson,
       signal: controller.signal,
     });

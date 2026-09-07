@@ -1,0 +1,68 @@
+<svg width="100%" height="100%" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#02050e" />
+      <stop offset="35%" stop-color="#0a1633" />
+      <stop offset="100%" stop-color="#07122a" />
+    </linearGradient>
+
+    <radialGradient id="glow" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#1e40af" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#0ea5e9" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#1e3a8a" stroke-width="0.5" opacity="0.22" />
+    </pattern>
+
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="50" />
+    </filter>
+
+    <radialGradient id="dot" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#bg)" />
+  <rect width="100%" height="100%" fill="url(#glow)" />
+  <rect width="100%" height="100%" fill="url(#grid)" />
+
+  <circle cx="200" cy="200" r="500" fill="#1d4ed8" opacity="0.18" />
+  <circle cx="1700" cy="300" r="600" fill="#0ea5e9" opacity="0.14" />
+  <circle cx="1200" cy="900" r="550" fill="#1e3a8a" opacity="0.16" />
+
+  <!-- network nodes -->
+  <circle cx="15%" cy="22%" r="3" fill="url(#dot)" />
+  <circle cx="28%" cy="18%" r="2.5" fill="url(#dot)" />
+  <circle cx="22%" cy="35%" r="2" fill="url(#dot)" />
+  <circle cx="82%" cy="20%" r="3" fill="url(#dot)" />
+  <circle cx="75%" cy="30%" r="2" fill="url(#dot)" />
+  <circle cx="88%" cy="38%" r="2.5" fill="url(#dot)" />
+  <circle cx="55%" cy="12%" r="2" fill="url(#dot)" />
+  <circle cx="45%" cy="85%" r="3" fill="url(#dot)" />
+  <circle cx="65%" cy="82%" r="2" fill="url(#dot)" />
+
+  <line x1="15%" y1="22%" x2="28%" y2="18%" stroke="#3b82f6" stroke-width="0.5" opacity="0.35" />
+  <line x1="28%" y1="18%" x2="22%" y2="35%" stroke="#3b82f6" stroke-width="0.5" opacity="0.35" />
+  <line x1="82%" y1="20%" x2="75%" y2="30%" stroke="#3b82f6" stroke-width="0.5" opacity="0.35" />
+  <line x1="75%" y1="30%" x2="88%" y2="38%" stroke="#3b82f6" stroke-width="0.5" opacity="0.35" />
+  <line x1="55%" y1="12%" x2="45%" y2="85%" stroke="#3b82f6" stroke-width="0.5" opacity="0.25" />
+  <line x1="45%" y1="85%" x2="65%" y2="82%" stroke="#3b82f6" stroke-width="0.5" opacity="0.3" />
+
+  <!-- top-right dashboard cards -->
+  <rect x="1380" y="120" width="160" height="90" rx="8" fill="#0b1f3a" opacity="0.45" stroke="#1e3a8a" stroke-width="1" />
+  <rect x="1400" y="145" width="80" height="6" rx="3" fill="#3b82f6" opacity="0.6" />
+  <rect x="1400" y="160" width="50" height="6" rx="3" fill="#60a5fa" opacity="0.5" />
+  <rect x="1400" y="175" width="100" height="4" rx="2" fill="#93c5fd" opacity="0.35" />
+
+  <rect x="1550" y="200" width="120" height="75" rx="8" fill="#0b1f3a" opacity="0.4" stroke="#1e3a8a" stroke-width="1" />
+  <path d="M1570 240 L1600 225 L1630 245 L1650 215" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7" />
+
+  <!-- bottom-left chart -->
+  <rect x="180" y="720" width="180" height="100" rx="8" fill="#0b1f3a" opacity="0.45" stroke="#1e3a8a" stroke-width="1" />
+  <path d="M220 790 L260 760 L300 780 L340 740" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.7" />
+  <circle cx="340" cy="740" r="4" fill="#0ea5e9" opacity="0.9" />
+</svg>

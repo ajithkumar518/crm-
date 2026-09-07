@@ -109,6 +109,7 @@ export const V1_ITEMS: NavItem[] = [
   { key: 'settings-roles', label: 'Roles & Permissions', href: '/settings/roles', iconEmoji: '⚙️', keywords: ['role', 'permission', 'access'], type: 'setting' },
   { key: 'settings-lead-sources', label: 'Lead Sources', href: '/settings/lead-sources', iconEmoji: '⚙️', keywords: ['source', 'lead source'], type: 'setting' },
   { key: 'settings-email', label: 'Email Templates', href: '/settings/email-templates', iconEmoji: '⚙️', keywords: ['email template', 'template'], type: 'setting' },
+  { key: 'settings-docs', label: 'Docs', href: '/settings/docs', iconEmoji: '📚', keywords: ['docs', 'documentation', 'manual', 'help', 'user guide'], type: 'setting' },
 ];
 
 // ─── V2 extras ────────────────────────────────────────────────────────────────

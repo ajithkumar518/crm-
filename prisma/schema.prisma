@@ -1467,6 +1467,13 @@ model Quotation {
   revisionNumber           Int                         @default(1)
   subtotal                 Float                       @default(0)
   taxAmount                Float                       @default(0)
+  taxType                  String?                     @default("unknown") // intra_state | inter_state | unknown
+  cgstPercent              Float?
+  sgstPercent              Float?
+  igstPercent              Float?
+  cgstAmount               Float?
+  sgstAmount               Float?
+  igstAmount               Float?
   rejectionReasonId        String?
   assignedUserId           String?
   negotiationId            String?
@@ -1524,6 +1531,12 @@ model QuotationItem {
   hsn                String?
   lineTotal          Float                     @default(0)
   taxPercent         Float                     @default(18)
+  cgstPercent        Float?
+  sgstPercent        Float?
+  igstPercent        Float?
+  cgstAmount         Float?
+  sgstAmount         Float?
+  igstAmount         Float?
   unit               String?
   costBasisUnitPrice Decimal?                  @db.Decimal(12, 2)
   marginPercent      Decimal?                  @db.Decimal(8, 2)
@@ -3341,6 +3354,13 @@ model SalesOrder {
   deliveryTerms        String?   @db.NVarChar(Max)
   subtotal             Float     @default(0)
   taxAmount            Float     @default(0)
+  taxType              String?   @default("unknown") // intra_state | inter_state | unknown
+  cgstPercent          Float?
+  sgstPercent          Float?
+  igstPercent          Float?
+  cgstAmount           Float?
+  sgstAmount           Float?
+  igstAmount           Float?
   discountPercent      Float     @default(0)
   grandTotal           Float     @default(0)
   notes                String?   @db.NVarChar(Max)
@@ -3385,6 +3405,12 @@ model SalesOrderItem {
   unitPrice       Float   @default(0)
   discountPercent Float   @default(0)
   taxPercent      Float   @default(18)
+  cgstPercent     Float?
+  sgstPercent     Float?
+  igstPercent     Float?
+  cgstAmount      Float?
+  sgstAmount      Float?
+  igstAmount      Float?
   lineTotal       Float   @default(0)
   rmMake          String?
   deliveryDays    Int?

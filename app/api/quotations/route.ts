@@ -4,6 +4,7 @@ import { verifyAuth } from "@/lib/auth";
 import { logAudit, extractAuditContext } from "@/lib/audit";
 import { logEvent } from "@/lib/activity-event";
 import { computeOverallMarginPercent } from "@/lib/quotation-margins";
+import { resolveTaxTreatment, computeGstSplitDetailed } from "@/lib/gstState";
 
 export async function GET(request: NextRequest) {
   const user = await verifyAuth();
@@ -227,6 +228,12 @@ export async function POST(request: NextRequest) {
       rmMake: item.rmMake || null,
       deliveryDays: item.deliveryDays != null ? parseInt(item.deliveryDays) : null,
       remarks: item.remarks || null,
+      cgstAmount: 0,
+      sgstAmount: 0,
+      igstAmount: 0,
+      cgstPercent: 0,
+      sgstPercent: 0,
+      igstPercent: 0,
     };
   });
 
@@ -249,10 +256,32 @@ export async function POST(request: NextRequest) {
   });
   const quotationCode = `QT-${year}-${String(yearCount + 1).padStart(5, "0")}`;
 
+  // Resolve GST treatment from company + customer state/GSTIN
+  const [customer, gstinConfig] = await Promise.all([
+    prisma.customer.findUnique({
+      where: { id: body.customerId },
+      select: { state: true, gstNumber: true, shippingAddress: true, billingAddress: true },
+    }),
+    prisma.systemConfig.findUnique({ where: { key: "company_gstin" } }),
+  ]);
+  const companyGstin = gstinConfig?.value || null;
+  const gstResult = resolveTaxTreatment(
+    companyGstin,
+    body.placeOfSupply || customer?.state,
+    null,
+    customer?.state,
+    customer?.gstNumber,
+    customer?.state,
+  );
+
   try {
     const quotation = await prisma.$transaction(async (tx) => {
       // 1. Resolve HSN and tax from product master for each item
       let totalTax = 0;
+      let totalCgst = 0;
+      let totalSgst = 0;
+      let totalIgst = 0;
+      let headerTaxPercent = 18;
       for (const pi of computedItems) {
         let taxPercent = 18;
         let hsn = pi.hsn;
@@ -276,8 +305,19 @@ export async function POST(request: NextRequest) {
 
         pi.hsn = hsn;
         pi.taxPercent = taxPercent;
-        const lineTax = pi.lineTotal * (taxPercent / 100);
+        if (headerTaxPercent === 18 && taxPercent !== 18) headerTaxPercent = taxPercent;
+        const split = computeGstSplitDetailed(pi.lineTotal, taxPercent, gstResult.treatment);
+        pi.cgstAmount = split.cgst;
+        pi.sgstAmount = split.sgst;
+        pi.igstAmount = split.igst;
+        pi.cgstPercent = split.cgstPercent;
+        pi.sgstPercent = split.sgstPercent;
+        pi.igstPercent = split.igstPercent;
+        const lineTax = split.totalTax;
         totalTax += lineTax;
+        totalCgst += split.cgst;
+        totalSgst += split.sgst;
+        totalIgst += split.igst;
       }
 
       // Recalculate grand total with resolved tax and extra charges
@@ -303,6 +343,13 @@ export async function POST(request: NextRequest) {
           totalAmount: subtotal,
           subtotal,
           taxAmount,
+          taxType: gstResult.treatment,
+          cgstPercent: gstResult.treatment === "intra_state" ? headerTaxPercent / 2 : 0,
+          sgstPercent: gstResult.treatment === "intra_state" ? headerTaxPercent / 2 : 0,
+          igstPercent: gstResult.treatment === "inter_state" ? headerTaxPercent : 0,
+          cgstAmount: totalCgst,
+          sgstAmount: totalSgst,
+          igstAmount: totalIgst,
           finalAmount: grandTotal,
           overallMarginPercent,
           termsAndConditions: body.termsAndConditions || null,

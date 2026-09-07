@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 /**
  * Syncs a URL query param with a value from the page state (e.g. deal.status).
@@ -13,18 +13,30 @@ import { useRouter, useSearchParams } from "next/navigation";
  * @param value   - The current value to sync (e.g. deal.status). Empty/null = no-op.
  * @param paramKey - The URL query param name (e.g. "status", "stage", "type").
  */
-export function useSyncUrlParam(value: string | undefined | null, paramKey: string) {
+export function useSyncUrlParam(
+  value: string | undefined | null,
+  paramKey: string,
+) {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!value) return;
-    const current = searchParams.get(paramKey) || "";
-    if (current !== value) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set(paramKey, value);
-      const path = window.location.pathname;
-      router.replace(`${path}?${params.toString()}`, { scroll: false });
-    }
-  }, [value, paramKey, router, searchParams]);
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const current = params.get(paramKey) || "";
+    if (current === value) return;
+
+    params.set(paramKey, value);
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+
+    // Defer to the next tick so the AppRouter action queue is initialized
+    // before we dispatch a navigation action. This prevents the intermittent
+    // "Router action dispatched before initialization" error.
+    const timer = setTimeout(() => {
+      router.replace(newUrl, { scroll: false });
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [value, paramKey, router]);
 }

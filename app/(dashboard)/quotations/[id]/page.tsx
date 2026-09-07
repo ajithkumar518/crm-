@@ -22,7 +22,7 @@ import { useHasModule } from "@/components/ModuleGate";
 import { MODULE_KEYS } from "@/lib/config/moduleVariantMap";
 import { StatusStepper } from "@/components/ui/StatusStepper";
 import {
-  ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, Copy, Download, X, XCircle, Check, Plus, FileText, MoreVertical, TrendingUp, CalendarClock
+  ChevronRight, ChevronLeft, CheckCircle, Edit, AlertTriangle, Send, Copy, Download, X, XCircle, Check, Plus, FileText, MoreVertical, TrendingUp, CalendarClock, Mail, Users
 } from "lucide-react";
 import { isQuotationFollowupAllowed } from "@/lib/feature-allowlist";
 
@@ -99,6 +99,9 @@ export default function QuotationDetailPage() {
   // Start Negotiation modal state
   const [showNegotiateModal, setShowNegotiateModal] = useState(false);
   const [showOutcomeModal, setShowOutcomeModal] = useState(false);
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+  const [sendForm, setSendForm] = useState({ to: "", cc: "" });
+  const [sending, setSending] = useState(false);
   const [outcomeForm, setOutcomeForm] = useState({ outcomeStatus: "Rejected", notes: "", rejectionReasonId: "" });
   const [changingStatus, setChangingStatus] = useState(false);
   const [negotiateForm, setNegotiateForm] = useState({
@@ -339,8 +342,16 @@ export default function QuotationDetailPage() {
   };
 
   const handleSend = async () => {
+    setSending(true);
+    setSendModalOpen(false);
     try {
-      const res = await fetch(`/api/quotations/${id}/send`, { method: "POST" });
+      const to = sendForm.to.split(/[\n,;]+/).map((e) => e.trim()).filter((e) => e.length > 0);
+      const cc = sendForm.cc.split(/[\n,;]+/).map((e) => e.trim()).filter((e) => e.length > 0);
+      const res = await fetch(`/api/quotations/${id}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: to.length ? to : undefined, cc: cc.length ? cc : undefined }),
+      });
       const data = await res.json();
       if (data.success) {
         // Check if the email was actually delivered — distinct from the workflow status
@@ -362,7 +373,17 @@ export default function QuotationDetailPage() {
       }
     } catch {
       toast.error("Failed");
+    } finally {
+      setSending(false);
     }
+  };
+
+  const openSendModal = () => {
+    const defaultTo = [quotation?.contact?.email, quotation?.customer?.email]
+      .filter((e): e is string => typeof e === "string" && e.length > 0)
+      .join(", ");
+    setSendForm({ to: defaultTo, cc: "" });
+    setSendModalOpen(true);
   };
 
   const handleAccept = async () => {
@@ -839,7 +860,7 @@ export default function QuotationDetailPage() {
               <button onClick={handleRequestApproval} disabled={quotation.status !== "Draft" || !needsApproval} title={quotation.status !== "Draft" ? "Quotation must be in Draft" : !needsApproval ? "No approval triggers — discount/margin within limits" : "Request manager approval for discount/margin override"} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${quotation.status === "Draft" && needsApproval ? "text-white bg-[var(--status-warning)] hover:opacity-90" : "text-[var(--text-muted)] bg-[var(--surface-2)]"}`}><AlertTriangle size={15} /> Request Approval</button>
               )}
               {/* Send — available in Draft and Approved */}
-              <button onClick={handleSend} disabled={!["Draft", "Approved"].includes(quotation.status)} title={!["Draft", "Approved"].includes(quotation.status) ? "Quotation must be Draft or Approved to send" : "Send quotation to customer"} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${["Draft", "Approved"].includes(quotation.status) ? "text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)]" : "text-[var(--text-muted)] bg-[var(--surface-2)]"}`}><Send size={15} /> Send</button>
+              <button onClick={openSendModal} disabled={!["Draft", "Approved"].includes(quotation.status) || sending} title={!["Draft", "Approved"].includes(quotation.status) ? "Quotation must be Draft or Approved to send" : "Send quotation to customer"} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${["Draft", "Approved"].includes(quotation.status) ? "text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)]" : "text-[var(--text-muted)] bg-[var(--surface-2)]"}`}><Send size={15} /> {sending ? "Sending..." : "Send"}</button>
               {/* Negotiate — available in active statuses, only with negotiation module */}
               {hasMod(MODULE_KEYS.NEGOTIATION) && (
               <button onClick={() => setShowNegotiateModal(true)} disabled={!canNegotiate} title={!canNegotiate ? "Quotation must be in an active state to negotiate" : "Move quotation to negotiation"} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${canNegotiate ? "text-white bg-[var(--status-warning)] hover:opacity-90" : "text-[var(--text-muted)] bg-[var(--surface-2)]"}`}><AlertTriangle size={15} /> Negotiate</button>
@@ -1862,6 +1883,102 @@ export default function QuotationDetailPage() {
           onClose={() => setPdfPreviewUrl(null)}
         />
       )}
+      {/* Send Quotation Modal */}
+      {sendModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center">
+                  <Send size={20} className="text-[var(--primary)]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-800">Send Quotation</h3>
+                  <p className="text-xs text-slate-500">
+                    {quotation?.quotationCode ? `Quotation ${quotation.quotationCode}` : "Email quotation PDF"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSendModalOpen(false)}
+                className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5 overflow-y-auto">
+              <p className="text-sm text-slate-600 leading-relaxed">
+                The quotation PDF will be attached and sent to the recipients below. Add multiple emails in the To or CC fields.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+                    <Users size={14} className="text-slate-400" />
+                    To <span className="text-rose-500">*</span>
+                  </label>
+                  <textarea
+                    value={sendForm.to}
+                    onChange={(e) => setSendForm({ ...sendForm, to: e.target.value })}
+                    rows={2}
+                    placeholder="e.g. contact@example.com, sales@example.com"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all resize-none"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1.5">
+                    Separate multiple emails with commas, semicolons, or new lines.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2">
+                    <Mail size={14} className="text-slate-400" />
+                    CC
+                  </label>
+                  <textarea
+                    value={sendForm.cc}
+                    onChange={(e) => setSendForm({ ...sendForm, cc: e.target.value })}
+                    rows={2}
+                    placeholder="e.g. manager@example.com"
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)] transition-all resize-none"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1.5">
+                    Separate multiple emails with commas, semicolons, or new lines.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3">
+              <button
+                onClick={() => setSendModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={sending || !sendForm.to.trim()}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {sending ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send size={14} />
+                    Send Quotation
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </PageContainer>
   );
 }

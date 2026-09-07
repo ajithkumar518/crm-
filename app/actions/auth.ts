@@ -24,6 +24,7 @@ import {
 import { logAudit } from "@/lib/audit";
 import { DB_DEFAULT_THEME } from "@/lib/theme";
 import { getModulesForVariant } from "@/lib/config/moduleVariantMap";
+import { checkInternalUserLimit } from "@/lib/userLimits";
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
@@ -1013,6 +1014,17 @@ export async function createInternalUserByAdmin(data: {
     const { name, email, role } = data;
     if (!name?.trim() || !email?.trim() || !role) {
       return { success: false, message: "Name, email and role are required." };
+    }
+
+    // Enforce per-variant internal user credential limit
+    if (adminPayload.companyId) {
+      const limitCheck = await checkInternalUserLimit(adminPayload.companyId);
+      if (!limitCheck.allowed && limitCheck.max != null) {
+        return {
+          success: false,
+          message: `This plan allows a maximum of ${limitCheck.max} internal users. You currently have ${limitCheck.current}. Please delete an existing user to add a new one.`,
+        };
+      }
     }
 
     const normalizedEmail = email.toLowerCase().trim();

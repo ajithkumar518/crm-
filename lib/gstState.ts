@@ -297,6 +297,12 @@ export function computeGstSplit(
   taxable: number,
   taxPercent: number,
   treatment: TaxTreatment,
+): { cgst: number; sgst: number; igst: number; totalTax: number } {return _computeGstSplit(taxable, taxPercent, treatment);}
+
+function _computeGstSplit(
+  taxable: number,
+  taxPercent: number,
+  treatment: TaxTreatment,
 ): { cgst: number; sgst: number; igst: number; totalTax: number } {
   if (treatment === "unknown") {
     throw new Error(
@@ -315,5 +321,36 @@ export function computeGstSplit(
   const cgst = taxable * (halfRate / 100);
   const sgst = taxable * (halfRate / 100);
   return { cgst, sgst, igst: 0, totalTax: cgst + sgst };
+}
+
+export interface GstSplitDetail {
+  cgst: number;
+  sgst: number;
+  igst: number;
+  totalTax: number;
+  cgstPercent: number;
+  sgstPercent: number;
+  igstPercent: number;
+}
+
+/**
+ * Compute CGST/SGST/IGST amounts and the percentages applied.
+ * Returns 0 for the tax components that do not apply to the given treatment.
+ */
+export function computeGstSplitDetailed(
+  taxable: number,
+  taxPercent: number,
+  treatment: TaxTreatment,
+): GstSplitDetail {
+  const { cgst, sgst, igst, totalTax } = _computeGstSplit(taxable, taxPercent, treatment);
+  return {
+    cgst,
+    sgst,
+    igst,
+    totalTax,
+    cgstPercent: treatment === "intra_state" ? taxPercent / 2 : 0,
+    sgstPercent: treatment === "intra_state" ? taxPercent / 2 : 0,
+    igstPercent: treatment === "inter_state" ? taxPercent : 0,
+  };
 }
 

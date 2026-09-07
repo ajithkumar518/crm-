@@ -59,6 +59,7 @@ const icons = {
   bell: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9",
   shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
   check: "M5 13l4 4L19 7",
+  help: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3 M12 17h.01",
 };
 
 interface ToggleProps {
@@ -470,7 +471,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!authLoading && !canAccessSettings) {
-      router.replace("/dashboard");
+      // Defer slightly so the AppRouter action queue is initialized before
+      // dispatching a navigation action.
+      const timer = setTimeout(() => router.replace("/dashboard"), 0);
+      return () => clearTimeout(timer);
     }
   }, [user, authLoading, router, canAccessSettings]);
 
@@ -650,6 +654,23 @@ export default function SettingsPage() {
               </button>
             </div>
           </Card>
+
+          {/* Help Center */}
+          {user?.email?.toLowerCase() === "shahnaz@sukisoftware.com" && (
+            <Card title="Help Center" icon={icons.help}>
+              <div className="space-y-3">
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Searchable user manual with screenshots of every module visible to the Shahnaz account.
+                </p>
+                <button
+                  onClick={() => router.push("/settings/help")}
+                  className="w-full py-2.5 rounded-xl text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] transition-colors shadow-sm cursor-pointer"
+                >
+                  Open Help Center
+                </button>
+              </div>
+            </Card>
+          )}
 
           {/* Module Management */}
           <Card title="Module Management" icon={icons.shield}>

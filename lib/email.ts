@@ -25,7 +25,9 @@ interface EmailAttachment {
 }
 
 interface SendEmailOptions {
-  to: string;
+  to: string | string[];
+  cc?: string | string[];
+  bcc?: string | string[];
   subject: string;
   html: string;
   attachments?: EmailAttachment[];
@@ -42,13 +44,17 @@ export async function sendEmail(
   subject?: string,
   html?: string,
 ): Promise<void> {
-  let to: string;
+  let to: string | string[];
   let subjectText: string;
   let htmlText: string;
+  let cc: string | string[] | undefined;
+  let bcc: string | string[] | undefined;
   let attachments: EmailAttachment[] | undefined;
 
   if (typeof toOrOpts === "object") {
     to = toOrOpts.to;
+    cc = toOrOpts.cc;
+    bcc = toOrOpts.bcc;
     subjectText = toOrOpts.subject;
     htmlText = toOrOpts.html;
     attachments = toOrOpts.attachments;
@@ -78,6 +84,8 @@ export async function sendEmail(
       process.env.EMAIL_FROM ||
       '"Shahnaz CRM" <noreply@sukisoftware.com>',
     to,
+    ...(cc ? { cc } : {}),
+    ...(bcc ? { bcc } : {}),
     subject: subjectText,
     html: htmlText,
     ...(attachments && attachments.length > 0 ? { attachments } : {}),
