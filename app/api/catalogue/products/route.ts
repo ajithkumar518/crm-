@@ -77,6 +77,10 @@ export async function GET(request: Request) {
       where.OR = [
         { name: { contains: trimmedSearch } },
         { productCode: { contains: trimmedSearch } },
+        { partNumber: { contains: trimmedSearch } },
+        { materialGrade: { contains: trimmedSearch } },
+        { materialSize: { contains: trimmedSearch } },
+        { rmMake: { contains: trimmedSearch } },
         { description: { contains: trimmedSearch } },
       ];
     }
