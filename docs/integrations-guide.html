@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>Shahnaz CRM — Integration Guide</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+    header {
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+      color: #0b1f3a;
+      letter-spacing: -0.02em;
+    }
+    .subtitle {
+      color: #64748b;
+      font-size: 15px;
+      margin: 0;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      color: #0b1f3a;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: #0b1f3a;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .status.done { background: #dcfce7; color: #166534; }
+    .status.pending { background: #fef3c7; color: #92400e; }
+    .status.planned { background: #e2e8f0; color: #475569; }
+    .status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    p { margin: 0 0 12px; }
+    ul, ol { margin: 8px 0 12px; padding-left: 20px; }
+    li { margin-bottom: 6px; }
+    .env {
+      background: #f1f5f9;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: #334155;
+      margin: 14px 0;
+      line-height: 1.8;
+    }
+    .env strong { color: #0f172a; margin-right: 6px; }
+    .env span {
+      display: inline-block;
+      background: #e2e8f0;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 6px;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+    .files {
+      background: #f8fafc;
+      border-left: 3px solid #2563eb;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #475569;
+      margin: 12px 0;
+    }
+    .files strong { color: #0b1f3a; }
+    .diagram {
+      margin: 18px 0 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #fff;
+      padding: 14px;
+      overflow-x: auto;
+    }
+    summary {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+    summary th, summary td {
+      padding: 14px 16px;
+      text-align: left;
+      font-size: 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    summary th { background: #f1f5f9; color: #0b1f3a; font-weight: 600; }
+    summary tr:last-child td { border-bottom: none; }
+    .footer {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 13px;
+      margin-top: 40px;
+      padding-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class='container'>
+    <header>
+      <h1>Shahnaz CRM — Integration Guide</h1>
+      <p class='subtitle'>Generated on 2026-09-04 &middot; All external APIs, schedulers, and data flows in one place</p>
+    </header>
+
+    <table class='summary'>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Integration</th>
+          <th>Direction</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Email to Lead (Microsoft 365 Graph)</td><td>Inbound</td><td>Configured &amp; Tested</td></tr>
+        <tr><td>2</td><td>Quotation Send (SMTP + PDF)</td><td>Outbound</td><td>Configured</td></tr>
+        <tr><td>3</td><td>Proforma Invoice Send + SO Creation</td><td>Outbound / Internal</td><td>Configured</td></tr>
+        <tr><td>4</td><td>Product Pull from ERP (SQL Server)</td><td>Inbound</td><td>Configured</td></tr>
+        <tr><td>5</td><td>Sales Order Push to ERP</td><td>Outbound</td><td>Configured &amp; Tested</td></tr>
+        <tr><td>6</td><td>Purchase Order Push to ERP</td><td>Outbound</td><td>Configured</td></tr>
+        <tr><td>7</td><td>Lead Ingestion API</td><td>Inbound</td><td>Configured</td></tr>
+        <tr><td>8</td><td>Currency Exchange Rates</td><td>Inbound</td><td>Configured</td></tr>
+        <tr><td>9</td><td>Cron / Scheduled Jobs</td><td>Internal</td><td>Configured</td></tr>
+      </tbody>
+    </table>
+
+    <section class='card'>
+      <h2><span class='number'>1</span> Email to Lead Extraction</h2>
+      <span class='status done'>Configured &amp; Tested</span>
+      <p>Polls a Microsoft 365 mailbox via the Graph API, reads unread emails, classifies them, extracts lead information, and creates leads automatically.</p>
+      <div class='env'><strong>Env vars:</strong> <span>MS_GRAPH_CLIENT_ID</span> <span>MS_GRAPH_CLIENT_SECRET</span> <span>MS_GRAPH_TENANT_ID</span> <span>MS_GRAPH_MAILBOX</span> <span>CRON_SECRET</span> <span>INTERNAL_COMPANY_ID</span> <span>INBOUND_MAX_MESSAGES_PER_RUN</span></div>
+      <div class='files'><strong>Files:</strong> lib/inbound-email-service.ts, lib/email-classification.ts, lib/email-extractor.ts, lib/leadWorkflow.ts, app/api/cron/email-poll/route.ts, instrumentation.ts</div>
+      <div class='diagram' id='flow-email-to-lead'></div>
+      <ul>
+        <li><strong>Trigger:</strong> POST /api/cron/email-poll with CRON_SECRET, or automatic 2-minute polling in production.</li>
+        <li><strong>Output:</strong> New Lead with code, assignment, SLA deadline, and notification.</li>
+      </ul>
+    </section>
+
+    <section class='card'>
+      <h2><span class='number'>2</span> Quotation Send</h2>
+      <span class='status done'>Configured</span>
+      <p>Generates a branded quotation PDF and emails it to the customer or contact. Updates the quotation status and creates a follow-up task.</p>
+      <div class='env'><strong>Env vars:</strong> <span>SMTP_HOST</span> <span>SMTP_PORT</span> <span>SMTP_USER</span> <span>SMTP_PASS</span> <span>SMTP_FROM</span> <span>NEXT_PUBLIC_APP_URL</span></div>
+      <div class='files'><strong>Files:</strong> app/api/quotations/[id]/send/route.ts, lib/email.ts, lib/generateSukiQuotationPdf.ts</div>
+      <div class='diagram' id='flow-quotation-send'></div>
+      <ul>
+        <li><strong>Trigger:</strong> Send button on the quotation detail page.</li>
+        <li><strong>Status transition:</strong> Draft / Approved / UnderReview &rarr; Quotation Sent.</li>
+      </ul>
+    </section>
+
+    <section class='card'>
+      <h2><span class='number'>3</span> Proforma Invoice</h2>
+      <span class='status done'>Configured</span>
+      <p>Two related flows: (A) email a proforma PDF to the customer, and (B) convert an approved proforma invoice into a sales order.</p>
+      <div class='env'><strong>Env vars:</strong> <span>SMTP_HOST</span> <span>SMTP_PORT</span> <span>SMTP_USER</span> <span>SMTP_PASS</span> <span>SMTP_FROM</span></div>
+      <div class='files'><strong>Files:</strong> app/api/proforma-invoices/[id]/send/route.ts, app/api/proforma-invoices/[id]/sales-order/route.ts, lib/email.ts</div>
+      <div class='diagram' id='flow-proforma'></div>
+      <ul>
+        <li><strong>Send trigger:</strong> Send button on proforma detail page. Status must be Draft or Sent.</li>
+        <li><strong>SO creation trigger:</strong> Create Sales Order button on approved proforma. Computes totals, tax, and saves the order.</li>
+      </ul>
+    </section>
+
+    <section class='card'>
+      <h2><span class='number'>4</span> Product Pull from ERP</h2>
+      <span class='status done'>Configured</span>
+      <p>Connects directly to the ERP SQL Server database and MERGEs product master data, stock levels, prices, categories, and grades into the CRM Product table.</p>
+      <div class='env'><strong>Env vars:</strong> <span>ERP_ADMIN_PASSWORD</span></div>
+      <div class='files'><strong>Files:</strong> scripts/erp-sync-poller.mjs, __run_erp_sync_now.mjs, scripts/erp-product-sync.sql, scripts/erp-category-sync.sql</div>
+      <div class='diagram' id='flow-product-pull'></div>
+      <ul>
+        <li><strong>Schedule:</strong> Products every 2 minutes, categories every 24 hours.</li>
+        <li><strong>Source:</strong> ERPDb_SHAHNAZ_CHE.dbo.PRODUCT and daily_trans on 192.168.1.160:1433.</li>
+      </ul>
+    </section>
+
+    <section class='card'>
+      <h2><span class='number'>5</span> Sales Order Push to ERP</h2>
+      <span class='status done'>Configured &amp; Tested</span>
+      <p>Builds a flat JSON array payload for the ERP and POSTs it to the SUKI ERP sales order endpoint. Updates sync status and stores the ERP reference.</p>
+      <div class='env'><strong>Env vars:</strong> <span>SUKI_ERP_API_URL</span> <span>SUKI_ERP_API_KEY</span></div>
+      <div class='files'><strong>Files:</strong> app/api/sales-orders/[id]/sync-erp/route.ts</div>
+      <div class='diagram' id='flow-so-push'></div>
+      <ul>
+        <li><strong>Trigger:</strong> Sync to ERP button on the sales order detail page.</li>
+        <li><strong>Endpoint:</strong> {SUKI_ERP_API_URL}/saleOrder</li>
+        <li><strong>Format:</strong> Flat JSON array containing item-level and order-level fields.</li>
+      </ul>
+    </section>
+
+    <section class='card'>
+      <h2><span class='number'>6</span> Purchase Order Push to ERP</h2>
+      <span class='status done'>Configured</span>
+      <p>Similar to the sales order flow but for purchase orders. Sends an approved PO payload to the ERP.</p>
+      <div class='env'><strong>Env vars:</strong> <span>SUKI_ERP_API_URL</span> <span>SUKI_ERP_API_KEY</span></div>
+      <div class='files'><strong>Files:</strong> app/api/purchase-orders/[id]/sync-erp/route.ts</div>
+      <div class='diagram' id='flow-po-push'></div>
+      <ul>
+        <li><strong>Trigger:</strong> Sync to ERP button on the purchase order detail page.</li>
+        <li><strong>Status guard:</strong> PO must be Approved.</li>
+      </ul>
+    </section>
+
+    <section class='card'>
+      <h2><span class='number'>7</span> Lead Ingestion API</h2>
+      <span class='status done'>Configured</span>
+      <p>Exposes a secure REST endpoint so external websites or landing pages can create leads in the CRM.</p>
+      <div class='env'><strong>Env vars:</strong> <span>LEADS_API_KEY</span> <span>INTERNAL_COMPANY_ID</span></div>
+      <div class='files'><strong>Files:</strong> app/api/leads/route.ts, lib/leadWorkflow.ts</div>
+      <div class='diagram' id='flow-lead-api'></div>
+      <ul>
+        <li><strong>Endpoint:</strong> POST /api/leads</li>
+        <li><strong>Auth:</strong> Header x-api-key matching LEADS_API_KEY or systemConfig leads_api_key.</li>
+      </ul>
+    </section>
+
+    <section class='card'>
+      <h2><span class='number'>8</span> Currency Exchange Rates</h2>
+      <span class='status done'>Configured</span>
+      <p>Fetches live INR/USD/EUR exchange rates, caches them in the database, and converts/format amounts for display.</p>
+      <div class='env'><strong>Env vars:</strong> <span>EXCHANGE_RATE_API_KEY</span></div>
+      <div class='files'><strong>Files:</strong> lib/currency.ts</div>
+      <div class='diagram' id='flow-currency'></div>
+      <ul>
+        <li><strong>Primary source:</strong> exchangerate-api.com</li>
+        <li><strong>Fallback source:</strong> open.er-api.com (free, no key)</li>
+        <li><strong>Cache:</strong> ExchangeRate table, refreshed every 24 hours.</li>
+      </ul>
+    </section>
+
+    <section class='card'>
+      <h2><span class='number'>9</span> Cron / Scheduled Jobs</h2>
+      <span class='status done'>Configured</span>
+      <p>Protected HTTP endpoints designed to be called by an external scheduler such as Vercel Cron, Azure Functions, or a local cron job.</p>
+      <div class='env'><strong>Env vars:</strong> <span>CRON_SECRET</span> <span>CRON_API_KEY</span></div>
+      <div class='files'><strong>Files:</strong> app/api/cron/email-poll/route.ts, app/api/cron/nightly-batch/route.ts, app/api/cron/proposals/route.ts, app/api/cron/subscriptions/route.ts, app/api/quotations/expire-stale/route.ts</div>
+      <div class='diagram' id='flow-cron'></div>
+      <ul>
+        <li><strong>Email poller:</strong> Also auto-starts in production via instrumentation.ts every 2 minutes.</li>
+        <li><strong>Other jobs:</strong> Expire stale proposals, nightly account aging, birthday reminders, PO auto-hold, stale quotation expiry.</li>
+      </ul>
+    </section>
+
+    <div class='footer'>
+      Shahnaz CRM Integration Guide &middot; Generated by Devin on 2026-09-04
+    </div>
+  </div>
+
+  <script>
+    function renderFlow(id, title, steps) {
+      const container = document.getElementById(id);
+      if (!container) return;
+      const boxW = 132, boxH = 48, gap = 34, marginX = 24, marginY = 48, rowH = 100;
+      const perRow = Math.min(steps.length, 7);
+      const rows = Math.ceil(steps.length / perRow);
+      const maxPerRow = Math.min(steps.length, perRow);
+      const rowW = maxPerRow * boxW + Math.max(0, maxPerRow - 1) * gap + marginX * 2;
+      const svgW = Math.max(760, rowW);
+      const svgH = rows * rowH + marginY + 8;
+      const colors = {
+        source: { fill: '#dbeafe', stroke: '#2563eb' },
+        process: { fill: '#e0f2fe', stroke: '#0ea5e9' },
+        data: { fill: '#f3e8ff', stroke: '#9333ea' },
+        end: { fill: '#dcfce7', stroke: '#16a34a' }
+      };
+      let svg = '<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 ' + svgW + ' ' + svgH + '\' style=\'width:100%;height:auto;max-width:' + svgW + 'px;display:block;margin:0 auto;\'>';
+      svg += '<defs><marker id=\'arrow-' + id + '\' markerWidth=\'10\' markerHeight=\'10\' refX=\'9\' refY=\'3\' orient=\'auto\' markerUnits=\'strokeWidth\'><path d=\'M0,0 L0,6 L9,3 z\' fill=\'#64748b\'/></marker></defs>';
+      svg += '<text x=\'' + (svgW / 2) + '\' y=\'24\' text-anchor=\'middle\' font-size=\'14\' font-weight=\'600\' fill=\'#0b1f3a\'>' + title + '</text>';
+
+      for (let i = 0; i < steps.length; i++) {
+        const row = Math.floor(i / perRow);
+        const col = i % perRow;
+        const x = marginX + col * (boxW + gap);
+        const y = marginY + row * rowH;
+        const step = steps[i];
+        const type = step.type || 'process';
+        const c = colors[type] || colors.process;
+        svg += '<rect x=\'' + x + '\' y=\'' + y + '\' width=\'' + boxW + '\' height=\'' + boxH + '\' rx=\'8\' fill=\'' + c.fill + '\' stroke=\'' + c.stroke + '\' stroke-width=\'1.5\'/>';
+
+        const words = step.label.split(' ');
+        if (words.length === 1) {
+          svg += '<text x=\'' + (x + boxW / 2) + '\' y=\'' + (y + boxH / 2 + 4) + '\' text-anchor=\'middle\' font-size=\'11\' fill=\'#1e293b\' font-weight=\'500\'>' + step.label + '</text>';
+        } else {
+          const mid = Math.ceil(words.length / 2);
+          const line1 = words.slice(0, mid).join(' ');
+          const line2 = words.slice(mid).join(' ');
+          svg += '<text x=\'' + (x + boxW / 2) + '\' y=\'' + (y + boxH / 2 - 3) + '\' text-anchor=\'middle\' font-size=\'11\' fill=\'#1e293b\' font-weight=\'500\'>' + line1 + '</text>';
+          svg += '<text x=\'' + (x + boxW / 2) + '\' y=\'' + (y + boxH / 2 + 13) + '\' text-anchor=\'middle\' font-size=\'11\' fill=\'#1e293b\' font-weight=\'500\'>' + line2 + '</text>';
+        }
+
+        if (i < steps.length - 1) {
+          const nextRow = Math.floor((i + 1) / perRow);
+          if (nextRow === row) {
+            const x1 = x + boxW;
+            const y1 = y + boxH / 2;
+            const x2 = x + boxW + gap;
+            svg += '<path d=\'M' + x1 + ',' + y1 + ' L' + (x2 - 6) + ',' + y1 + '\' fill=\'none\' stroke=\'#64748b\' stroke-width=\'1.5\' marker-end=\'url(#arrow-' + id + ')\'/>';
+          } else {
+            const x1 = x + boxW / 2;
+            const y1 = y + boxH;
+            const y2 = y + rowH - 2;
+            const x2 = marginX + boxW / 2;
+            svg += '<path d=\'M' + x1 + ',' + y1 + ' L' + x1 + ',' + y2 + '\' fill=\'none\' stroke=\'#64748b\' stroke-width=\'1.5\' marker-end=\'url(#arrow-' + id + ')\'/>';
+            svg += '<path d=\'M' + x1 + ',' + y2 + ' L' + x2 + ',' + y2 + '\' fill=\'none\' stroke=\'#64748b\' stroke-width=\'1.5\' marker-end=\'url(#arrow-' + id + ')\'/>';
+          }
+        }
+      }
+      svg += '</svg>';
+      container.innerHTML = svg;
+    }
+
+    renderFlow('flow-email-to-lead', 'Email to Lead Flow', [
+      { label: 'M365 Mailbox', type: 'source' },
+      { label: 'Graph Auth Token', type: 'process' },
+      { label: 'Fetch Unread', type: 'process' },
+      { label: 'Parse Email', type: 'process' },
+      { label: 'Classify', type: 'process' },
+      { label: 'Extract Info', type: 'process' },
+      { label: 'Create Lead', type: 'end' }
+    ]);
+
+    renderFlow('flow-quotation-send', 'Quotation Send Flow', [
+      { label: 'Open Quotation', type: 'source' },
+      { label: 'Validate Status', type: 'process' },
+      { label: 'Generate PDF', type: 'process' },
+      { label: 'Build Email', type: 'process' },
+      { label: 'SMTP Send', type: 'process' },
+      { label: 'Update Status', type: 'end' }
+    ]);
+
+    renderFlow('flow-proforma', 'Proforma Invoice Flow', [
+      { label: 'Approved Proforma', type: 'source' },
+      { label: 'Generate PDF', type: 'process' },
+      { label: 'SMTP Send', type: 'process' },
+      { label: 'Create Sales Order', type: 'process' },
+      { label: 'Compute Totals', type: 'process' },
+      { label: 'Save GST Splits', type: 'end' }
+    ]);
+
+    renderFlow('flow-product-pull', 'ERP Product Pull Flow', [
+      { label: 'ERP SQL Server', type: 'source' },
+      { label: 'Connect mssql', type: 'process' },
+      { label: 'sp SyncErpProducts', type: 'process' },
+      { label: 'MERGE Product', type: 'process' },
+      { label: 'Sync Stock Price', type: 'process' },
+      { label: 'CRM Product Table', type: 'end' }
+    ]);
+
+    renderFlow('flow-so-push', 'Sales Order Push to ERP', [
+      { label: 'Open Sales Order', type: 'source' },
+      { label: 'Fetch Items Totals', type: 'process' },
+      { label: 'Map Flat Array', type: 'process' },
+      { label: 'POST ERP', type: 'process' },
+      { label: 'ERP Reference', type: 'process' },
+      { label: 'Sync Status Updated', type: 'end' }
+    ]);
+
+    renderFlow('flow-po-push', 'Purchase Order Push to ERP', [
+      { label: 'Approved PO', type: 'source' },
+      { label: 'Fetch PO Data', type: 'process' },
+      { label: 'Build Payload', type: 'process' },
+      { label: 'POST ERP', type: 'process' },
+      { label: 'Update Status', type: 'end' }
+    ]);
+
+    renderFlow('flow-lead-api', 'Lead Ingestion API', [
+      { label: 'Website Form', type: 'source' },
+      { label: 'POST /api/leads', type: 'process' },
+      { label: 'x-api-key Check', type: 'process' },
+      { label: 'Duplicate Check', type: 'process' },
+      { label: 'Create Lead', type: 'end' }
+    ]);
+
+    renderFlow('flow-currency', 'Currency Exchange Rates', [
+      { label: 'Base Currency', type: 'source' },
+      { label: 'exchangerate-api', type: 'process' },
+      { label: 'Fallback open er-api', type: 'process' },
+      { label: 'Cache in DB', type: 'data' },
+      { label: 'Convert Display', type: 'end' }
+    ]);
+
+    renderFlow('flow-cron', 'Cron Scheduled Jobs', [
+      { label: 'External Scheduler', type: 'source' },
+      { label: 'CRON_SECRET Header', type: 'process' },
+      { label: 'Run Batch Job', type: 'process' },
+      { label: 'Update Records', type: 'process' },
+      { label: 'Notify Audit', type: 'end' }
+    ]);
+  </script>
+</body>
+</html>

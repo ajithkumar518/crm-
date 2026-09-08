@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,10 +16,10 @@ const sqlPath = path.join(__dirname, 'scripts', 'erp-product-sync.sql');
 const sqlText = fs.readFileSync(sqlPath, 'utf-8');
 
 const config = {
-  server: '192.168.1.160',
-  port: 1433,
-  database: 'shahnaz_crm',
-  user: 'sukierpadmin',
+  server: process.env.ERP_SYNC_SQL_SERVER || '103.182.210.30',
+  port: parseInt(process.env.ERP_SYNC_SQL_PORT || '1433', 10),
+  database: process.env.ERP_SYNC_SQL_DATABASE || 'shahnaz_crm',
+  user: process.env.ERP_SYNC_SQL_USER || 'sukierpadmin',
   password,
   options: {
     encrypt: true,
@@ -31,7 +32,7 @@ const config = {
 async function main() {
   let pool;
   try {
-    console.log('Connecting to 192.168.1.160 as sukierpadmin...');
+    console.log(`Connecting to ${config.server}:${config.port} as ${config.user}...`);
     pool = await sql.connect(config);
     console.log('Connected. Running scripts/erp-product-sync.sql ...');
 

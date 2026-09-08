@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import sql from 'mssql';
 
 const password = process.env.ERP_ADMIN_PASSWORD;
@@ -7,10 +8,10 @@ if (!password) {
 }
 
 const config = {
-  server: '192.168.1.160',
-  port: 1433,
-  database: 'shahnaz_crm',
-  user: 'sukierpadmin',
+  server: process.env.ERP_SYNC_SQL_SERVER || '103.182.210.30',
+  port: parseInt(process.env.ERP_SYNC_SQL_PORT || '1433', 10),
+  database: process.env.ERP_SYNC_SQL_DATABASE || 'shahnaz_crm',
+  user: process.env.ERP_SYNC_SQL_USER || 'sukierpadmin',
   password,
   options: {
     encrypt: true,
@@ -32,7 +33,7 @@ async function ensurePool() {
     if (pool) await pool.close().catch(() => {});
     pool = new sql.ConnectionPool(config);
     await pool.connect();
-    console.log(`[${new Date().toISOString()}] (Re)connected to 192.168.1.160`);
+    console.log(`[${new Date().toISOString()}] (Re)connected to ${config.server}:${config.port}`);
     return pool;
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Connection failed:`, err.message);

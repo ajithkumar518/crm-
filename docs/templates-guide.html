@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>Quotation &amp; Proforma Invoice Templates</title>
+  <style>
+    * { box-sizing: border-box; }
+    @page { size: A4 landscape; margin: 0; }
+    body {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      color: #1e293b;
+      line-height: 1.5;
+    }
+    .page {
+      width: 297mm;
+      min-height: 210mm;
+      padding: 12mm;
+      margin: 0 auto;
+      background: #fff;
+      page-break-after: always;
+      position: relative;
+      overflow: hidden;
+    }
+    .page:last-child { page-break-after: auto; }
+    .cover {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .cover h1 { font-size: 36px; color: #0b1f3a; margin: 0 0 12px; }
+    .cover p { color: #64748b; font-size: 16px; max-width: 700px; }
+    h2 { font-size: 20px; color: #0b1f3a; margin: 0 0 10px; }
+    p { margin: 0 0 10px; }
+    .template-wrap { border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; background: #f8fafc; margin-bottom: 14px; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid #0b1f3a;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+    .brand { display: flex; gap: 10px; align-items: center; }
+    .logo { width: 34px; height: 22px; background: #0b1f3a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+    .brand h3 { margin: 0; font-size: 14px; color: #0b1f3a; }
+    .brand small { display: block; font-size: 8px; color: #334155; line-height: 1.4; }
+    .meta { font-size: 9px; line-height: 1.6; color: #0f172a; }
+    .boxes { display: flex; gap: 8px; margin-bottom: 8px; }
+    .box { flex: 1; background: #f3f4f6; border: 1px solid #9ca3af; padding: 6px; font-size: 8px; min-height: 42px; }
+    .box strong { color: #1e40af; display: block; font-size: 9px; margin-bottom: 3px; }
+    table { width: 100%; border-collapse: collapse; font-size: 7px; margin-bottom: 8px; }
+    th, td { border: 1px solid #94a3b8; padding: 3px 2px; text-align: center; }
+    th { background: #e2e8f0; font-weight: 600; }
+    td:nth-child(2) { text-align: left; }
+    .bottom { display: flex; gap: 8px; }
+    .left { flex: 1.4; border: 1px solid #0f172a; padding: 6px; font-size: 8px; min-height: 75px; }
+    .right { flex: 1; background: #e2e8f0; padding: 6px; font-size: 8px; min-height: 75px; }
+    .right div { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .right .bold { font-weight: 700; color: #0b1f3a; }
+    .sig { width: 55mm; height: 16mm; border: 1px solid #0f172a; padding: 4px; font-size: 8px; margin-top: 4px; }
+    .legend { font-size: 11px; }
+    .legend li { margin-bottom: 5px; }
+    .legend strong { color: #0b1f3a; }
+    .badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+    .footer { position: absolute; bottom: 6mm; left: 12mm; right: 12mm; font-size: 8px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class='page cover'>
+    <h1>Quotation &amp; Proforma Invoice Templates</h1>
+    <p>This document shows the layout and fields that appear in the computer-generated Quotation and Proforma Invoice PDFs sent from Shahnaz CRM.</p>
+    <p style='margin-top:20px; color:#94a3b8; font-size:13px;'>Generated on 2026-09-04</p>
+  </div>
+
+  <div class='page'>
+    <h2>1. Quotation Template</h2>
+    <p class='badge'>Sent via SMTP as a PDF attachment</p>
+    <div class='template-wrap'>
+      <div class='header'>
+        <div class='brand'>
+          <div class='logo'>SBS</div>
+          <div>
+            <h3>SHAHNAZ BRIGHT STEEL INDUSTRIES PRIVATE LIMITED</h3>
+            <small>No:1, Plot No.52A, 52B, No.102, Mugappair Road<br>Padi, Chennai, Tamil Nadu - 600050, India<br>Phone: 9363331766, 7845517678</small>
+          </div>
+        </div>
+        <div class='meta'>
+          <strong>Quotation No : QT-2026-00001</strong><br>
+          Quotation Date : 04 Sep 2026<br>
+          Contact Person : Rajesh Kumar<br>
+          Contact No : +91-9876543210<br>
+          Payment Terms : 50% Advance<br>
+          Delivery Terms : Ex-Works<br>
+          Delivery Period : 7 DAYS
+        </div>
+      </div>
+      <div class='boxes'>
+        <div class='box'>
+          <strong>BILL TO</strong>
+          Bright Auto Components<br>
+          Code: C-0001<br>
+          12, Industrial Estate, Chennai<br>
+          Chennai, Tamil Nadu<br>
+          GSTIN: 33AABCB1234X1ZX
+        </div>
+        <div class='box'>
+          <strong>SHIP TO</strong>
+          Bright Auto Components<br>
+          Code: C-0001<br>
+          12, Industrial Estate, Chennai<br>
+          Chennai, Tamil Nadu<br>
+          GSTIN: 33AABCB1234X1ZX
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>S.No</th><th>Material Description</th><th>Product Type</th><th>Make</th><th>No of Pcs</th><th>Qty</th><th>UOM</th><th>Price</th><th>Tax Val</th><th>CGST</th><th>SGST</th><th>Cutting</th><th>Total</th><th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>01</td><td>EN31 Bright Bar 150x300 mm</td><td>Bright Bar</td><td>JSW</td><td>2</td><td>500</td><td>Kgs</td><td>85.00</td><td>42,500</td><td>3,825</td><td>3,825</td><td>0</td><td>50,150</td><td>Heat treated</td>
+          </tr>
+          <tr>
+            <td>02</td><td>C45 Medium Carbon Bar 50x200 mm</td><td>Black Bar</td><td>Tata</td><td>1</td><td>200</td><td>Kgs</td><td>62.00</td><td>12,400</td><td>1,116</td><td>1,116</td><td>0</td><td>14,632</td><td>—</td>
+          </tr>
+          <tr>
+            <td></td><td>Total</td><td></td><td></td><td>3</td><td>700</td><td></td><td></td><td></td><td></td><td></td><td></td><td>64,782</td><td></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class='bottom'>
+        <div class='left'>
+          <strong>Comments :</strong><br>
+          Delivery as per availability.<br><br>
+          <strong>Amount In Words :</strong> Sixty Four Thousand Seven Hundred and Eighty Two Rupees Only.<br><br>
+          <strong>Terms &amp; Condition :</strong><br>
+          Cutting Charges - Extra, Weighing/Loading - Rs. 350/- PER TON, Delivery Charges - Extra, Testing Charges - Extra, Quotation Validity - Immediate, Taxes - Extra.
+        </div>
+        <div class='right'>
+          <div><span>Taxable Val</span><span>54,900</span></div>
+          <div><span>Tax Charges</span><span>9,882</span></div>
+          <div><span>Cutting Charges</span><span>0</span></div>
+          <div><span>Other Charges</span><span>0</span></div>
+          <div><span>Weighing/Loading</span><span>0</span></div>
+          <div><span>Delivery Charge</span><span>0</span></div>
+          <div><span>Testing Charge</span><span>0</span></div>
+          <div class='bold'><span>Total Amount</span><span>64,782</span></div>
+        </div>
+      </div>
+      <div class='sig'>
+        <strong>For SHAHNAZ BRIGHT STEEL</strong><br>
+        _______________________<br>
+        Authorized Signature
+      </div>
+    </div>
+    <p class='badge'>Sections explained</p>
+    <ol class='legend'>
+      <li><strong>Header</strong> — Company logo, full address, document number, date, contact person, contact number, payment &amp; delivery terms, and delivery period.</li>
+      <li><strong>Bill To / Ship To</strong> — Customer name, customer code, billing/shipping address, city/state, and GSTIN.</li>
+      <li><strong>Items Table</strong> — S.No, material description, product type, make, number of pieces, quantity, UOM, unit price, taxable value, CGST/SGST (or IGST for inter-state), cutting charge, total amount, and remarks.</li>
+      <li><strong>Bottom Left</strong> — Comments, total amount in words, and terms &amp; conditions.</li>
+      <li><strong>Summary Box</strong> — Taxable value, tax charges, extra charges, and final total amount.</li>
+      <li><strong>Signature</strong> — Authorized signatory block for the company.</li>
+      <li><strong>Footer</strong> — Computer-generated notice and page numbers on multi-page quotations.</li>
+    </ol>
+    <div class='footer'>Shahnaz CRM Template Guide &middot; Page 2</div>
+  </div>
+
+  <div class='page'>
+    <h2>2. Proforma Invoice Template</h2>
+    <p class='badge'>Sent via SMTP as a PDF attachment and used to create Sales Orders</p>
+    <div class='template-wrap'>
+      <div class='header'>
+        <div class='brand'>
+          <div class='logo'>SBS</div>
+          <div>
+            <h3>SHAHNAZ BRIGHT STEEL INDUSTRIES PRIVATE LIMITED</h3>
+            <small>PLANT 2, No:1, Plot No.52A, 52B, No.102, Mugappair Road<br>Padi, Chennai, Tamil Nadu - 600050, India<br>Phone: 9363331766, 7845517678</small>
+          </div>
+        </div>
+        <div class='meta'>
+          <strong>Proforma No : PF-2026-00001</strong><br>
+          Proforma Date : 04 Sep 2026<br>
+          Valid Until : 11 Sep 2026<br>
+          Quotation Ref : QT-2026-00001<br>
+          Contact Person : Rajesh Kumar<br>
+          Contact No : +91-9876543210<br>
+          Payment Terms : 50% Advance
+        </div>
+      </div>
+      <div class='boxes'>
+        <div class='box'>
+          <strong>BILL TO</strong>
+          Bright Auto Components<br>
+          Code: C-0001<br>
+          12, Industrial Estate, Chennai<br>
+          Chennai, Tamil Nadu<br>
+          GSTIN: 33AABCB1234X1ZX
+        </div>
+        <div class='box'>
+          <strong>SHIP TO</strong>
+          Bright Auto Components<br>
+          Code: C-0001<br>
+          12, Industrial Estate, Chennai<br>
+          Chennai, Tamil Nadu<br>
+          GSTIN: 33AABCB1234X1ZX
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>S.No</th><th>Material Description</th><th>Item Code</th><th>Make</th><th>Length (mm)</th><th>No of Pcs</th><th>Qty</th><th>UOM</th><th>Price</th><th>Tax Val</th><th>CGST</th><th>SGST</th><th>Cutting</th><th>Total</th><th>Days</th><th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>01</td><td>EN31 Bright Bar 150x300 mm</td><td>Bright Bar</td><td>JSW</td><td>300</td><td>2</td><td>500</td><td>Kgs</td><td>85.00</td><td>42,500</td><td>3,825</td><td>3,825</td><td>0</td><td>50,150</td><td>7</td><td>—</td>
+          </tr>
+          <tr>
+            <td></td><td>Total</td><td></td><td></td><td></td><td>2</td><td>500</td><td></td><td></td><td></td><td></td><td></td><td></td><td>50,150</td><td></td><td></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class='bottom'>
+        <div class='left'>
+          <strong>Comments :</strong><br>
+          Delivery as per availability.<br><br>
+          <strong>Amount In Words :</strong> Fifty Thousand One Hundred and Fifty Rupees Only.<br><br>
+          <strong>Terms &amp; Condition :</strong><br>
+          Cutting Charges - Extra, Weighing/Loading - Rs. 350/- PER TON, Delivery Charges - Extra, Testing Charges - Extra, Proforma Validity - Immediate, Taxes - Extra.
+        </div>
+        <div class='right'>
+          <div><span>Taxable Val</span><span>42,500</span></div>
+          <div><span>Tax Charges</span><span>7,650</span></div>
+          <div><span>Cutting Charges</span><span>0</span></div>
+          <div><span>Other Charges</span><span>0</span></div>
+          <div><span>Weighing/Loading</span><span>0</span></div>
+          <div><span>Delivery Charge</span><span>0</span></div>
+          <div><span>Testing Charge</span><span>0</span></div>
+          <div class='bold'><span>Total Amount</span><span>50,150</span></div>
+        </div>
+      </div>
+      <div class='sig'>
+        <strong>For SHAHNAZ BRIGHT STEEL</strong><br>
+        _______________________<br>
+        Authorized Signature
+      </div>
+    </div>
+    <p class='badge'>Sections explained</p>
+    <ol class='legend'>
+      <li><strong>Header</strong> — Company logo and address, proforma number, date, validity date, quotation reference, contact person, contact number, and payment/delivery terms.</li>
+      <li><strong>Bill To / Ship To</strong> — Customer and shipping party details including code, address, state, and GSTIN. Separate bill-to and ship-to parties are supported.</li>
+      <li><strong>Items Table</strong> — Additional columns include Item Code, Length in mm, and Delivery Days. The last row shows the item total before extra charges.</li>
+      <li><strong>Tax Treatment</strong> — Intra-state uses CGST + SGST. Inter-state automatically switches to a single IGST column. Missing ship-to state blocks proforma generation.</li>
+      <li><strong>Bottom Left</strong> — Comments, amount in words, and terms &amp; conditions.</li>
+      <li><strong>Summary Box</strong> — Taxable value, total tax, extra charges (cutting, other, weighing, delivery, testing), and grand total.</li>
+      <li><strong>Signature</strong> — Authorized signatory block.</li>
+    </ol>
+    <div class='footer'>Shahnaz CRM Template Guide &middot; Page 3</div>
+  </div>
+</body>
+</html>
