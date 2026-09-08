@@ -74,15 +74,21 @@ export async function GET(request: Request) {
 
     const trimmedSearch = search.trim();
     if (trimmedSearch) {
-      where.OR = [
-        { name: { contains: trimmedSearch } },
-        { productCode: { contains: trimmedSearch } },
-        { partNumber: { contains: trimmedSearch } },
-        { materialGrade: { contains: trimmedSearch } },
-        { materialSize: { contains: trimmedSearch } },
-        { rmMake: { contains: trimmedSearch } },
-        { description: { contains: trimmedSearch } },
-      ];
+      // Split into words and require every word to match at least one field.
+      // This makes searches like "BRIGHT SQUARE MS 63X63" find
+      // "BRIGHT FLAT AND SQUARE MS 63X63".
+      const searchTerms = trimmedSearch.split(/\s+/).filter(Boolean);
+      where.AND = searchTerms.map((term) => ({
+        OR: [
+          { name: { contains: term } },
+          { productCode: { contains: term } },
+          { partNumber: { contains: term } },
+          { materialGrade: { contains: term } },
+          { materialSize: { contains: term } },
+          { rmMake: { contains: term } },
+          { description: { contains: term } },
+        ],
+      }));
     }
 
     const orderBy: any = {};
