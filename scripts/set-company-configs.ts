@@ -9,6 +9,7 @@ async function main() {
     { key: "company_pan", value: "ABACS6559E" },
     { key: "company_gstin", value: "33ABACS6559E1ZD" },
     { key: "company_cin", value: "U28999TN2018PTC123999" },
+    { key: "suki_erp_api_url", value: "http://103.182.210.30:7080" },
   ];
 
   for (const c of configs) {

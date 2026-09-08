@@ -49,12 +49,18 @@ export async function POST(
     );
   }
 
-  const erpApiUrl = process.env.SUKI_ERP_API_URL;
-  const erpApiKey = process.env.SUKI_ERP_API_KEY;
+  // Allow ERP URL to be provided by environment variable OR SystemConfig (useful when env vars cannot be set on the server)
+  const [erpUrlConfig, erpKeyConfig] = await Promise.all([
+    prisma.systemConfig.findUnique({ where: { key: "suki_erp_api_url" } }),
+    prisma.systemConfig.findUnique({ where: { key: "suki_erp_api_key" } }),
+  ]);
+
+  const erpApiUrl = process.env.SUKI_ERP_API_URL || erpUrlConfig?.value || null;
+  const erpApiKey = process.env.SUKI_ERP_API_KEY || erpKeyConfig?.value || null;
 
   if (!erpApiUrl) {
     return NextResponse.json(
-      { success: false, message: "ERP integration is not configured. Set SUKI_ERP_API_URL in environment." },
+      { success: false, message: "ERP integration is not configured. Set SUKI_ERP_API_URL in environment or set suki_erp_api_url in SystemConfig." },
       { status: 500 }
     );
   }
