@@ -113,11 +113,9 @@ function NewActivityPageInner() {
         if (callForm.content.trim().length < 10) e.content = "Notes must be at least 10 characters";
       }
     } else if (activityType === "meeting") {
-      if (!isFollowUpLinked) {
-        if (!meetingForm.meetingDate) e.meetingDate = "Meeting date is required";
-        if (!meetingForm.mode) e.mode = "Mode is required";
-        if (meetingForm.agenda.trim().length < 20) e.agenda = "Agenda must be at least 20 characters";
-      }
+      if (!meetingForm.meetingDate) e.meetingDate = "Meeting date is required";
+      if (!meetingForm.mode) e.mode = "Mode is required";
+      if (meetingForm.agenda.trim().length < 20) e.agenda = "Agenda must be at least 20 characters";
       
       const isMeetingDatePassed = meetingForm.meetingDate ? new Date(meetingForm.meetingDate) < new Date() : false;
       const isTerminatedStatus = meetingForm.status === "Missed" || meetingForm.status === "Cancelled";
@@ -146,7 +144,7 @@ function NewActivityPageInner() {
       let res: any;
       let followUpCompleted = false;
       if (activityType === "call") {
-        if (isFollowUpLinked) {
+        if (shouldCompleteLinkedFollowUp("call")) {
           if (callForm.status === "Missed" || callForm.status === "Cancelled") {
             res = await updateFollowUpStatusAction({ id: urlFollowUpId, status: callForm.status });
             followUpCompleted = res.success;
@@ -173,7 +171,7 @@ function NewActivityPageInner() {
           });
         }
       } else if (activityType === "meeting") {
-        if (isFollowUpLinked) {
+        if (shouldCompleteLinkedFollowUp("meeting")) {
           if (meetingForm.status === "Missed" || meetingForm.status === "Cancelled") {
             res = await updateFollowUpStatusAction({ id: urlFollowUpId, status: meetingForm.status });
             followUpCompleted = res.success;
@@ -212,7 +210,7 @@ function NewActivityPageInner() {
           direction: emailForm.direction,
         });
       } else {
-        if (isFollowUpLinked) {
+        if (shouldCompleteLinkedFollowUp("note")) {
           res = await completeFollowUpWithActivityAction({
             followUpId: urlFollowUpId,
             activityType: "Note",
@@ -286,22 +284,26 @@ function NewActivityPageInner() {
     }
   };
 
+  const shouldCompleteLinkedFollowUp = (type: ActivityType) => {
+    if (!isFollowUpLinked || !linkedFollowUp) return false;
+    if (linkedFollowUp.status === "Completed") return false;
+    const fuType = (linkedFollowUp.type || "").toLowerCase();
+    return fuType === type;
+  };
+
   const TypeButton = ({ type, icon, label }: { type: ActivityType; icon: React.ReactNode; label: string }) => (
     <button
-      onClick={() => !isFollowUpLinked && setActivityType(type)}
-      disabled={isFollowUpLinked && activityType !== type}
+      onClick={() => setActivityType(type)}
       className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold border transition-all ${
         activityType === type
           ? "border-[var(--primary)] bg-[var(--primary)]/5 text-[var(--primary)]"
-          : isFollowUpLinked
-            ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
-            : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
+          : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
       }`}
     >
       {icon} {label}
-      {isFollowUpLinked && activityType === type && (
+      {isFollowUpLinked && (linkedFollowUp?.type || "").toLowerCase() === type && (
         <span className="text-[10px] bg-[var(--primary)]/10 text-[var(--primary)] font-bold px-2 py-0.5 rounded-full border border-[var(--primary)]/20 ml-1.5 shrink-0">
-          Linked to follow-up
+          Linked
         </span>
       )}
     </button>
@@ -372,7 +374,7 @@ function NewActivityPageInner() {
           <LinkedEntityDisplay />          {/* ── CALL FORM ── */}
           {activityType === "call" && (
             <>
-              {isFollowUpLinked ? (
+              {shouldCompleteLinkedFollowUp("call") ? (
                 /* Linked Follow-up Call Details */
                 <div className="space-y-4">
                   {/* Reference Card */}
@@ -490,7 +492,7 @@ function NewActivityPageInner() {
           {/* ── MEETING FORM ── */}
           {activityType === "meeting" && (
             <>
-              {isFollowUpLinked ? (
+              {shouldCompleteLinkedFollowUp("meeting") ? (
                 /* Linked Follow-up Meeting Details */
                 <div className="space-y-4">
                   {/* Reference Card */}
