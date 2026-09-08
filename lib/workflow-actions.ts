@@ -91,7 +91,7 @@ export function getLeadWorkflowActions(state: WorkflowState): WorkflowActions {
     return {
       stage: "FollowUpPending",
       stageDescription: "A follow-up is pending. Log the corresponding activity to complete it.",
-      primary: { id: "log-followup-activity", label: "Log Follow-Up Activity", variant: "primary", icon: "PhoneCall" },
+      primary: { id: "log-followup-activity", label: "Complete Follow-Up", variant: "primary", icon: "PhoneCall" },
       secondary: [
         { id: "reschedule-followup", label: "Reschedule Follow-Up", variant: "secondary", icon: "CalendarClock" },
       ],
@@ -162,7 +162,7 @@ export function getLeadWorkflowActions(state: WorkflowState): WorkflowActions {
     return {
       stage: "FollowUpDue",
       stageDescription: "A follow-up is due. Complete it to progress this lead.",
-      primary: { id: "log-followup-activity", label: "Log Follow-Up Activity", variant: "primary", icon: "PhoneCall" },
+      primary: { id: "log-followup-activity", label: "Complete Follow-Up", variant: "primary", icon: "PhoneCall" },
       secondary: [
         { id: "reschedule-followup", label: "Reschedule Follow-Up", variant: "secondary", icon: "CalendarClock" },
       ],

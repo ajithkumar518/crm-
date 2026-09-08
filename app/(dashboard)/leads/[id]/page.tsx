@@ -610,11 +610,10 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
         setFuAssignedTo(lead.assignedUserId || ""); setFuSaving(false); setFuFromCallLog(false); setFuModal(true);
         break;
       case "log-followup-activity": {
-        // Find the pending follow-up and redirect to activity form
+        // Find the pending follow-up and open the completion modal
         const pendingFu = followups.find((f: any) => f.status === "Pending" || f.status === "Scheduled" || f.status === "Overdue");
         if (pendingFu) {
-          const fuType = (pendingFu.type || "Call").toLowerCase();
-          router.push(`/activities/new?type=${fuType}&leadId=${lead.id}&followUpId=${pendingFu.id}`);
+          openCompleteFuModal(pendingFu);
         } else {
           toast.error("No pending follow-up found.");
         }
@@ -798,13 +797,13 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             {!isConverted && !isLost && (
               <button
-                onClick={() => router.push(`/activities/new?type=${(nextFu.type || "Call").toLowerCase()}&leadId=${lead.id}&followUpId=${nextFu.id}`)}
+                onClick={() => openCompleteFuModal(nextFu)}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap",
                   isOverdue ? "bg-red-600 hover:bg-red-750 text-white shadow-sm" : "bg-blue-600 hover:bg-blue-750 text-white shadow-sm"
                 )}
               >
-                Log Activity
+                Complete Follow-up
               </button>
             )}
           </div>
