@@ -253,16 +253,17 @@ function NewActivityPageInner() {
             message: `Meeting logged: ${meetingForm.mode}`,
             primary: dealId
               ? { label: "Update Stage", href: `/sales-pipeline/${dealId}`, icon: <Video size={16} /> }
-              : { label: "Schedule Demo", href: `/activities/new?leadId=${leadId}&type=Meeting`, icon: <Video size={16} /> },
-            secondary: { label: "View All Meetings", href: "/activities?type=Meeting" },
+              : { label: "Create Follow-Up", href: `/follow-up/new?leadId=${leadId}`, icon: <Phone size={16} /> },
+            secondary: { label: "Start Qualification", href: `/leads/${leadId}?tab=bant&action=qualify`, icon: <CheckCircle2 size={16} /> },
             alternate: dealId ? { label: "Back to Opportunity", href: `/sales-pipeline/${dealId}` } : { label: "Back to Lead", href: `/leads/${leadId}` },
           });
         } else if (activityType === "email") {
           setOverlay({
             open: true,
             message: `Email logged: ${emailForm.subject}`,
-            primary: { label: "View All Emails", href: "/activities?type=Email", icon: <Mail size={16} /> },
-            secondary: { label: "Back to Activities", href: "/activities" },
+            primary: { label: "Create Follow-Up", href: `/follow-up/new?leadId=${leadId}`, icon: <Phone size={16} /> },
+            secondary: { label: "Start Qualification", href: `/leads/${leadId}?tab=bant&action=qualify`, icon: <CheckCircle2 size={16} /> },
+            alternate: { label: "Back to Lead", href: `/leads/${leadId}` },
           });
         } else {
           setOverlay({
@@ -270,8 +271,9 @@ function NewActivityPageInner() {
             message: `Note added to timeline`,
             primary: dealId
               ? { label: "Back to Opportunity", href: `/sales-pipeline/${dealId}`, icon: <StickyNote size={16} /> }
-              : { label: "Back to Lead", href: `/leads/${leadId}`, icon: <StickyNote size={16} /> },
-            secondary: { label: "View All Activities", href: "/activities" },
+              : { label: "Create Follow-Up", href: `/follow-up/new?leadId=${leadId}`, icon: <Phone size={16} /> },
+            secondary: { label: "Start Qualification", href: `/leads/${leadId}?tab=bant&action=qualify`, icon: <CheckCircle2 size={16} /> },
+            alternate: { label: "Back to Lead", href: `/leads/${leadId}` },
           });
         }
       } else {

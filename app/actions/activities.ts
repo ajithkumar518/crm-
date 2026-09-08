@@ -290,6 +290,19 @@ export async function createEmailAction(input: EmailInput) {
       },
     });
 
+    // Auto-transition lead from New to Contacted when an email is logged
+    if (input.leadId) {
+      const lead = await prisma.lead.findUnique({ where: { id: input.leadId } });
+      if (lead && lead.status === "New") {
+        const now = new Date();
+        await prisma.lead.update({
+          where: { id: input.leadId },
+          data: { status: "Contacted", lastInteractionAt: now },
+        }).catch((e) => console.error("Auto-transition lead status failed:", e));
+      }
+      revalidatePath(`/leads/${input.leadId}`);
+    }
+
     revalidatePath("/activities");
     return { success: true, data: log };
   } catch (error) {

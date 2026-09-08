@@ -80,14 +80,27 @@ export async function createNoteAction(
       },
     });
 
+    // Auto-transition lead from New to Contacted when a note is added to a lead
+    if (entityType === "LEAD") {
+      const lead = await prisma.lead.findUnique({ where: { id: entityId } });
+      if (lead && lead.status === "New") {
+        const now = new Date();
+        await prisma.lead.update({
+          where: { id: entityId },
+          data: { status: "Contacted", lastInteractionAt: now },
+        }).catch((e) => console.error("Auto-transition lead status failed:", e));
+      }
+      revalidatePath(`/leads/${entityId}`);
+    } else {
+      revalidatePath(`/${entityType.toLowerCase()}s/${entityId}`);
+    }
+
     await logAudit(
       userPayload.id,
       entityType,
       "NOTE_ADDED",
       `Added note to ${entityType} ${entityId}: "${trimmed.substring(0, 80)}${trimmed.length > 80 ? "…" : ""}"`
     );
-
-    revalidatePath(`/${entityType.toLowerCase()}s/${entityId}`);
 
     return {
       success: true,

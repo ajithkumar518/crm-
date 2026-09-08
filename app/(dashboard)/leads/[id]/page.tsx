@@ -199,7 +199,10 @@ export default function LeadDetailPage({ params }: { params: Promise<{ id: strin
   const openCompleteFuModal = (f: any) => {
     setActiveFollowUp(f);
     setCompleteRemarks("");
-    setCompleteLeadStatus(lead?.status || "Contacted");
+    // Default to the next natural step (SQL) for leads that are still Contacted,
+    // so the user can complete the follow-up and promote the lead in one action.
+    const nextStatus = lead?.status === "Contacted" ? "SQL" : (lead?.status || "Contacted");
+    setCompleteLeadStatus(nextStatus);
     setCompleteFuModal(true);
   };
 
