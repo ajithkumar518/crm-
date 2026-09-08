@@ -341,6 +341,7 @@ gitleaks:
 "prisma:migrate-deploy": { <<: *ops_request }
 "seed:superadmin": { <<: *ops_request }
 "seed:suki-masters": { <<: *ops_request }
+"seed:company-configs": { <<: *ops_request }
 
 # --- recovery
 "rollback": { <<: *ops_request }
